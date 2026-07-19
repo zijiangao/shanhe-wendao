@@ -11,6 +11,7 @@ func _initialize() -> void:
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
 	_test_ranged_enemy_attack_and_cover()
+	_test_archer_aimed_shot()
 	_test_brute_heavy_attack()
 	_test_boss_phase_and_sweep()
 	_test_duelist_fast_movement()
@@ -182,6 +183,39 @@ func _test_ranged_enemy_attack_and_cover() -> void:
 	var covered: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
 	assert(int(covered.hero_hp) == 20, "Cover should prevent a ranged enemy from dealing damage.")
 	assert(Vector2i(int(battle.enemies[0].x), int(battle.enemies[0].y)) != Vector2i(5, 1), "A ranged enemy without line of sight should reposition.")
+
+func _test_archer_aimed_shot() -> void:
+	var aimed := _fixture()
+	aimed.erase("ally")
+	aimed.turn = 3
+	aimed.enemies[0].role = "archer"
+	aimed.enemies[0].range = 4
+	aimed.enemies[0].x = 5
+	aimed.enemies[0].y = 1
+	var aimed_outcome: Dictionary = ENGINE.enemy_turn(aimed, 30, _seeded_rng())
+	assert(bool(aimed_outcome.suppressed) and int(aimed.ap) == 1, "A clear aimed shot should reduce the next shared player turn to one action point.")
+	assert(Array(aimed_outcome.events).size() == 3 and str(aimed_outcome.events[0].type) == "technique", "Aimed shots should present their technique before attack and hit events.")
+
+	var regular := _fixture()
+	regular.erase("ally")
+	regular.turn = 1
+	regular.enemies[0].role = "archer"
+	regular.enemies[0].range = 4
+	regular.enemies[0].x = 5
+	regular.enemies[0].y = 1
+	var regular_outcome: Dictionary = ENGINE.enemy_turn(regular, 30, _seeded_rng())
+	assert(int(aimed_outcome.total_hurt) == int(regular_outcome.total_hurt) + 2, "Aimed shots should deal exactly two bonus damage with the same random roll.")
+
+	var covered := _fixture()
+	covered.erase("ally")
+	covered.turn = 3
+	covered.enemies[0].role = "archer"
+	covered.enemies[0].range = 4
+	covered.enemies[0].x = 5
+	covered.enemies[0].y = 1
+	covered.blocked = [[3, 1]]
+	var covered_outcome: Dictionary = ENGINE.enemy_turn(covered, 30, _seeded_rng())
+	assert(not bool(covered_outcome.suppressed) and int(covered.ap) == 2, "Cover should prevent an aimed shot from applying action suppression.")
 
 func _test_brute_heavy_attack() -> void:
 	var battle := _fixture()

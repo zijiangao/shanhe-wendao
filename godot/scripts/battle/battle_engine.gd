@@ -124,6 +124,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 	var special_notes: PackedStringArray = []
 	var ally_was_active := battle.has("ally") and int(battle.ally.hp) > 0
 	var boss_transition := false
+	var suppressed := false
 	var effects: Array = []
 	var events: Array = []
 	for enemy in battle.enemies:
@@ -162,10 +163,16 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		var enemy_position := Vector2i(int(enemy.x), int(enemy.y))
 		if RULES.can_enemy_attack(battle, enemy, target):
 			var heavy_attack := RULES.is_heavy_turn(battle, enemy)
-			events.append({"type": "attack", "actor": str(enemy.name), "position": enemy_position, "text": "蓄力重击" if heavy_attack else "发动攻击"})
-			var hurt := int(enemy.attack) + _roll_bonus(rng) + (4 if heavy_attack else 0)
+			var aimed_shot := RULES.is_aimed_shot_turn(battle, enemy)
+			if aimed_shot:
+				events.append({"type": "technique", "actor": str(enemy.name), "text": "穿 云 箭"})
+			events.append({"type": "attack", "actor": str(enemy.name), "position": enemy_position, "text": "蓄力重击" if heavy_attack else ("穿云箭" if aimed_shot else "发动攻击")})
+			var hurt := int(enemy.attack) + _roll_bonus(rng) + (4 if heavy_attack else 0) + (2 if aimed_shot else 0)
 			if heavy_attack:
 				special_notes.append("%s发动重击" % str(enemy.name))
+			if aimed_shot:
+				suppressed = true
+				special_notes.append("%s施展穿云箭，压制下回合行动" % str(enemy.name))
 			if target_is_ally:
 				var blocked := mini(hurt, int(battle.ally.guard))
 				hurt -= blocked
@@ -194,7 +201,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 	var ally_defeated := ally_was_active and battle.has("ally") and int(battle.ally.hp) <= 0
 	if not hero_defeated:
 		battle.turn = int(battle.turn) + 1
-		battle.ap = 2
+		battle.ap = 1 if suppressed else 2
 		battle.active_unit = "hero"
 		battle.result = _turn_result(total_hurt, ally_defeated, special_notes)
 		battle.skill_flash = boss_transition
@@ -206,6 +213,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		"ally_defeated": ally_defeated,
 		"total_hurt": total_hurt,
 		"boss_transition": boss_transition,
+		"suppressed": suppressed,
 		"events": events
 	}
 

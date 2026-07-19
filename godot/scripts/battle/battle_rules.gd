@@ -148,6 +148,8 @@ static func enemy_preview(battle: Dictionary) -> String:
 		var description := "向%s接近" % target_name
 		if is_boss_sweep_turn(battle, enemy):
 			description = "施展断岳刀势（周身两格，立即撤离）"
+		elif is_aimed_shot_turn(battle, enemy) and can_attack:
+			description = "穿云箭瞄准%s（命中后下回合少1行动点）" % target_name
 		elif can_attack:
 			if is_heavy_turn(battle, enemy):
 				description = "蓄力重击%s" % target_name
@@ -165,6 +167,9 @@ static func enemy_preview(battle: Dictionary) -> String:
 
 static func is_heavy_turn(battle: Dictionary, enemy: Dictionary) -> bool:
 	return str(enemy.get("role", "melee")) == "brute" and int(battle.get("turn", 1)) % 2 == 0
+
+static func is_aimed_shot_turn(battle: Dictionary, enemy: Dictionary) -> bool:
+	return str(enemy.get("role", "melee")) == "archer" and int(battle.get("turn", 1)) % 3 == 0
 
 static func boss_phase(enemy: Dictionary) -> int:
 	if not bool(enemy.get("boss", false)):

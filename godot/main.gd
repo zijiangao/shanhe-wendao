@@ -106,6 +106,8 @@ func _capture_store_screenshots() -> void:
 
 	GameState.data.energy = 3
 	GameState.start_blackreed_battle()
+	GameState.data.battle.turn = 3
+	GameState.data.battle.enemies[2].y = GameState.data.battle.player_y
 	battle_mode = "move"
 	screen = "battle"
 	_rebuild()

@@ -34,6 +34,10 @@ func _initialize() -> void:
 	battle.blocked.append([3, 1])
 	assert(not RULES.can_enemy_attack(battle, battle.enemies[0], Vector2i(1, 1)), "Terrain should block ranged enemy attacks.")
 	battle.blocked.clear()
+	battle.enemies[0].role = "archer"
+	battle.turn = 3
+	assert(RULES.is_aimed_shot_turn(battle, battle.enemies[0]), "Archers should telegraph an aimed shot every third turn.")
+	assert("穿云箭" in RULES.enemy_preview(battle) and "少1行动点" in RULES.enemy_preview(battle), "Enemy preview should teach the aimed shot and its counterplay stakes.")
 
 	battle.active_unit = "ally"
 	battle.ally.x = 1
