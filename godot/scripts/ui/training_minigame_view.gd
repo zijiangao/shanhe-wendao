@@ -10,9 +10,14 @@ var prompt_label: Label
 var progress_label: Label
 var feedback_label: Label
 var buttons: Dictionary = {}
+var discipline_id: String = ""
+var round_started_ms: int = 0
+var timing_fill: ColorRect
 
-func setup(discipline: String, round_index: int, target: String, scores: Array, result: Dictionary = {}) -> void:
+func setup(discipline: String, round_index: int, challenge: Dictionary, input_index: int, scores: Array, started_ms: int, last_feedback: String = "", result: Dictionary = {}) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	discipline_id = discipline
+	round_started_ms = started_ms
 	var spec: Dictionary = RULES.DISCIPLINES[discipline]
 	var backdrop := ColorRect.new()
 	backdrop.color = Color("#d4c8ae")
@@ -51,11 +56,21 @@ func setup(discipline: String, round_index: int, target: String, scores: Array, 
 	progress_label.add_theme_color_override("font_color", Color("#dfbf74"))
 	page.add_child(progress_label)
 	prompt_label = Label.new()
-	prompt_label.text = "看招：%s" % RULES.DIRECTION_LABELS[target]
+	prompt_label.text = str(challenge.get("prompt", "凝神准备"))
 	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt_label.add_theme_font_size_override("font_size", 42)
 	prompt_label.add_theme_color_override("font_color", spec.accent)
 	page.add_child(prompt_label)
+	var mechanic := Label.new()
+	var targets: Array = challenge.get("targets", [])
+	var step_text := "第 %d / %d 式" % [mini(input_index + 1, targets.size()), targets.size()] if targets.size() > 1 else str(challenge.get("timing", ""))
+	mechanic.text = "%s · %s" % [str(spec.mechanic), step_text]
+	mechanic.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mechanic.add_theme_font_size_override("font_size", 17)
+	mechanic.add_theme_color_override("font_color", Color("#dfbf74"))
+	page.add_child(mechanic)
+	if discipline in ["bladesmanship", "mining"]:
+		_add_timing_meter(page, spec)
 
 	var grid := GridContainer.new()
 	grid.columns = 3
@@ -81,10 +96,41 @@ func setup(discipline: String, round_index: int, target: String, scores: Array, 
 		buttons[direction] = button
 		grid.add_child(button)
 	feedback_label = Label.new()
-	feedback_label.text = "方向键 / WASD / 手柄方向 / 点击按钮"
+	feedback_label.text = (last_feedback + "\n" if last_feedback != "" else "") + "方向键 / WASD / 手柄方向 / 点击按钮"
 	feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	feedback_label.add_theme_color_override("font_color", Color("#aeb9b1"))
+	feedback_label.add_theme_color_override("font_color", Color("#dfbf74") if last_feedback != "" else Color("#aeb9b1"))
 	page.add_child(feedback_label)
+
+func _process(_delta: float) -> void:
+	if timing_fill == null or round_started_ms <= 0:
+		return
+	var elapsed := maxi(0, Time.get_ticks_msec() - round_started_ms)
+	var ratio := clampf(float(elapsed) / 2200.0, 0.0, 1.0)
+	timing_fill.position.x = 700.0 * ratio - 3.0
+	var ideal := 1000 if discipline_id == "bladesmanship" else 1200
+	timing_fill.color = Color("#d7bd67") if absi(elapsed - ideal) <= 150 else Color("#75877c")
+
+func _add_timing_meter(page: VBoxContainer, spec: Dictionary) -> void:
+	var track := Control.new()
+	track.custom_minimum_size = Vector2(700, 18)
+	track.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	page.add_child(track)
+	var background := ColorRect.new()
+	background.color = Color("#0d1812")
+	background.position = Vector2.ZERO
+	background.size = Vector2(700, 18)
+	track.add_child(background)
+	var ideal := 1000 if discipline_id == "bladesmanship" else 1200
+	var window := ColorRect.new()
+	window.color = Color(spec.accent, 0.55)
+	window.position = Vector2(700.0 * float(ideal - 150) / 2200.0, 0)
+	window.size = Vector2(700.0 * 300.0 / 2200.0, 18)
+	track.add_child(window)
+	timing_fill = ColorRect.new()
+	timing_fill.color = Color("#75877c")
+	timing_fill.position = Vector2(-3, -5)
+	timing_fill.size = Vector2(6, 28)
+	track.add_child(timing_fill)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or prompt_label == null:
@@ -98,6 +144,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		direction = "down"
 	elif event.is_action_pressed("ui_left"):
 		direction = "left"
+	elif event is InputEventKey and event.pressed and not event.echo:
+		match event.physical_keycode:
+			KEY_W: direction = "up"
+			KEY_D: direction = "right"
+			KEY_S: direction = "down"
+			KEY_A: direction = "left"
 	if direction != "":
 		get_viewport().set_input_as_handled()
 		direction_selected.emit(direction)

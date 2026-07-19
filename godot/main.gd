@@ -52,9 +52,12 @@ var last_battle_id: String = "blackreed"
 var training_discipline: String = ""
 var training_round: int = 0
 var training_target: String = ""
+var training_challenge: Dictionary = {}
+var training_input_index: int = 0
 var training_started_ms: int = 0
 var training_scores: Array = []
 var training_result: Dictionary = {}
+var training_last_feedback: String = ""
 var active_training_view: TrainingMinigameView
 
 func _ready() -> void:
@@ -105,10 +108,12 @@ func _verify_training_flow() -> void:
 	GameState.new_game()
 	var start_week := int(GameState.data.week)
 	_start_training("swordsmanship")
-	for index in range(TRAINING_RULES.ROUND_COUNT):
+	for round_index in range(TRAINING_RULES.ROUND_COUNT):
 		training_started_ms = Time.get_ticks_msec() - 400
-		_training_direction_selected(training_target)
-		if index + 1 < TRAINING_RULES.ROUND_COUNT:
+		var targets: Array = training_challenge.targets.duplicate()
+		for target in targets:
+			_training_direction_selected(str(target))
+		if round_index + 1 < TRAINING_RULES.ROUND_COUNT:
 			await get_tree().create_timer(0.25).timeout
 	var valid := screen == "training" and str(training_result.get("grade", "")) == "S"
 	valid = valid and int(GameState.data.swordsmanship) == 3 and int(GameState.data.week) == start_week + 1
@@ -887,13 +892,20 @@ func _start_training(discipline: String) -> void:
 	training_round = 0
 	training_scores = []
 	training_result = {}
+	training_last_feedback = ""
 	choice_event = ""
 	_next_training_target()
 	screen = "training"
 	_rebuild()
 
 func _next_training_target() -> void:
-	training_target = str(TRAINING_RULES.DIRECTIONS[randi() % TRAINING_RULES.DIRECTIONS.size()])
+	var primary := str(TRAINING_RULES.DIRECTIONS[randi() % TRAINING_RULES.DIRECTIONS.size()])
+	var secondary := str(TRAINING_RULES.DIRECTIONS[randi() % TRAINING_RULES.DIRECTIONS.size()])
+	if secondary == primary:
+		secondary = TRAINING_RULES.opposite(primary)
+	training_challenge = TRAINING_RULES.challenge(training_discipline, primary, secondary)
+	training_input_index = 0
+	training_target = str(training_challenge.targets[0])
 	training_started_ms = Time.get_ticks_msec()
 
 func _show_training() -> void:
@@ -904,7 +916,7 @@ func _show_training() -> void:
 		return
 	active_training_view = TRAINING_VIEW.new()
 	content.add_child(active_training_view)
-	active_training_view.setup(training_discipline, training_round, training_target, training_scores, training_result)
+	active_training_view.setup(training_discipline, training_round, training_challenge, training_input_index, training_scores, training_started_ms, training_last_feedback, training_result)
 	active_training_view.direction_selected.connect(_training_direction_selected)
 	active_training_view.continue_requested.connect(_finish_training_screen)
 
@@ -912,8 +924,17 @@ func _training_direction_selected(direction: String) -> void:
 	if screen != "training" or not training_result.is_empty() or active_training_view == null:
 		return
 	active_training_view.set_locked()
+	var targets: Array = training_challenge.get("targets", [])
+	var correct := training_input_index < targets.size() and direction == str(targets[training_input_index])
+	if correct and training_input_index + 1 < targets.size():
+		training_input_index += 1
+		training_target = str(targets[training_input_index])
+		_rebuild()
+		return
 	var elapsed := maxi(0, Time.get_ticks_msec() - training_started_ms)
-	training_scores.append(TRAINING_RULES.score_round(direction == training_target, elapsed))
+	var round_score := TRAINING_RULES.score_challenge(training_discipline, correct, elapsed)
+	training_scores.append(round_score)
+	training_last_feedback = "%s · +%d 分" % [TRAINING_RULES.timing_feedback(training_discipline, elapsed, correct), round_score]
 	training_round += 1
 	if training_round >= TRAINING_RULES.ROUND_COUNT:
 		var total := 0
@@ -1138,7 +1159,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.27.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.28.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1393,7 +1414,7 @@ func _show_character() -> void:
 	specialty_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(specialty_title)
 	var specialties := Label.new()
-	specialties.text = "剑法 %d  ·  刀法 %d  ·  采药 %d  ·  挖矿 %d\n前往青云门演武场完成小游戏，成绩决定本周修炼成果。" % [GameState.data.swordsmanship, GameState.data.bladesmanship, GameState.data.herbalism, GameState.data.mining]
+	specialties.text = "剑法 %d  ·  刀法 %d  ·  采药 %d  ·  挖矿 %d\n剑法强化流云剑法，刀法强化普通攻击；小游戏成绩决定本周成果。" % [GameState.data.swordsmanship, GameState.data.bladesmanship, GameState.data.herbalism, GameState.data.mining]
 	specialties.add_theme_font_size_override("font_size", 17)
 	specialties.add_theme_color_override("font_color", Color("#f4eee2"))
 	specialties.add_theme_stylebox_override("normal", _box(Color("#223a30")))

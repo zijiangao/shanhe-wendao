@@ -44,7 +44,9 @@ func _wire_existing_buttons() -> void:
 
 func _on_node_added(node: Node) -> void:
 	if node is BaseButton:
-		_wire_button.call_deferred(node as BaseButton)
+		# node_added already runs after the button exists. Wiring immediately avoids a
+		# deferred typed argument retaining a button that a fast screen rebuild freed.
+		_wire_button(node as BaseButton)
 
 func _wire_button(button: BaseButton) -> void:
 	if button == null or not is_instance_valid(button) or button.has_meta("audio_feedback_wired"):
