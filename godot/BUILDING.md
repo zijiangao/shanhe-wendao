@@ -16,8 +16,8 @@ $tests = @(
     "test_game_state.gd",
     "test_save_manager.gd",
     "test_battle_rules.gd",
-	"test_battle_engine.gd",
-	"test_encounter_rules.gd",
+    "test_battle_engine.gd",
+    "test_encounter_rules.gd",
     "test_battle_scene_spec.gd",
     "test_settings_manager.gd",
     "test_difficulty_rules.gd",
@@ -26,6 +26,7 @@ $tests = @(
     "test_store_capture_spec.gd",
     "test_onboarding_spec.gd",
     "test_growth_rules.gd",
+    "test_reward_rules.gd",
     "test_navigation_rules.gd",
     "test_tutorial_rules.gd",
     "test_cue_synth.gd",
@@ -43,6 +44,22 @@ Run the independent SteamPipe preparation regression test after the Godot suite:
 
 ```powershell
 & .\steamworks\scripts\test_prepare_steampipe.ps1
+```
+
+## Preview the battle reward choice
+
+Capture the save-backed three-way reward screen at 1280×720 for visual QA:
+
+```powershell
+& $godot --path $project --script res://tests/test_reward_choice_view.gd
+```
+
+Godot writes `reward_choice_preview.png` to the project user-data folder and exits non-zero if the pending reward state is missing.
+
+Verify the packaged one-time reward flow from either exported executable:
+
+```powershell
+& "..\build\windows\ShanheWendao.exe" -- --verify-reward-flow
 ```
 
 The save-manager test deliberately feeds malformed and future-version save files to verify recovery, so warning/error log lines from those fixtures are expected.

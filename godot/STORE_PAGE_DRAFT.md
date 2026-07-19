@@ -29,6 +29,10 @@ Train your martial arts, investigate the Black-Iron Token, and shape the fate of
 
 战斗采用网格回合制。近战、弓手、重装头目与疾步剑客拥有不同行动模式；战前调查会改变敌方阵容与初始破绽。利用走位、视线、敌方预判和同伴技能，用有限的行动点扭转战局。
 
+### 每场胜利都留下选择
+
+战后除基础战利品外，还需在参悟武学、补充军资与积累声望之间三选一。眼前收益会继续影响武学熟练度、门派关系与结局评价。
+
 ### 你的做法就是你的江湖
 
 面对洛阳官府、华山剑会与峨眉试问，你可倾向侠义、谋略或威势。选择会改变门派关系、同伴信任与后续路线。
@@ -38,6 +42,7 @@ Train your martial arts, investigate the Black-Iron Token, and shape the fate of
 - 两年倒计时间管理与门派养成
 - 带有行动点、视线和敌方预判的网格战棋
 - 可操作同伴、武学熟练度与多种战斗目标
+- 影响构筑与长期路线的互斥战后奖励
 - 侠义、谋略、威势三种叙事倾向
 - 自动存档、多存档位、键鼠与手柄导航
 - 水墨武侠美术风格
@@ -72,7 +77,7 @@ Complete Valve's content survey from the actual release build; this draft is not
 
 ## Demo promise
 
-The demo includes the opening Qingyun chapter, investigation choices that alter the Blackreed enemy formation, the first tactical battle, tutorial, saves, settings, controller navigation, and local achievement simulation. It ends immediately after the Blackreed victory. The same save format is accepted by the full build.
+The demo includes the opening Qingyun chapter, investigation choices that alter the Blackreed enemy formation, the first tactical battle, a three-way post-battle reward, tutorial, saves, settings, controller navigation, and local achievement simulation. It ends after the Blackreed reward is chosen. The same save format is accepted by the full build.
 
 ## Required graphical assets
 
@@ -100,4 +105,4 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 
 Only upload screenshots captured from the actual build. Do not substitute concept art or generated promotional scenes for gameplay screenshots.
 
-The reviewed 0.24.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.
+The reviewed 0.25.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.

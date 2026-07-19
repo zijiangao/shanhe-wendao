@@ -23,6 +23,7 @@ const BATTLE_SCENE_SPEC := preload("res://scripts/battle/battle_scene_spec.gd")
 const STORE_CAPTURE_SPEC := preload("res://scripts/release/store_capture_spec.gd")
 const ONBOARDING_SPEC := preload("res://scripts/release/onboarding_spec.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
+const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
@@ -60,6 +61,8 @@ func _ready() -> void:
 		call_deferred("_verify_steam_data")
 	elif "--verify-battle-presentation" in OS.get_cmdline_user_args():
 		call_deferred("_verify_battle_presentation")
+	elif "--verify-reward-flow" in OS.get_cmdline_user_args():
+		call_deferred("_verify_reward_flow")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
 		call_deferred("_capture_store_screenshots")
 	elif "--capture-tactical-tutorial" in OS.get_cmdline_user_args():
@@ -211,6 +214,27 @@ func _capture_tactical_tutorial() -> void:
 	print("Tactical tutorial preview saved to: %s" % ProjectSettings.globalize_path(output_path))
 	get_tree().quit(0 if result == OK and active_tutorial_step == "battle_tactics" else 6)
 
+func _capture_reward_choice() -> void:
+	get_window().size = Vector2i(1280, 720)
+	GameState.new_game()
+	GameState.data.energy = 3
+	GameState.data.investigations = ["secret_route", "archer"]
+	GameState.start_blackreed_battle()
+	GameState.data.battle.turn = 4
+	for enemy in GameState.data.battle.enemies:
+		enemy.hp = 0
+	_check_tactical_victory(GameState.data.battle)
+	screen = "victory"
+	_rebuild()
+	for frame in range(5):
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var output_path := "user://reward_choice_preview.png"
+	var result := get_viewport().get_texture().get_image().save_png(output_path)
+	var valid: bool = result == OK and not GameState.data.pending_reward.is_empty() and screen == "victory"
+	print("Reward choice preview saved to: %s" % ProjectSettings.globalize_path(output_path))
+	get_tree().quit(0 if valid else 8)
+
 func _verify_battle_presentation() -> void:
 	GameState.new_game()
 	GameState.data.quest_stage = "investigate"
@@ -234,6 +258,23 @@ func _verify_battle_presentation() -> void:
 	var valid := is_instance_valid(active_battle_view) and not active_battle_view.presentation_active
 	print("Battle presentation verification passed." if valid else "Battle presentation verification failed.")
 	get_tree().quit(0 if valid else 4)
+
+func _verify_reward_flow() -> void:
+	GameState.new_game()
+	GameState.data.energy = 3
+	GameState.data.investigations = ["secret_route", "archer"]
+	GameState.start_blackreed_battle()
+	GameState.data.battle.turn = 4
+	GameState.finish_battle(true)
+	var pending_valid: bool = int(GameState.data.xp) == 22 and str(GameState.data.pending_reward.get("battle_id", "")) == "blackreed"
+	pending_valid = pending_valid and not DEMO_POLICY.is_demo_complete(GameState.data, true)
+	var claimed: bool = GameState.claim_pending_reward("temper")
+	var claim_valid: bool = claimed and int(GameState.data.xp) == 30 and int(GameState.data.skill_mastery.cloud) == 1
+	claim_valid = claim_valid and GameState.data.pending_reward.is_empty() and DEMO_POLICY.is_demo_complete(GameState.data, true)
+	claim_valid = claim_valid and not GameState.claim_pending_reward("supplies")
+	var valid: bool = pending_valid and claim_valid
+	print("Reward flow verification passed." if valid else "Reward flow verification failed.")
+	get_tree().quit(0 if valid else 9)
 
 func _verify_onboarding_flow() -> void:
 	GameState.new_game()
@@ -1472,6 +1513,8 @@ func _screen_after_load() -> String:
 		return "battle"
 	if typeof(GameState.data.get("battle_retry", {})) == TYPE_DICTIONARY and not GameState.data.battle_retry.is_empty():
 		return "defeat"
+	if typeof(GameState.data.get("pending_reward", {})) == TYPE_DICTIONARY and not GameState.data.pending_reward.is_empty():
+		return "victory"
 	if DEMO_POLICY.is_demo_complete(GameState.data):
 		return "demo_complete"
 	return "map"
@@ -1833,15 +1876,11 @@ func _check_tactical_victory(battle: Dictionary) -> bool:
 	AudioFeedback.play("victory")
 	var battle_id: String = str(battle.get("battle_id", "blackreed"))
 	last_battle_id = battle_id
-	if battle_id == "wuku_finale":
-		last_rewards = {"title": "天 门 已 定", "story": "厉无咎的刀落在石阶上。武库机关仍在轰鸣，而决定它命运的人已经变成了你。", "xp": 60, "silver": 30, "renown": 8, "item": "武库钥印", "turns": battle.turn, "next_screen": "final_choice"}
-	elif battle_id == "huashan_trial":
-		last_rewards = {"title": "剑 会 胜 出", "story": "你与林清霜剑路相合，通过华山双人试炼。守台长老准许你们前往思过崖查看残图。", "xp": 30, "silver": 10, "renown": 3, "item": "思过崖通行令", "turns": battle.turn}
-	else:
-		last_rewards = {"title": "大 捷", "story": "黑苇寨众溃散，渡口重归平静。你从寨主身上搜出一枚玄铁令，厉千秋的阴谋终于露出端倪。", "xp": 22, "silver": 15, "renown": 4, "item": "玄铁令", "turns": battle.turn}
+	last_rewards = REWARD_RULES.base_for(battle_id)
+	last_rewards.turns = int(battle.turn)
 	GameState.finish_battle(true)
 	GameState.data.quest_stage = "final_choice" if battle_id == "wuku_finale" else ("huashan_trial_complete" if battle_id == "huashan_trial" else "return_master")
-	screen = "demo_complete" if DEMO_POLICY.should_end_after_victory(battle_id) else "victory"
+	screen = "victory"
 	return true
 
 func _show_demo_complete() -> void:
@@ -1906,6 +1945,12 @@ func _battle_token(index: int) -> AtlasTexture:
 
 func _show_victory() -> void:
 	_clear_content()
+	var pending: Dictionary = GameState.data.get("pending_reward", {})
+	var reward_battle_id := str(pending.get("battle_id", last_battle_id))
+	last_battle_id = reward_battle_id
+	if last_rewards.is_empty() or not pending.is_empty():
+		last_rewards = REWARD_RULES.base_for(reward_battle_id)
+		last_rewards.turns = int(pending.get("turns", last_rewards.get("turns", 0)))
 	var art := TextureRect.new()
 	art.texture = _battle_texture(last_battle_id)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -1917,9 +1962,9 @@ func _show_victory() -> void:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(shade)
 	var panel := VBoxContainer.new()
-	panel.position = Vector2(390, 65)
-	panel.size = Vector2(500, 465)
-	panel.add_theme_constant_override("separation", 16)
+	panel.position = Vector2(300, 28)
+	panel.size = Vector2(680, 650)
+	panel.add_theme_constant_override("separation", 9)
 	content.add_child(panel)
 	var title := Label.new()
 	title.text = str(last_rewards.get("title", "大 捷"))
@@ -1940,10 +1985,33 @@ func _show_victory() -> void:
 	rewards.add_theme_color_override("font_color", Color("#fff0d2"))
 	rewards.add_theme_stylebox_override("normal", _box(Color("#17382eee")))
 	panel.add_child(rewards)
-	var next_screen := str(last_rewards.get("next_screen", "map"))
-	var continue_button := _action_button("进入武库 · 作出最终抉择" if next_screen == "final_choice" else "收剑归鞘 · 返回天下舆图", Color("#8b493b"))
-	continue_button.pressed.connect(func(): screen = next_screen; _rebuild())
-	panel.add_child(continue_button)
+	if not pending.is_empty():
+		var prompt := Label.new()
+		prompt.text = "战后取舍 · 三选一（选择后立即存档）"
+		prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		prompt.add_theme_font_size_override("font_size", 19)
+		prompt.add_theme_color_override("font_color", Color("#dfbf74"))
+		panel.add_child(prompt)
+		for choice in REWARD_RULES.choices_for(reward_battle_id):
+			var choice_button := _action_button("%s\n%s" % [choice.title, choice.description], Color("#315f4b"))
+			choice_button.pressed.connect(_claim_battle_reward.bind(str(choice.id)))
+			panel.add_child(choice_button)
+	else:
+		var next_screen := str(last_rewards.get("next_screen", "map"))
+		var continue_button := _action_button("进入武库 · 作出最终抉择" if next_screen == "final_choice" else "收剑归鞘 · 返回天下舆图", Color("#8b493b"))
+		continue_button.pressed.connect(func(): screen = next_screen; _rebuild())
+		panel.add_child(continue_button)
+
+func _claim_battle_reward(choice_id: String) -> void:
+	var pending: Dictionary = GameState.data.get("pending_reward", {})
+	var battle_id := str(pending.get("battle_id", last_battle_id))
+	var next_screen := str(REWARD_RULES.base_for(battle_id).get("next_screen", "map"))
+	if not GameState.claim_pending_reward(choice_id):
+		_toast("奖励领取失败，请重试。")
+		return
+	SaveManager.save_auto()
+	screen = "demo_complete" if DEMO_POLICY.should_end_after_victory(battle_id) else next_screen
+	_rebuild()
 
 func _begin_final_battle() -> void:
 	if not GameState.start_final_battle():

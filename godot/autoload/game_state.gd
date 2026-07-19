@@ -3,12 +3,13 @@ extends Node
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const ENCOUNTER_RULES := preload("res://scripts/battle/encounter_rules.gd")
+const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 
 signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -49,6 +50,7 @@ func new_game() -> void:
 		"ending": {},
 		"tutorial": {"map": false, "location": false, "battle": false, "battle_tactics": false},
 		"battle_retry": {},
+		"pending_reward": {},
 		"log": ["你拜入青云门。距离厉千秋出关还有两年。"],
 		"battle": {}
 	}
@@ -201,27 +203,24 @@ func start_final_battle() -> bool:
 func finish_battle(victory: bool) -> void:
 	var battle_id: String = str(data.battle.get("battle_id", "blackreed"))
 	var battle_difficulty: String = str(data.battle.get("difficulty", "standard"))
+	var battle_turns: int = int(data.battle.get("turn", 1))
 	data.battle = {}
 	if victory:
 		data.battle_retry = {}
+		var base_reward := REWARD_RULES.base_for(battle_id)
+		data.xp += int(base_reward.xp)
+		data.renown += int(base_reward.renown)
+		data.silver += int(base_reward.silver)
+		data.pending_reward = {"battle_id": battle_id, "turns": battle_turns}
 		if battle_id == "wuku_finale":
-			data.xp += 60
-			data.renown += 8
-			data.silver += 30
 			if "武库钥印" not in data.items:
 				data.items.append("武库钥印")
 			add_log("你与同伴击败厉无咎，武库的命运将由你决定。")
 		elif battle_id == "huashan_trial":
-			data.xp += 30
-			data.renown += 3
-			data.silver += 10
 			if "思过崖通行令" not in data.items:
 				data.items.append("思过崖通行令")
 			add_log("你与林清霜通过华山双人试炼，获准前往思过崖。")
 		else:
-			data.xp += 22
-			data.renown += 4
-			data.silver += 15
 			if "玄铁令" not in data.items:
 				data.items.append("玄铁令")
 			if "villain_revealed" not in data.flags:
@@ -234,6 +233,17 @@ func finish_battle(victory: bool) -> void:
 		add_log("你战败后被江湖同道救回，%s。" % ("没有损失银两" if int(recovery.loss) == 0 else "损失%d两银子" % int(recovery.loss)))
 	battle_finished.emit(victory)
 	state_changed.emit()
+
+func claim_pending_reward(choice_id: String) -> bool:
+	if typeof(data.get("pending_reward", {})) != TYPE_DICTIONARY or data.pending_reward.is_empty():
+		return false
+	var battle_id := str(data.pending_reward.get("battle_id", ""))
+	if not REWARD_RULES.apply_choice(data, battle_id, choice_id):
+		return false
+	var choice := REWARD_RULES.choice_for(battle_id, choice_id)
+	data.pending_reward = {}
+	add_log("战后取舍：%s。" % str(choice.get("title", choice_id)))
+	return true
 
 func _apply_current_difficulty() -> void:
 	var manager: Node = get_tree().root.get_node_or_null("SettingsManager") if is_inside_tree() else null
@@ -365,6 +375,10 @@ func _migrate_and_validate() -> void:
 	elif not data.battle_retry.is_empty():
 		if not data.battle_retry.has("battle") or not _valid_battle(data.battle_retry.battle):
 			data.battle_retry = {}
+	if typeof(data.pending_reward) != TYPE_DICTIONARY:
+		data.pending_reward = {}
+	elif not data.pending_reward.is_empty() and str(data.pending_reward.get("battle_id", "")) not in ["blackreed", "huashan_trial", "wuku_finale"]:
+		data.pending_reward = {}
 	if not _valid_battle(data.battle):
 		data.battle = {}
 	data.week = clampi(int(data.week), 1, FINAL_WEEK)

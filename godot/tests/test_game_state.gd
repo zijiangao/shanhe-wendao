@@ -72,8 +72,10 @@ func _initialize() -> void:
 	var old_save: Dictionary = state.data.duplicate(true)
 	old_save.erase("tutorial")
 	old_save.erase("battle_retry")
+	old_save.erase("pending_reward")
 	assert(state.import_data(old_save), "Saves without onboarding fields should migrate.")
 	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("battle_tactics"), "Migration should add every current tutorial progress field.")
+	assert(typeof(state.data.pending_reward) == TYPE_DICTIONARY and state.data.pending_reward.is_empty(), "Older saves should gain an empty pending reward safely.")
 
 	state.new_game()
 	state.data.energy = 3
@@ -84,6 +86,10 @@ func _initialize() -> void:
 	assert(state.data.battle.has("ally") and state.data.battle.enemies.size() == 3, "The finale should include the companion and complete enemy squad.")
 	state.finish_battle(true)
 	assert("武库钥印" in state.data.items and int(state.data.xp) == 60, "Final victory rewards should be granted exactly once.")
+	assert(str(state.data.pending_reward.battle_id) == "wuku_finale", "Victory should persist an unresolved reward choice.")
+	assert(state.claim_pending_reward("temper"), "A pending reward should be claimable once.")
+	assert(int(state.data.xp) == 80 and int(state.data.skill_mastery.cloud) == 2, "The selected reward should apply on top of base rewards.")
+	assert(state.data.pending_reward.is_empty() and not state.claim_pending_reward("supplies"), "Claiming must clear the pending reward and prevent duplicate grants.")
 	state.data.alignment.strategy = 2
 	state.data.master_relation = 2
 	state.data.faction_relations.huashan = 3
