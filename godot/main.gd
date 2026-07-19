@@ -13,6 +13,7 @@ const BATTLE_RULES := preload("res://scripts/battle/battle_rules.gd")
 const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
 const NAVIGATION_RULES := preload("res://scripts/ui/navigation_rules.gd")
 const TUTORIAL_RULES := preload("res://scripts/ui/tutorial_rules.gd")
+const DEMO_POLICY := preload("res://scripts/release/demo_policy.gd")
 
 var screen: String = "menu"
 var previous_screen: String = "menu"
@@ -32,11 +33,25 @@ var active_tutorial_step: String = ""
 var last_defeat_battle: String = ""
 
 func _ready() -> void:
+	if _handle_release_mode_verification():
+		return
 	GameState.state_changed.connect(_on_state_changed)
 	GameState.battle_started.connect(func(): screen = "battle"; _rebuild())
 	SteamService.achievement_unlocked.connect(_on_achievement_unlocked)
 	_build_shell()
 	_show_menu()
+
+func _handle_release_mode_verification() -> bool:
+	var arguments := OS.get_cmdline_user_args()
+	var expected_demo := "--verify-demo-build" in arguments
+	var expected_full := "--verify-full-build" in arguments
+	if not expected_demo and not expected_full:
+		return false
+	var valid := DEMO_POLICY.is_demo_build() if expected_demo else not DEMO_POLICY.is_demo_build()
+	if not valid:
+		push_error("Release mode verification failed.")
+	get_tree().quit(0 if valid else 2)
+	return true
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("ui_cancel"):
@@ -72,6 +87,8 @@ func _build_shell() -> void:
 
 	var brand := Label.new()
 	brand.text = "  山河问道  ·  两年江湖录"
+	if DEMO_POLICY.is_demo_build():
+		brand.text += "  ·  试玩版"
 	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	brand.add_theme_font_size_override("font_size", 20)
 	brand.add_theme_color_override("font_color", Color("#eadfc7"))
@@ -144,7 +161,7 @@ func _show_menu() -> void:
 	panel.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "两年之约 · Godot 技术原型\n拜入青云，行走江湖，在厉千秋出关前阻止大劫。"
+	subtitle.text = "两年之约 · 一纸玄铁令\n拜入青云，行走江湖，在厉千秋出关前阻止大劫。"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.add_theme_font_size_override("font_size", 16)
 	subtitle.add_theme_color_override("font_color", Color("#c9c7bc"))
@@ -160,7 +177,7 @@ func _show_menu() -> void:
 	panel.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "原型流程：青云门 → 黑苇渡 → 格子战斗 → 存档"
+	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "江湖路：青云 → 洛阳 → 华山 → 峨眉"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	_update_status()
@@ -176,6 +193,8 @@ func _switch_screen(next: String) -> void:
 
 func _rebuild() -> void:
 	SteamService.evaluate_state(GameState.data)
+	if DEMO_POLICY.should_redirect_screen(screen, GameState.data):
+		screen = "demo_complete"
 	match screen:
 		"menu": _show_menu()
 		"map": _show_map()
@@ -192,6 +211,7 @@ func _rebuild() -> void:
 		"battle": _show_battle()
 		"victory": _show_victory()
 		"defeat": _show_defeat()
+		"demo_complete": _show_demo_complete()
 	_update_status()
 	_show_contextual_tutorial()
 	call_deferred("_focus_first_content_control")
@@ -1099,6 +1119,8 @@ func _screen_after_load() -> String:
 		return "battle"
 	if typeof(GameState.data.get("battle_retry", {})) == TYPE_DICTIONARY and not GameState.data.battle_retry.is_empty():
 		return "defeat"
+	if DEMO_POLICY.is_demo_complete(GameState.data):
+		return "demo_complete"
 	return "map"
 
 func _show_battle() -> void:
@@ -1447,8 +1469,58 @@ func _check_tactical_victory(battle: Dictionary) -> bool:
 		last_rewards = {"title": "大 捷", "story": "黑苇寨众溃散，渡口重归平静。你从寨主身上搜出一枚玄铁令，厉千秋的阴谋终于露出端倪。", "xp": 22, "silver": 15, "renown": 4, "item": "玄铁令", "turns": battle.turn}
 	GameState.finish_battle(true)
 	GameState.data.quest_stage = "huashan_trial_complete" if battle_id == "huashan_trial" else "return_master"
-	screen = "victory"
+	screen = "demo_complete" if DEMO_POLICY.should_end_after_victory(battle_id) else "victory"
 	return true
+
+func _show_demo_complete() -> void:
+	_clear_content()
+	var art := TextureRect.new()
+	art.texture = MAP_TEXTURE
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#08130de8")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(310, 42)
+	panel.size = Vector2(660, 500)
+	panel.add_theme_constant_override("separation", 14)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "试 玩 章 结 束"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 42)
+	title.add_theme_color_override("font_color", Color("#f2dfb3"))
+	panel.add_child(title)
+	var summary := Label.new()
+	summary.text = "你已完成《山河问道》试玩版纵向切片。\n\n黑苇寨主败退，玄铁令却将线索指向洛阳官府。完整版中，沈羽将走访洛阳、华山与峨眉，结识同伴，选择侠义、谋略或威势之路。"
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	summary.add_theme_font_size_override("font_size", 18)
+	summary.add_theme_color_override("font_color", Color("#eee5d3"))
+	summary.add_theme_stylebox_override("normal", _box(Color("#17382eee")))
+	panel.add_child(summary)
+	var stats := Label.new()
+	stats.text = "试玩记录\n江湖周数  %d    声望  %d    调查线索  %d/3\n已解锁成就  %d/%d" % [GameState.data.week, GameState.data.renown, GameState.data.investigations.size(), SteamService.unlocked_count(), SteamService.definitions.size()]
+	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats.add_theme_font_size_override("font_size", 18)
+	stats.add_theme_color_override("font_color", Color("#dfbf74"))
+	panel.add_child(stats)
+	var note := Label.new()
+	note.text = "感谢试玩。Steam 商店页上线后，可将完整版加入愿望单。试玩存档可在完整版中继续。"
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.add_theme_color_override("font_color", Color("#c9c7bc"))
+	panel.add_child(note)
+	var achievements := _action_button("查看已解锁成就", Color("#315746"))
+	achievements.pressed.connect(func(): screen = "achievements"; _rebuild())
+	panel.add_child(achievements)
+	var menu := _action_button("返回主菜单", Color("#806c4f"))
+	menu.pressed.connect(_show_menu)
+	panel.add_child(menu)
 
 func _mode_name(mode: String) -> String:
 	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "inspect": "查看战场"}.get(mode, mode)

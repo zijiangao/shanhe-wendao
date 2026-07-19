@@ -21,7 +21,8 @@ $tests = @(
     "test_navigation_rules.gd",
     "test_tutorial_rules.gd",
     "test_cue_synth.gd",
-    "test_steam_service.gd"
+    "test_steam_service.gd",
+    "test_demo_policy.gd"
 )
 
 foreach ($test in $tests) {
@@ -37,8 +38,12 @@ The save-manager test deliberately feeds malformed and future-version save files
 ```powershell
 New-Item -ItemType Directory -Force -Path (Join-Path $PWD "build/windows") | Out-Null
 & $godot --headless --path $project --export-release "Windows Desktop"
+New-Item -ItemType Directory -Force -Path (Join-Path $PWD "build/windows-demo") | Out-Null
+& $godot --headless --path $project --export-release "Windows Demo"
 ```
 
 The Windows release is written to `build/windows/ShanheWendao.exe` with `ShanheWendao.pck` beside it. Both files are required. Keeping game content separate improves SteamPipe patch behavior. The `build` directory is intentionally ignored by Git.
+
+The demo is written separately to `build/windows-demo/ShanheWendaoDemo.exe` with `ShanheWendaoDemo.pck`. Its `demo` custom feature enforces the Blackreed victory boundary; the full preset has no such feature.
 
 Before a public Steam release, replace the current provisional application icon only after the final brand and art-rights review, and configure code signing in the Windows export preset.
