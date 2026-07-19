@@ -4,6 +4,12 @@ const RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 
 func _init() -> void:
 	assert(RULES.options().size() == 4, "Training should offer four distinct specialties.")
+	assert(RULES.specialty_rank_name(0) == "初学" and RULES.specialty_rank_name(3) == "熟手", "Early specialty thresholds should have stable names.")
+	assert(RULES.specialty_rank_name(6) == "精通" and RULES.specialty_rank_name(10) == "大成", "Advanced specialty thresholds should have stable names.")
+	assert(RULES.next_specialty_level(5) == 6 and RULES.next_specialty_level(10) == -1, "Specialty progress should expose the next threshold and cap cleanly.")
+	assert(RULES.gathering_bonus(5) == 0 and RULES.gathering_bonus(6) == 1 and RULES.gathering_bonus(10) == 2, "Gathering yield bonuses should unlock only at mastery milestones.")
+	var ranked_options := RULES.options({"swordsmanship": 3, "mining": 10})
+	assert("熟手 3级" in str(ranked_options[0][1]) and "已达大成" in str(ranked_options[3][1]), "Training choices should explain current rank and next milestone.")
 	assert(RULES.MAX_TOTAL_SCORE == 315, "The displayed maximum must match three perfect rounds plus capped streak bonuses.")
 	assert(RULES.score_round(true, 500) == 100, "Fast correct reactions should earn full points.")
 	assert(RULES.score_round(true, 1200) == 70, "Slower correct reactions should receive partial points.")

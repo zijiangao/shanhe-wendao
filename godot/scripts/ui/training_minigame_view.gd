@@ -182,7 +182,7 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	grade.add_theme_color_override("font_color", spec.accent)
 	page.add_child(grade)
 	var verdict := Label.new()
-	verdict.text = {"S": "炉火纯青", "A": "行云流水", "B": "渐入佳境", "C": "尚需磨炼"}[str(result.grade)]
+	verdict.text = "技艺突破 · %s" % str(result.specialty_rank) if bool(result.get("rank_up", false)) else {"S": "炉火纯青", "A": "行云流水", "B": "渐入佳境", "C": "尚需磨炼"}[str(result.grade)]
 	verdict.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	verdict.add_theme_font_size_override("font_size", 24)
 	verdict.add_theme_color_override("font_color", Color("#f2dfb3"))

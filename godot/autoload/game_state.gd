@@ -126,7 +126,17 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 	outcome.score = safe_score
 	outcome.best_streak = clampi(best_streak, 0, TRAINING_RULES.ROUND_COUNT)
 	outcome.record = TRAINING_RULES.record_attempt(data.training_records, discipline, safe_score, best_streak)
-	data[discipline] = int(data.get(discipline, 0)) + int(outcome.specialty_gain)
+	var previous_level := int(data.get(discipline, 0))
+	data[discipline] = previous_level + int(outcome.specialty_gain)
+	var current_level := int(data[discipline])
+	outcome.specialty_level = current_level
+	outcome.specialty_rank = TRAINING_RULES.specialty_rank_name(current_level)
+	outcome.rank_up = TRAINING_RULES.specialty_rank_index(current_level) > TRAINING_RULES.specialty_rank_index(previous_level)
+	var gathering_bonus := TRAINING_RULES.gathering_bonus(current_level)
+	if discipline == "herbalism":
+		outcome.herbs = int(outcome.get("herbs", 0)) + gathering_bonus
+	if discipline == "mining":
+		outcome.ore = int(outcome.get("ore", 0)) + gathering_bonus
 	data.xp += int(outcome.xp)
 	data.silver += int(outcome.silver)
 	data.materials.herbs = int(data.materials.herbs) + int(outcome.get("herbs", 0))
@@ -152,6 +162,8 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 			data.flags.append("training_event_seen")
 		add_log("修炼奇遇：%s，%s。" % [str(event.title), str(event.reward)])
 	add_log("专项修炼完成：%s级，%s。" % [str(outcome.grade), TRAINING_RULES.reward_text(outcome)])
+	if bool(outcome.rank_up):
+		add_log("%s技艺突破至%s。" % [str(TRAINING_RULES.DISCIPLINES[discipline].title).split(" · ")[0], str(outcome.specialty_rank)])
 	return outcome
 
 func craft(recipe_id: String) -> bool:

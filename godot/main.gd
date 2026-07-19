@@ -273,6 +273,10 @@ func _capture_store_screenshots() -> void:
 		"herbalism": {"best_score": 285, "best_streak": 3, "attempts": 5},
 		"mining": {"best_score": 232, "best_streak": 2, "attempts": 3}
 	}
+	GameState.data.swordsmanship = 10
+	GameState.data.bladesmanship = 7
+	GameState.data.herbalism = 8
+	GameState.data.mining = 6
 	screen = "character"
 	_rebuild()
 	await _save_store_capture("character_growth")
@@ -836,7 +840,7 @@ func _location_action_requested(action_id: String) -> void:
 				return
 			choice_event = "training"
 			choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
-			choice_options = TRAINING_RULES.options()
+			choice_options = TRAINING_RULES.options(GameState.data)
 			screen = "choice"
 			_rebuild()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
@@ -1358,7 +1362,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.38.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.39.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1614,7 +1618,7 @@ func _show_character() -> void:
 	specialty_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(specialty_title)
 	var specialties := Label.new()
-	specialties.text = "剑法 %d  ·  刀法 %d  ·  采药 %d  ·  挖矿 %d\n修炼战绩：%s\n剑法强化流云剑法，刀法强化普通攻击；小游戏成绩决定本周成果。" % [GameState.data.swordsmanship, GameState.data.bladesmanship, GameState.data.herbalism, GameState.data.mining, TRAINING_RULES.records_text(GameState.data.training_records)]
+	specialties.text = "剑法 %d·%s  ·  刀法 %d·%s  ·  采药 %d·%s  ·  挖矿 %d·%s\n修炼战绩：%s\n剑法强化流云剑法，刀法强化普通攻击；采集精通后提高材料产量。" % [GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining)), TRAINING_RULES.records_text(GameState.data.training_records)]
 	specialties.add_theme_font_size_override("font_size", 15)
 	specialties.add_theme_color_override("font_color", Color("#f4eee2"))
 	specialties.add_theme_stylebox_override("normal", _box(Color("#223a30")))

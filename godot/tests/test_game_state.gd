@@ -36,6 +36,16 @@ func _initialize() -> void:
 	assert(not lower_training.record.new_best and lower_training.record.best_score == 315 and lower_training.record.attempts == 2, "A lower repeat must preserve the personal best while incrementing attempts.")
 	assert(int(state.data.week) == spent_week + 1, "A recorded repeat must still spend exactly one week.")
 	state.new_game()
+	state.data.herbalism = 5
+	var mastery_herbs: Dictionary = state.complete_training("herbalism", 300, 99, 3)
+	assert(mastery_herbs.rank_up and mastery_herbs.specialty_rank == "精通" and int(state.data.herbalism) == 8, "Crossing level six should announce herbalism mastery.")
+	assert(int(mastery_herbs.herbs) == 4 and int(state.data.materials.herbs) == 4, "Master herbalism should add one material to the normal score reward.")
+	state.new_game()
+	state.data.mining = 8
+	var mastery_mining: Dictionary = state.complete_training("mining", 300, 99, 3)
+	assert(mastery_mining.rank_up and mastery_mining.specialty_rank == "大成" and int(state.data.mining) == 11, "Crossing level ten should announce mining mastery.")
+	assert(int(mastery_mining.ore) == 5 and int(state.data.materials.ore) == 5, "Great mining mastery should add two materials to the normal score reward.")
+	state.new_game()
 	var event_training: Dictionary = state.complete_training("herbalism", 300, 0)
 	assert(str(event_training.get("event", {}).get("id", "")) == "rare_herb", "A deterministic high-grade roll should attach its training encounter to the result.")
 	assert(int(state.data.materials.herbs) == 5, "The normal three-herb reward and two bonus herbs must be committed together.")

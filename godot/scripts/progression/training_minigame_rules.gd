@@ -6,6 +6,12 @@ const COMBO_SCORE_THRESHOLD := 85
 const COMBO_BONUS_PER_STEP := 5
 const MAX_COMBO_BONUS := 10
 const MAX_TOTAL_SCORE := 315
+const SPECIALTY_RANKS := [
+	{"level": 0, "name": "初学"},
+	{"level": 3, "name": "熟手"},
+	{"level": 6, "name": "精通"},
+	{"level": 10, "name": "大成"}
+]
 const DIRECTIONS := ["up", "right", "down", "left"]
 const DIRECTION_LABELS := {"up": "上", "right": "右", "down": "下", "left": "左"}
 const DISCIPLINES := {
@@ -37,6 +43,31 @@ const DISCIPLINES := {
 
 static func is_valid_discipline(id: String) -> bool:
 	return DISCIPLINES.has(id)
+
+static func specialty_rank_index(level: int) -> int:
+	var result := 0
+	for index in range(SPECIALTY_RANKS.size()):
+		if level >= int(SPECIALTY_RANKS[index].level):
+			result = index
+	return result
+
+static func specialty_rank_name(level: int) -> String:
+	return str(SPECIALTY_RANKS[specialty_rank_index(maxi(0, level))].name)
+
+static func next_specialty_level(level: int) -> int:
+	var current := specialty_rank_index(maxi(0, level))
+	return int(SPECIALTY_RANKS[current + 1].level) if current + 1 < SPECIALTY_RANKS.size() else -1
+
+static func gathering_bonus(level: int) -> int:
+	return maxi(0, specialty_rank_index(maxi(0, level)) - 1)
+
+static func perk_text(discipline: String, level: int) -> String:
+	match discipline:
+		"swordsmanship": return "每2级使流云剑法伤害 +1"
+		"bladesmanship": return "每2级使普通攻击伤害 +1"
+		"herbalism": return "每2级使回春散治疗 +1；精通后采药增产 +%d" % gathering_bonus(level)
+		"mining": return "精通后每次挖矿增产 +%d矿石" % gathering_bonus(level)
+	return ""
 
 static func empty_records() -> Dictionary:
 	var records := {}
@@ -79,13 +110,15 @@ static func records_text(records: Variant) -> String:
 		entries.append("%s %s·%d（%d次）" % [entry[1], grade(int(record.best_score)) if int(record.attempts) > 0 else "—", int(record.best_score), int(record.attempts)])
 	return " · ".join(entries)
 
-static func options() -> Array:
-	return [
-		["剑法 · 听风辨势", "提升剑法；影响流云剑法的威力。", "swordsmanship"],
-		["刀法 · 破阵斩隙", "提升刀法；每两级增加普通攻击伤害。", "bladesmanship"],
-		["采药 · 寻香识草", "提升采药，并按成绩获得药材。", "herbalism"],
-		["挖矿 · 听音寻脉", "提升挖矿，并按成绩获得银两。", "mining"]
-	]
+static func options(specialties: Dictionary = {}) -> Array:
+	var result: Array = []
+	for entry in [["swordsmanship", "剑法 · 听风辨势"], ["bladesmanship", "刀法 · 破阵斩隙"], ["herbalism", "采药 · 寻香识草"], ["mining", "挖矿 · 听音寻脉"]]:
+		var discipline := str(entry[0])
+		var level := maxi(0, int(specialties.get(discipline, 0)))
+		var next_level := next_specialty_level(level)
+		var progress := "已达大成" if next_level < 0 else "距下境界 %d级" % (next_level - level)
+		result.append([str(entry[1]), "%s %d级 · %s · %s\n小游戏成绩决定本周成长与收益。" % [specialty_rank_name(level), level, progress, perk_text(discipline, level)], discipline])
+	return result
 
 static func score_round(correct: bool, elapsed_ms: int) -> int:
 	if not correct:
