@@ -24,7 +24,7 @@ func _capture() -> void:
 	var texts: Array[String] = []
 	for label in labels:
 		texts.append(str((label as Label).text))
-	var valid := result == OK and texts.any(func(value: String): return "江 湖 成 就" in value and "/15" in value)
+	var valid := result == OK and texts.any(func(value: String): return "江 湖 成 就" in value and "/19" in value)
 	valid = valid and texts.any(func(value: String): return "炉火纯青" in value) and texts.any(func(value: String): return "百炼成锋" in value)
 	print("Achievement preview saved to: %s" % ProjectSettings.globalize_path(output_path))
 	quit(0 if valid else 20)

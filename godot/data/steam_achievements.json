@@ -88,5 +88,29 @@
     "title": "问道藏锋",
     "description": "选择封存兵法，将武库学问用于济世。",
     "hidden": true
+  },
+  {
+    "api_name": "ACH_SPECIALTY_MASTERY",
+    "title": "一艺通神",
+    "description": "将任一专项修炼至大成境界。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_PERFECT_TRAINING",
+    "title": "毫厘不差",
+    "description": "在任一专项修炼中取得满分。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_HERBARIUM_COMPLETE",
+    "title": "百草入谱",
+    "description": "发现并收录药谱中的全部药材。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_MINERALOGY_COMPLETE",
+    "title": "山骨皆明",
+    "description": "发现并收录矿谱中的全部矿物。",
+    "hidden": false
   }
 ]

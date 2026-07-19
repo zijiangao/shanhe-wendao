@@ -5,6 +5,9 @@ signal achievement_unlocked(api_name: String, title: String)
 const LOCAL_BACKEND := preload("res://scripts/steam/local_steam_backend.gd")
 const LIVE_BACKEND := preload("res://scripts/steam/godot_steam_backend.gd")
 const ACHIEVEMENTS_PATH := "res://data/steam_achievements.json"
+const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
+const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 
 var backend
 var definitions: Array = []
@@ -111,6 +114,16 @@ func evaluate_state(state: Dictionary) -> void:
 	if "tempered_blade" in flags: unlock("ACH_FIRST_TEMPER")
 	var highest_specialty := maxi(int(state.get("swordsmanship", 0)), maxi(int(state.get("bladesmanship", 0)), maxi(int(state.get("herbalism", 0)), int(state.get("mining", 0)))))
 	backend.set_stat("STAT_HIGHEST_SPECIALTY", highest_specialty)
+	if highest_specialty >= 10: unlock("ACH_SPECIALTY_MASTERY")
+	var records := TRAINING_RULES.normalize_records(state.get("training_records", {}))
+	for discipline in records:
+		if int(records[discipline].best_score) >= TRAINING_RULES.MAX_TOTAL_SCORE:
+			unlock("ACH_PERFECT_TRAINING")
+			break
+	if HERBARIUM_RULES.discovered_count(state.get("herbarium", {})) >= HERBARIUM_RULES.SPECIMENS.size():
+		unlock("ACH_HERBARIUM_COMPLETE")
+	if MINERALOGY_RULES.discovered_count(state.get("mineralogy", {})) >= MINERALOGY_RULES.SPECIMENS.size():
+		unlock("ACH_MINERALOGY_COMPLETE")
 
 func _on_game_state_changed() -> void:
 	evaluate_state(GameState.data)

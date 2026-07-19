@@ -124,7 +124,7 @@ The onboarding verifier checks the shipping new-game route from Qingyun mission 
 & $godot --headless --path $project -- --verify-pause-flow
 ```
 
-The exported-build Steam data verifier checks that all 15 achievement definitions have stable API names and complete metadata. Besides story and ending progress, the set includes persistent milestones for an S-grade training result, a training encounter, field medicine, and weapon tempering; `STAT_HIGHEST_SPECIALTY` mirrors the player's strongest specialty:
+The exported-build Steam data verifier checks that all 19 achievement definitions have stable API names and complete metadata. Besides story and ending progress, the set includes persistent milestones for training, specialty mastery, complete herb and mineral collections, field medicine, and weapon tempering; `STAT_HIGHEST_SPECIALTY` mirrors the player's strongest specialty:
 
 ```powershell
 & "..\build\windows\ShanheWendao.exe" -- --verify-steam-data
