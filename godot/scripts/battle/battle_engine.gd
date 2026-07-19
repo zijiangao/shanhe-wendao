@@ -2,6 +2,7 @@ class_name BattleEngine
 extends RefCounted
 
 const RULES := preload("res://scripts/battle/battle_rules.gd")
+const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 
 static func is_victory(battle: Dictionary) -> bool:
 	if str(battle.get("objective", {}).get("type", "eliminate")) == "survive":
@@ -52,7 +53,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	if not RULES.can_attack_cell(battle, target, false, int(player.qi)):
 		return _failure("普通攻击只能命中相邻敌人。")
 	var enemy_index := RULES.enemy_at(battle, target)
-	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3
+	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0)))
 	var damage := base_damage + _roll_bonus(rng)
 	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
 	battle.ap = int(battle.ap) - 1
@@ -67,7 +68,7 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	if not RULES.can_attack_cell(battle, target, true, int(player.qi)):
 		return _failure("流云剑法需要8点真气，并只能攻击同一直线三格内的敌人。")
 	var enemy_index := RULES.enemy_at(battle, target)
-	var damage := int(player.strength) + 9 + int(player.skill_mastery.cloud / 3) + _roll_range(rng, 0, 3)
+	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.skill_mastery.cloud / 3) + _roll_range(rng, 0, 3)
 	player.qi = int(player.qi) - 8
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")

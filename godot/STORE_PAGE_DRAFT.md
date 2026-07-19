@@ -96,7 +96,8 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 5. Companion battle at Huashan with the survival objective visible.
 6. A consequential story choice at the Luoyang banquet.
 7. The final battle at the sealed Wuku gate, showing the boss and companion formation.
+8. Character growth overview showing cultivation rank, attribute roles, and martial mastery.
 
 Only upload screenshots captured from the actual build. Do not substitute concept art or generated promotional scenes for gameplay screenshots.
 
-The reviewed 0.16.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all seven images before uploading them to Steamworks.
+The reviewed 0.17.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.

@@ -22,6 +22,7 @@ const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const BATTLE_SCENE_SPEC := preload("res://scripts/battle/battle_scene_spec.gd")
 const STORE_CAPTURE_SPEC := preload("res://scripts/release/store_capture_spec.gd")
 const ONBOARDING_SPEC := preload("res://scripts/release/onboarding_spec.gd")
+const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
@@ -154,6 +155,20 @@ func _capture_store_screenshots() -> void:
 	screen = "battle"
 	_rebuild()
 	await _save_store_capture("wuku_finale")
+
+	GameState.new_game()
+	GameState.data.xp = 68
+	GameState.data.strength = 7
+	GameState.data.insight = 6
+	GameState.data.constitution = 5
+	GameState.data.max_hp = 48
+	GameState.data.hp = 48
+	GameState.data.renown = 8
+	GameState.data.skill_mastery.cloud = 5
+	GameState.data.companions = ["lin_qingshuang"]
+	screen = "character"
+	_rebuild()
+	await _save_store_capture("character_growth")
 
 	print("Store screenshots saved to: %s" % output_path)
 	get_tree().quit(0)
@@ -506,12 +521,13 @@ func _location_action_requested(action_id: String) -> void:
 		"map": screen = "map"; _rebuild()
 		"master": _qingyun_master_event()
 		"train":
-			if GameState.train():
-				_toast("苦修一周，臂力与修为提升。")
-				if not SaveManager.save_auto():
-					_toast("修炼完成，但自动存档失败。")
-			else:
+			if GameState.deadline_reached() or int(GameState.data.energy) <= 0:
 				_toast(_time_action_failure_message())
+				return
+			choice_event = "training"
+			choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
+			choice_options = GROWTH_RULES.TRAINING_OPTIONS.duplicate(true)
+			screen = "choice"
 			_rebuild()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
 		"fisher": _start_dialogue("clue_fisher", ONBOARDING_SPEC.dialogue_for("clue_fisher"))
@@ -680,7 +696,12 @@ func _show_choice() -> void:
 	view.option_selected.connect(_resolve_choice)
 
 func _resolve_choice(route: String) -> void:
-	if choice_event == "baima_route":
+	if choice_event == "training":
+		if not GameState.train(route):
+			_toast(_time_action_failure_message())
+			return
+		_toast("修炼完成，成长效果已生效。")
+	elif choice_event == "baima_route":
 		GameState.data.alignment[route] = int(GameState.data.alignment.get(route, 0)) + 1
 		GameState.data.luoyang_route = route
 		GameState.data.quest_stage = "luoyang_investigate"
@@ -1163,7 +1184,9 @@ func _show_character() -> void:
 	info.add_child(heading)
 
 	var summary := Label.new()
-	summary.text = "综合战力  %d     气血  %d/%d     真气  %d     声望  %d" % [GameState.power(), GameState.data.hp, GameState.data.max_hp, GameState.data.qi, GameState.data.renown]
+	var next_rank := GROWTH_RULES.next_rank_xp(int(GameState.data.xp))
+	var rank_progress := "已达最高境界" if next_rank < 0 else "距下境界 %d 修为" % (next_rank - int(GameState.data.xp))
+	summary.text = "综合战力  %d     气血  %d/%d     真气  %d     声望  %d\n修为  %d · %s · %s · 伤害加成 +%d" % [GameState.power(), GameState.data.hp, GameState.data.max_hp, GameState.data.qi, GameState.data.renown, GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp)), rank_progress, GROWTH_RULES.combat_bonus(int(GameState.data.xp))]
 	summary.add_theme_font_size_override("font_size", 18)
 	summary.add_theme_color_override("font_color", Color("#e9e1cf"))
 	info.add_child(summary)
@@ -1172,12 +1195,12 @@ func _show_character() -> void:
 	stat_grid.columns = 4
 	stat_grid.add_theme_constant_override("h_separation", 10)
 	info.add_child(stat_grid)
-	for entry in [["臂力", GameState.data.strength], ["身法", GameState.data.agility], ["悟性", GameState.data.insight], ["根骨", GameState.data.constitution]]:
+	for entry in [["臂力", GameState.data.strength, "普攻/剑法"], ["身法", GameState.data.agility, "综合战力"], ["悟性", GameState.data.insight, "剑法增伤"], ["根骨", GameState.data.constitution, "修炼加气血"]]:
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.add_theme_stylebox_override("panel", _box(Color("#294438")))
 		var value := Label.new()
-		value.text = "%s\n%d" % [entry[0], entry[1]]
+		value.text = "%s  %d\n%s" % [entry[0], entry[1], entry[2]]
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		value.add_theme_font_size_override("font_size", 20)
 		value.add_theme_color_override("font_color", Color("#fff4dc"))
@@ -1190,7 +1213,7 @@ func _show_character() -> void:
 	skill_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(skill_title)
 	var skill_card := Label.new()
-	skill_card.text = "流云剑法   ·   近身剑招   ·   消耗 8 真气\n当前效果：相邻目标造成较高伤害；修炼属性会直接提高招式威力。"
+	skill_card.text = "流云剑法   ·   直线剑招   ·   消耗 8 真气\n当前效果：同一直线三格内造成较高伤害；臂力、悟性、境界与熟练度都会提高威力。"
 	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_card.add_theme_font_size_override("font_size", 17)
 	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))

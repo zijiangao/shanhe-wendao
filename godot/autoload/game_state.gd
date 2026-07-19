@@ -1,6 +1,7 @@
 extends Node
 
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
+const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 
 signal state_changed
 signal battle_started
@@ -88,12 +89,14 @@ func travel(destination: String) -> bool:
 	add_log("你动身前往%s。" % place_name(destination))
 	return true
 
-func train() -> bool:
+func train(focus: String = "strength") -> bool:
+	if focus not in ["strength", "insight", "constitution"]:
+		return false
 	if not spend_week():
 		return false
-	data.strength += 1
-	data.xp += 12
-	add_log("一周苦修，臂力提升，修为增加。")
+	if not GROWTH_RULES.apply_training(data, focus):
+		return false
+	add_log({"strength": "你锻体一周，臂力与修为提升。", "insight": "你参悟一周，悟性与修为提升。", "constitution": "你筑基一周，根骨、气血与修为提升。"}[focus])
 	return true
 
 func add_investigation(clue: String, message: String) -> bool:

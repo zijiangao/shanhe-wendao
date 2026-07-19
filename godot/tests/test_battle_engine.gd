@@ -6,6 +6,7 @@ func _initialize() -> void:
 	_test_victory_detection()
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
+	_test_cultivation_damage_bonus()
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
 	_test_ranged_enemy_attack_and_cover()
@@ -75,6 +76,24 @@ func _test_player_skills_and_resources() -> void:
 	assert(bool(guard.ok) and int(battle.ally.guard) == 8 and int(battle.ally.qi) == 13, "Frost Guard should grant guard and restore qi.")
 	assert(int(player.skill_mastery.frost_guard) == 1, "Frost Guard should increase its mastery.")
 	assert(bool(battle.skill_flash) and str(battle.skill_name) == "寒 锋 守 势", "Frost Guard should expose its own presentation title.")
+
+func _test_cultivation_damage_bonus() -> void:
+	var low_battle := _fixture()
+	low_battle.active_unit = "hero"
+	low_battle.ap = 2
+	low_battle.enemies[0].x = 1
+	low_battle.enemies[0].y = 4
+	low_battle.ally.x = 0
+	low_battle.ally.y = 3
+	low_battle.enemies[0].hp = 100
+	var high_battle: Dictionary = low_battle.duplicate(true)
+	var low_player := _player_fixture()
+	var high_player: Dictionary = low_player.duplicate(true)
+	high_player.insight = 6
+	high_player.xp = 70
+	var low: Dictionary = ENGINE.player_action(low_battle, low_player, "skill", Vector2i(1, 4), _seeded_rng())
+	var high: Dictionary = ENGINE.player_action(high_battle, high_player, "skill", Vector2i(1, 4), _seeded_rng())
+	assert(int(high.damage) == int(low.damage) + 3, "Insight and cultivation rank bonuses should deterministically increase Flowing Cloud Sword damage.")
 
 func _test_invalid_action_preserves_resources() -> void:
 	var battle := _fixture()
@@ -251,6 +270,8 @@ func _fixture() -> Dictionary:
 func _player_fixture() -> Dictionary:
 	return {
 		"strength": 4,
+		"insight": 4,
+		"xp": 0,
 		"qi": 20,
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0}
 	}
