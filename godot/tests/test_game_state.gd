@@ -70,7 +70,7 @@ func _initialize() -> void:
 	old_save.erase("tutorial")
 	old_save.erase("battle_retry")
 	assert(state.import_data(old_save), "Saves without onboarding fields should migrate.")
-	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("battle"), "Migration should add tutorial progress defaults.")
+	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("battle_tactics"), "Migration should add every current tutorial progress field.")
 
 	state.new_game()
 	state.data.energy = 3

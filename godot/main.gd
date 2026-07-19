@@ -60,6 +60,8 @@ func _ready() -> void:
 		call_deferred("_verify_battle_presentation")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
 		call_deferred("_capture_store_screenshots")
+	elif "--capture-tactical-tutorial" in OS.get_cmdline_user_args():
+		call_deferred("_capture_tactical_tutorial")
 
 func _handle_release_mode_verification() -> bool:
 	var arguments := OS.get_cmdline_user_args()
@@ -175,6 +177,25 @@ func _capture_store_screenshots() -> void:
 
 	print("Store screenshots saved to: %s" % output_path)
 	get_tree().quit(0)
+
+func _capture_tactical_tutorial() -> void:
+	get_window().size = Vector2i(1280, 720)
+	GameState.new_game()
+	GameState.data.quest_stage = "investigate"
+	GameState.data.location = "blackreed"
+	GameState.data.energy = 3
+	GameState.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": false}
+	GameState.start_blackreed_battle()
+	screen = "battle"
+	_rebuild()
+	for frame in range(5):
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var image := get_viewport().get_texture().get_image()
+	var output_path := "user://tactical_tutorial_preview.png"
+	var result := image.save_png(output_path)
+	print("Tactical tutorial preview saved to: %s" % ProjectSettings.globalize_path(output_path))
+	get_tree().quit(0 if result == OK and active_tutorial_step == "battle_tactics" else 6)
 
 func _verify_battle_presentation() -> void:
 	GameState.new_game()
