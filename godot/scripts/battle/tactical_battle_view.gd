@@ -4,6 +4,7 @@ extends Control
 const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
+const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 
 signal cell_selected(x: int, y: int)
 signal mode_selected(mode: String)
@@ -108,7 +109,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	side.add_theme_stylebox_override("panel", _box(Color("#14271ff2")))
 	add_child(side)
 	var side_box := VBoxContainer.new()
-	side_box.add_theme_constant_override("separation", 10)
+	side_box.add_theme_constant_override("separation", 4)
 	side.add_child(side_box)
 	var status := Label.new()
 	var active_name: String = "林清霜" if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
@@ -116,12 +117,12 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	var active_max_hp: int = int(battle.ally.max_hp) if active_name == "林清霜" else int(player.max_hp)
 	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if active_name == "林清霜" else "真气 %d/20" % player.qi
 	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.ap, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
-	status.add_theme_font_size_override("font_size", 18)
+	status.add_theme_font_size_override("font_size", 17)
 	status.add_theme_color_override("font_color", Color("#f2dfb3"))
 	side_box.add_child(status)
 	var result := Label.new()
 	result.text = "战况\n%s" % battle.result
-	result.custom_minimum_size.y = 95
+	result.custom_minimum_size.y = 70
 	result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	result.add_theme_font_size_override("font_size", 16)
 	result.add_theme_color_override("font_color", Color("#f4eee2"))
@@ -130,26 +131,27 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	var preview := Label.new()
 	preview.text = "敌方预判\n" + enemy_preview
 	preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	preview.add_theme_font_size_override("font_size", 14)
+	preview.add_theme_font_size_override("font_size", 13)
 	preview.add_theme_color_override("font_color", Color("#e5c8b6"))
 	side_box.add_child(preview)
 	var action_grid := GridContainer.new()
 	action_grid.columns = 2
 	action_grid.add_theme_constant_override("h_separation", 8)
-	action_grid.add_theme_constant_override("v_separation", 8)
+	action_grid.add_theme_constant_override("v_separation", 6)
 	side_box.add_child(action_grid)
 	var actions: Array = [["移动", "move"], ["普通攻击", "attack"]]
 	if active_name == "林清霜":
 		actions.append(["霜华刺 · 6真气", "frost_dash"])
 		actions.append(["寒锋守势", "frost_guard"])
 	else:
-		actions.append(["流云剑法 · 8真气", "skill"])
-		actions.append(["回春散 · %d" % int(player.get("consumables", {}).get("healing_powder", 0)), "heal"])
+		var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
+		actions.append(["流云剑法 · %d真气" % qi_cost, "skill"])
+		actions.append(["回春散 · 回%d" % BATTLE_ENGINE.healing_amount(player), "heal"])
 		actions.append(["取消选择", "inspect"])
 	for action in actions:
 		var button := _action_button(action[0], Color("#8b493b") if mode == action[1] else Color("#315f4b"))
 		button.custom_minimum_size.x = 174
-		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < 8) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp)))
+		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp)))
 		button.pressed.connect(_emit_mode.bind(str(action[1])))
 		action_grid.add_child(button)
 	var end_button := _action_button("结束回合", Color("#806c4f"))
@@ -157,8 +159,8 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	end_button.pressed.connect(func(): end_turn_requested.emit())
 	action_grid.add_child(end_button)
 	var help := Label.new()
-	help.text = "移动/攻击/服药：消耗1行动点 · 普攻制造破绽\n剑法无视护甲 · 回春散恢复12+采药加成"
-	help.add_theme_font_size_override("font_size", 13)
+	help.text = BATTLE_ENGINE.hero_action_help(player) if active_name == "沈羽" else "霜华刺：突进两格并攻击 · 消耗6真气\n寒锋守势：获得护卫并恢复3真气 · 均消耗1行动点"
+	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
 	side_box.add_child(help)
 
@@ -324,7 +326,7 @@ func _battle_token(index: int) -> Texture2D:
 func _action_button(text_value: String, color: Color) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size.y = 48
+	button.custom_minimum_size.y = 42
 	button.add_theme_font_size_override("font_size", 16)
 	button.add_theme_color_override("font_color", Color("#f5ecd9"))
 	button.add_theme_stylebox_override("normal", _box(color))

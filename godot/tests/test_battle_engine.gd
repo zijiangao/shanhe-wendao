@@ -176,6 +176,8 @@ func _test_specialty_mastery_perks() -> void:
 	herbal_master.consumables = {"healing_powder": 1}
 	var medicine_result: Dictionary = ENGINE.player_action(medicine_battle, herbal_master, "heal")
 	assert(bool(medicine_result.ok) and int(medicine_result.healed) == 22, "Herbalism mastery should add five healing on top of its continuous level bonus.")
+	var help_text := ENGINE.hero_action_help({"strength": 4, "xp": 0, "bladesmanship": 10, "swordsmanship": 10, "insight": 4, "forge_level": 0, "skill_mastery": {"cloud": 0}, "herbalism": 10})
+	assert("制造2层破绽" in help_text and "消耗6真气" in help_text and "恢复22气血" in help_text, "The tactical action preview should expose all active mastery values.")
 
 func _test_armor_and_exposure_combo() -> void:
 	var armored := _fixture()

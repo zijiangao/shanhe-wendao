@@ -23,6 +23,25 @@ static func objective_text(battle: Dictionary) -> String:
 		return "坚持回合 %d/%d（或提前击败所有对手）" % [completed_rounds, required_rounds]
 	return "击败所有敌人"
 
+static func normal_damage_range(player: Dictionary) -> Vector2i:
+	var base := int(player.get("strength", 0)) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0))
+	return Vector2i(base, base + 2)
+
+static func cloud_damage_range(player: Dictionary) -> Vector2i:
+	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3
+	return Vector2i(base, base + 3)
+
+static func healing_amount(player: Dictionary) -> int:
+	var herbalism := int(player.get("herbalism", 0))
+	return 12 + herbalism / 2 + TRAINING_RULES.medicine_mastery_bonus(herbalism)
+
+static func hero_action_help(player: Dictionary) -> String:
+	var normal := normal_damage_range(player)
+	var cloud := cloud_damage_range(player)
+	var exposure := TRAINING_RULES.attack_exposure_gain(int(player.get("bladesmanship", 0)))
+	var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
+	return "普攻 %d–%d（护甲前）· 命中制造%d层破绽\n剑法 %d–%d（无视护甲）· 每层破绽追加4 · 消耗%d真气\n回春散恢复%d气血 · 所有行动均消耗1行动点" % [normal.x, normal.y, exposure, cloud.x, cloud.y, qi_cost, healing_amount(player)]
+
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
 	if int(battle.ap) <= 0:
 		return _failure("行动点已用尽，请结束回合。")
@@ -131,8 +150,7 @@ static func _use_healing_powder(battle: Dictionary, player: Dictionary) -> Dicti
 	var consumables: Dictionary = player.get("consumables", {})
 	if int(consumables.get("healing_powder", 0)) <= 0:
 		return _failure("行囊中没有回春散。")
-	var herbalism := int(player.get("herbalism", 0))
-	var healing := 12 + herbalism / 2 + TRAINING_RULES.medicine_mastery_bonus(herbalism)
+	var healing := healing_amount(player)
 	var before := int(player.hp)
 	player.hp = mini(int(player.max_hp), before + healing)
 	player.consumables.healing_powder = int(player.consumables.healing_powder) - 1

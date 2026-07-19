@@ -1362,7 +1362,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.40.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.41.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1630,7 +1630,7 @@ func _show_character() -> void:
 	skill_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(skill_title)
 	var skill_card := Label.new()
-	skill_card.text = "流云剑法   ·   直线剑招   ·   消耗 8 真气\n当前效果：无视护甲并引爆破绽；臂力、悟性、境界与熟练度都会提高威力。"
+	skill_card.text = "流云剑法   ·   直线剑招   ·   消耗 %d 真气\n当前效果：无视护甲并引爆破绽；臂力、悟性、境界与熟练度都会提高威力。" % TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship))
 	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_card.add_theme_font_size_override("font_size", 17)
 	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))
@@ -2158,10 +2158,11 @@ func _show_battle_legacy() -> void:
 	action_grid.add_theme_constant_override("h_separation", 8)
 	action_grid.add_theme_constant_override("v_separation", 8)
 	side_box.add_child(action_grid)
-	for action in [["移动", "move"], ["普通攻击", "attack"], ["流云剑法 · 8真气", "skill"]]:
+	var legacy_qi_cost := TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship))
+	for action in [["移动", "move"], ["普通攻击", "attack"], ["流云剑法 · %d真气" % legacy_qi_cost, "skill"]]:
 		var action_button := _action_button(action[0], Color("#8b493b") if battle_mode == action[1] else Color("#315f4b"))
 		action_button.custom_minimum_size.x = 174
-		action_button.disabled = int(battle.ap) <= 0 or (action[1] == "skill" and int(GameState.data.qi) < 8)
+		action_button.disabled = int(battle.ap) <= 0 or (action[1] == "skill" and int(GameState.data.qi) < legacy_qi_cost)
 		action_button.pressed.connect(func(): battle_mode = action[1]; _rebuild())
 		action_grid.add_child(action_button)
 	var cancel_button := _action_button("取消选择 / 查看战场", Color("#4d5550"))
@@ -2173,7 +2174,7 @@ func _show_battle_legacy() -> void:
 	end_button.pressed.connect(_enemy_turn)
 	action_grid.add_child(end_button)
 	var help := Label.new()
-	help.text = "移动：两格内，消耗1行动点\n普攻：相邻敌人，消耗1行动点\n流云剑法：同一直线三格，消耗1行动点"
+	help.text = BATTLE_ENGINE.hero_action_help(GameState.data)
 	help.add_theme_font_size_override("font_size", 14)
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
 	side_box.add_child(help)

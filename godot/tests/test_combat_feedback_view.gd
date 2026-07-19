@@ -14,6 +14,11 @@ func _capture() -> void:
 	game_state.new_game()
 	game_state.data.energy = 3
 	game_state.data.investigations = ["secret_route", "archer"]
+	game_state.data.swordsmanship = 10
+	game_state.data.bladesmanship = 10
+	game_state.data.herbalism = 10
+	game_state.data.hp = 30
+	game_state.data.consumables.healing_powder = 1
 	game_state.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": true}
 	game_state.start_blackreed_battle()
 	var battle: Dictionary = game_state.data.battle
@@ -32,6 +37,8 @@ func _capture() -> void:
 	await RenderingServer.frame_post_draw
 	var output_path := "user://combat_feedback_preview.png"
 	var result := main_scene.get_viewport().get_texture().get_image().save_png(output_path)
-	var valid: bool = result == OK and str(game_state.data.battle.effect.get("type", "")) == "skill"
+	var mastery_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "流云剑法 · 6真气" in button.text or "回春散 · 回22" in button.text)
+	var mastery_help: Array = main_scene.find_children("*", "Label", true, false).filter(func(label: Label): return "制造2层破绽" in label.text and "消耗6真气" in label.text and "恢复22气血" in label.text)
+	var valid: bool = result == OK and str(game_state.data.battle.effect.get("type", "")) == "skill" and mastery_buttons.size() == 2 and mastery_help.size() == 1
 	print("Combat feedback preview saved to: %s" % ProjectSettings.globalize_path(output_path))
 	quit(0 if valid else 11)
