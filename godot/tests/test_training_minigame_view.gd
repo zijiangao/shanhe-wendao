@@ -26,11 +26,13 @@ func _capture() -> void:
 	var timing_path := "user://training_timing_preview.png"
 	var timing_result := main_scene.get_viewport().get_texture().get_image().save_png(timing_path)
 	main_scene.training_result = {
-		"discipline": "mining", "grade": "S", "specialty_gain": 3,
-		"xp": 12, "silver": 12, "item": "", "herbs": 0, "ore": 3,
+		"discipline": "herbalism", "grade": "S", "specialty_gain": 3,
+		"xp": 12, "silver": 0, "item": "", "herbs": 3, "ore": 0,
 		"score": 315, "best_streak": 3,
-		"event": {"title": "暗藏富脉", "body": "回声之后还有一层空腔，你从中剥出两块可用精矿。", "reward": "额外矿石 +2"}
+		"herb_discovery": {"id": "sevenstar_lotus", "name": "七星莲", "rarity": "奇珍", "description": "七瓣映星，只在灵气充盈处短暂开放。", "first_discovery": true, "count": 1, "xp": 2},
+		"event": {"title": "石隙灵苗", "body": "你循着异香找到一簇罕见药苗，完整保住了根须。", "reward": "额外药材 +2"}
 	}
+	main_scene.training_discipline = "herbalism"
 	main_scene._rebuild()
 	for frame in range(4):
 		await process_frame
@@ -38,6 +40,11 @@ func _capture() -> void:
 	var result_path := "user://training_result_preview.png"
 	var result_result := main_scene.get_viewport().get_texture().get_image().save_png(result_path)
 	var buttons := main_scene.find_children("*", "Button", true, false)
-	var valid: bool = play_result == OK and timing_result == OK and result_result == OK and buttons.size() >= 1
+	var labels := main_scene.find_children("*", "Label", true, false)
+	var found_specimen := false
+	for label in labels:
+		if "新收录 药谱" in str((label as Label).text) and "七星莲" in str((label as Label).text):
+			found_specimen = true
+	var valid: bool = play_result == OK and timing_result == OK and result_result == OK and buttons.size() >= 1 and found_specimen
 	print("Training previews saved to: %s, %s and %s" % [ProjectSettings.globalize_path(play_path), ProjectSettings.globalize_path(timing_path), ProjectSettings.globalize_path(result_path)])
 	quit(0 if valid else 15)

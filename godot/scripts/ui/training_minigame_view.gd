@@ -33,7 +33,7 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	frame.add_theme_stylebox_override("panel", _box(Color("#172820")))
 	add_child(frame)
 	var page := VBoxContainer.new()
-	page.add_theme_constant_override("separation", 14)
+	page.add_theme_constant_override("separation", 8 if not result.is_empty() else 14)
 	frame.add_child(page)
 
 	var title := Label.new()
@@ -42,16 +42,15 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	title.add_theme_font_size_override("font_size", 31)
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	page.add_child(title)
+	if not result.is_empty():
+		_show_result(page, result, spec)
+		return
 	var description := Label.new()
 	description.text = str(spec.description)
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	description.add_theme_font_size_override("font_size", 17)
 	description.add_theme_color_override("font_color", Color("#c8c3b7"))
 	page.add_child(description)
-
-	if not result.is_empty():
-		_show_result(page, result, spec)
-		return
 
 	progress_label = Label.new()
 	progress_label.text = "第 %d / %d 回合    当前得分 %d" % [round_index + 1, RULES.ROUND_COUNT, _sum(scores)]
@@ -179,7 +178,7 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	var grade := Label.new()
 	grade.text = str(result.grade)
 	grade.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	grade.add_theme_font_size_override("font_size", 96)
+	grade.add_theme_font_size_override("font_size", 78)
 	grade.add_theme_color_override("font_color", spec.accent)
 	page.add_child(grade)
 	var verdict := Label.new()
@@ -192,10 +191,22 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	var streak_text := "\n最佳连击 %d" % int(result.get("best_streak", 0)) if int(result.get("best_streak", 0)) >= 2 else ""
 	score.text = "总分 %d / %d%s\n%s" % [int(result.score), RULES.MAX_TOTAL_SCORE, streak_text, RULES.reward_text(result)]
 	score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score.add_theme_font_size_override("font_size", 21)
+	score.add_theme_font_size_override("font_size", 19)
 	score.add_theme_color_override("font_color", Color("#e9e1cf"))
 	page.add_child(score)
 	var event: Dictionary = result.get("event", {})
+	var discovery: Dictionary = result.get("herb_discovery", {})
+	if not discovery.is_empty():
+		var herb_card := PanelContainer.new()
+		herb_card.add_theme_stylebox_override("panel", _box(Color("#294438")))
+		page.add_child(herb_card)
+		var herb_text := Label.new()
+		herb_text.text = "%s药谱 · %s（%s）\n%s%s" % ["新收录 " if bool(discovery.get("first_discovery", false)) else "再采得 ", str(discovery.name), str(discovery.rarity), str(discovery.description), "\n首次发现：修为 +%d" % int(discovery.xp) if int(discovery.get("xp", 0)) > 0 else ""]
+		herb_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		herb_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		herb_text.add_theme_font_size_override("font_size", 15)
+		herb_text.add_theme_color_override("font_color", Color("#d8e5cf"))
+		herb_card.add_child(herb_text)
 	if not event.is_empty():
 		var event_card := PanelContainer.new()
 		event_card.add_theme_stylebox_override("panel", _box(Color(spec.accent, 0.18)))
@@ -204,12 +215,12 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 		event_text.text = "奇遇 · %s\n%s\n%s" % [str(event.title), str(event.body), str(event.reward)]
 		event_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		event_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		event_text.add_theme_font_size_override("font_size", 17)
+		event_text.add_theme_font_size_override("font_size", 15)
 		event_text.add_theme_color_override("font_color", Color("#f2dfb3"))
 		event_card.add_child(event_text)
 	var done := Button.new()
 	done.text = "收功 · 返回青云门"
-	done.custom_minimum_size.y = 54
+	done.custom_minimum_size.y = 48
 	done.add_theme_font_size_override("font_size", 18)
 	done.add_theme_stylebox_override("normal", _box(Color("#8b493b")))
 	done.pressed.connect(func(): continue_requested.emit())

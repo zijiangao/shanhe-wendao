@@ -26,6 +26,7 @@ const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
 const CREDITS_PATH := "res://data/credits.json"
@@ -263,6 +264,7 @@ func _capture_store_screenshots() -> void:
 	GameState.data.renown = 8
 	GameState.data.skill_mastery.cloud = 5
 	GameState.data.companions = ["lin_qingshuang"]
+	GameState.data.herbarium = {"dewgrass": 3, "cloudleaf": 2, "sunroot": 1}
 	screen = "character"
 	_rebuild()
 	await _save_store_capture("character_growth")
@@ -1348,7 +1350,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.35.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.36.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1628,7 +1630,7 @@ func _show_character() -> void:
 	item_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(item_title)
 	var items := Label.new()
-	items.text = "已装备：青锋剑（淬炼 %d/3）\n材料：药材 %d · 矿石 %d · 回春散 %d\n剧情物品：%s" % [GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, "、".join(PackedStringArray(GameState.data.items))]
+	items.text = "已装备：青锋剑（淬炼 %d/3）\n材料：药材 %d · 矿石 %d · 回春散 %d\n药谱 %d/%d：%s\n剧情物品：%s" % [GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), "、".join(PackedStringArray(GameState.data.items))]
 	items.add_theme_font_size_override("font_size", 17)
 	items.add_theme_color_override("font_color", Color("#f4eee2"))
 	info.add_child(items)

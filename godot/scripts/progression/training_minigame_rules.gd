@@ -220,6 +220,11 @@ static func reward_text(result: Dictionary) -> String:
 		parts.append("获得%s" % str(result.item))
 	if int(result.get("herbs", 0)) > 0:
 		parts.append("药材 +%d" % int(result.herbs))
+	var discovery: Dictionary = result.get("herb_discovery", {})
+	if not discovery.is_empty():
+		parts.append("%s%s（%s）" % ["新识 " if bool(discovery.get("first_discovery", false)) else "采得 ", str(discovery.name), str(discovery.rarity)])
+		if int(discovery.get("xp", 0)) > 0:
+			parts.append("药谱心得 +%d" % int(discovery.xp))
 	if int(result.get("ore", 0)) > 0:
 		parts.append("矿石 +%d" % int(result.ore))
 	return " · ".join(parts)
