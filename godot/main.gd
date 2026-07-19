@@ -114,6 +114,7 @@ func _capture_store_screenshots() -> void:
 	var battle: Dictionary = GameState.data.battle
 	battle.enemies[0].x = 1
 	battle.enemies[0].y = 1
+	battle.enemies[0].exposure = 2
 	var capture_rng := RandomNumberGenerator.new()
 	capture_rng.seed = STORE_CAPTURE_SPEC.RNG_SEED
 	BATTLE_ENGINE.player_action(battle, GameState.data, "skill", Vector2i(1, 1), capture_rng)
@@ -221,6 +222,9 @@ func _save_store_capture(id: String) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
 	if image.get_size() != STORE_CAPTURE_SPEC.OUTPUT_SIZE:
 		image.resize(STORE_CAPTURE_SPEC.OUTPUT_SIZE.x, STORE_CAPTURE_SPEC.OUTPUT_SIZE.y, Image.INTERPOLATE_LANCZOS)
@@ -1213,7 +1217,7 @@ func _show_character() -> void:
 	skill_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(skill_title)
 	var skill_card := Label.new()
-	skill_card.text = "流云剑法   ·   直线剑招   ·   消耗 8 真气\n当前效果：同一直线三格内造成较高伤害；臂力、悟性、境界与熟练度都会提高威力。"
+	skill_card.text = "流云剑法   ·   直线剑招   ·   消耗 8 真气\n当前效果：无视护甲并引爆破绽；臂力、悟性、境界与熟练度都会提高威力。"
 	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_card.add_theme_font_size_override("font_size", 17)
 	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))
@@ -1502,7 +1506,8 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				var enemy_index: int = BATTLE_RULES.enemy_at(battle, cell)
 				if enemy_index >= 0:
 					var enemy: Dictionary = battle.enemies[enemy_index]
-					data.text = "%s\n%d/%d" % [enemy.name, enemy.hp, enemy.max_hp]
+					var trait_text := BATTLE_RULES.enemy_trait_text(enemy)
+					data.text = "%s\n%d/%d%s" % [enemy.name, enemy.hp, enemy.max_hp, "\n" + trait_text if not trait_text.is_empty() else ""]
 					data.token = 1 if enemy.name == "黑苇寨主" else (3 if "弓手" in enemy.name else 2)
 					if not attack_valid and not skill_valid and not frost_valid:
 						data.color = "#71322dee"
@@ -1581,7 +1586,8 @@ func _show_battle_legacy() -> void:
 				var enemy_index: int = BATTLE_RULES.enemy_at(battle, position)
 				if enemy_index >= 0:
 					var enemy: Dictionary = battle.enemies[enemy_index]
-					cell.text = "%s\n%d/%d" % [enemy.name, enemy.hp, enemy.max_hp]
+					var trait_text := BATTLE_RULES.enemy_trait_text(enemy)
+					cell.text = "%s\n%d/%d%s" % [enemy.name, enemy.hp, enemy.max_hp, "\n" + trait_text if not trait_text.is_empty() else ""]
 					cell.icon = _battle_token(1 if enemy.name == "黑苇寨主" else (3 if "弓手" in enemy.name else 2))
 					cell.expand_icon = true
 					if attack_valid:

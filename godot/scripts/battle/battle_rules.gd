@@ -8,6 +8,22 @@ static func enemy_at(battle: Dictionary, cell: Vector2i) -> int:
 			return index
 	return -1
 
+static func enemy_armor(enemy: Dictionary) -> int:
+	return maxi(0, int(enemy.get("armor", 2 if str(enemy.get("role", "melee")) == "brute" else 0)))
+
+static func enemy_exposure(enemy: Dictionary) -> int:
+	return clampi(int(enemy.get("exposure", 0)), 0, 2)
+
+static func enemy_trait_text(enemy: Dictionary) -> String:
+	var traits: PackedStringArray = []
+	var armor := enemy_armor(enemy)
+	var exposure := enemy_exposure(enemy)
+	if armor > 0:
+		traits.append("护甲%d" % armor)
+	if exposure > 0:
+		traits.append("破绽%d" % exposure)
+	return " · ".join(traits)
+
 static func is_ally_at(battle: Dictionary, cell: Vector2i) -> bool:
 	return battle.has("ally") and not battle.ally.is_empty() and int(battle.ally.hp) > 0 and Vector2i(int(battle.ally.x), int(battle.ally.y)) == cell
 
@@ -141,6 +157,9 @@ static func enemy_preview(battle: Dictionary) -> String:
 				description = "准备攻击%s" % target_name
 		elif str(enemy.get("role", "melee")) == "duelist":
 			description = "疾步逼近%s" % target_name
+		var traits := enemy_trait_text(enemy)
+		if not traits.is_empty():
+			description += "（%s）" % traits
 		lines.append("· %s：%s" % [enemy.name, description])
 	return "\n".join(lines)
 

@@ -155,7 +155,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	end_button.pressed.connect(func(): end_turn_requested.emit())
 	action_grid.add_child(end_button)
 	var help := Label.new()
-	help.text = "移动：两格内，消耗1行动点\n普攻：相邻敌人，消耗1行动点\n流云剑法：同一直线三格，消耗1行动点"
+	help.text = "移动：两格内，消耗1行动点\n普攻：受护甲减伤，制造破绽\n流云剑法：无视护甲，引爆破绽"
 	help.add_theme_font_size_override("font_size", 14)
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
 	side_box.add_child(help)

@@ -54,10 +54,16 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 		return _failure("普通攻击只能命中相邻敌人。")
 	var enemy_index := RULES.enemy_at(battle, target)
 	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0)))
-	var damage := base_damage + _roll_bonus(rng)
+	var armor := RULES.enemy_armor(battle.enemies[enemy_index])
+	var damage := maxi(1, base_damage + _roll_bonus(rng) - armor)
 	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
+	var target_survived := int(battle.enemies[enemy_index].hp) > 0
+	if target_survived:
+		battle.enemies[enemy_index].exposure = mini(2, RULES.enemy_exposure(battle.enemies[enemy_index]) + 1)
 	battle.ap = int(battle.ap) - 1
-	battle.result = "%s对%s造成%d点伤害。" % [_active_name(battle), battle.enemies[enemy_index].name, damage]
+	var armor_note := "（护甲抵消%d）" % armor if armor > 0 else ""
+	var exposure_note := "，并制造1层破绽" if target_survived else ""
+	battle.result = "%s对%s造成%d点伤害%s%s。" % [_active_name(battle), battle.enemies[enemy_index].name, damage, armor_note, exposure_note]
 	battle.skill_flash = false
 	battle.skill_name = ""
 	return _success(battle, damage)
@@ -68,12 +74,16 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	if not RULES.can_attack_cell(battle, target, true, int(player.qi)):
 		return _failure("流云剑法需要8点真气，并只能攻击同一直线三格内的敌人。")
 	var enemy_index := RULES.enemy_at(battle, target)
-	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.skill_mastery.cloud / 3) + _roll_range(rng, 0, 3)
+	var exposure := RULES.enemy_exposure(battle.enemies[enemy_index])
+	var exposure_bonus := exposure * 4
+	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
 	player.qi = int(player.qi) - 8
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
+	battle.enemies[enemy_index].exposure = 0
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
 	battle.ap = int(battle.ap) - 1
-	battle.result = "流云剑气贯穿战场，对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
+	var exposure_note := "，引爆%d层破绽追加%d点" % [exposure, exposure_bonus] if exposure > 0 else ""
+	battle.result = "流云剑气无视护甲，对%s造成%d点伤害%s！" % [battle.enemies[enemy_index].name, damage, exposure_note]
 	battle.skill_flash = true
 	battle.skill_name = "流 云 剑 法"
 	return _success(battle, damage)

@@ -53,6 +53,9 @@ func _initialize() -> void:
 	battle.turn = 2
 	var preview: String = RULES.enemy_preview(battle)
 	assert("蓄力重击林清霜" in preview, "Enemy previews should identify a brute's target and heavy attack.")
+	assert(RULES.enemy_armor(battle.enemies[0]) == 2 and "护甲2" in preview, "Brutes should expose their default armor in the enemy preview.")
+	battle.enemies[0].exposure = 2
+	assert(RULES.enemy_exposure(battle.enemies[0]) == 2 and "破绽2" in RULES.enemy_trait_text(battle.enemies[0]), "Exposure stacks should be clamped and clearly described.")
 	assert(RULES.enemy_move_steps({"role": "duelist"}) == 2, "Duelists should have a two-cell movement allowance.")
 	var boss := {"name": "厉无咎", "role": "brute", "boss": true, "hp": 20, "max_hp": 46, "x": 3, "y": 2}
 	battle.enemies = [boss]

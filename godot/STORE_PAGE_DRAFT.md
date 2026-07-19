@@ -92,7 +92,7 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 1. Qingyun world map with the current objective visible.
 2. Blackreed investigation scene with multiple interactable locations.
 3. Tactical battle showing movement highlights and enemy prediction.
-4. A skill impact with damage feedback and distinct enemy roles.
+4. A skill impact demonstrating armor-breaking exposure damage and distinct enemy roles.
 5. Companion battle at Huashan with the survival objective visible.
 6. A consequential story choice at the Luoyang banquet.
 7. The final battle at the sealed Wuku gate, showing the boss and companion formation.
@@ -100,4 +100,4 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 
 Only upload screenshots captured from the actual build. Do not substitute concept art or generated promotional scenes for gameplay screenshots.
 
-The reviewed 0.17.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.
+The reviewed 0.18.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.

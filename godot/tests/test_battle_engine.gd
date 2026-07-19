@@ -7,6 +7,7 @@ func _initialize() -> void:
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
 	_test_cultivation_damage_bonus()
+	_test_armor_and_exposure_combo()
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
 	_test_ranged_enemy_attack_and_cover()
@@ -94,6 +95,43 @@ func _test_cultivation_damage_bonus() -> void:
 	var low: Dictionary = ENGINE.player_action(low_battle, low_player, "skill", Vector2i(1, 4), _seeded_rng())
 	var high: Dictionary = ENGINE.player_action(high_battle, high_player, "skill", Vector2i(1, 4), _seeded_rng())
 	assert(int(high.damage) == int(low.damage) + 3, "Insight and cultivation rank bonuses should deterministically increase Flowing Cloud Sword damage.")
+
+func _test_armor_and_exposure_combo() -> void:
+	var armored := _fixture()
+	armored.erase("ally")
+	armored.active_unit = "hero"
+	armored.ap = 2
+	armored.enemies[0].role = "brute"
+	armored.enemies[0].hp = 100
+	armored.enemies[0].max_hp = 100
+	armored.enemies[0].x = 2
+	armored.enemies[0].y = 1
+	var player := _player_fixture()
+	var attack: Dictionary = ENGINE.player_action(armored, player, "attack", Vector2i(2, 1), _seeded_rng())
+	assert(bool(attack.ok) and int(armored.enemies[0].exposure) == 1, "A normal attack should create one exposure stack on a surviving target.")
+
+	var unarmored := _fixture()
+	unarmored.erase("ally")
+	unarmored.active_unit = "hero"
+	unarmored.ap = 2
+	unarmored.enemies[0].hp = 100
+	unarmored.enemies[0].max_hp = 100
+	unarmored.enemies[0].x = 2
+	unarmored.enemies[0].y = 1
+	var unarmored_attack: Dictionary = ENGINE.player_action(unarmored, _player_fixture(), "attack", Vector2i(2, 1), _seeded_rng())
+	assert(int(attack.damage) == int(unarmored_attack.damage) - 2, "Brute armor should reduce normal attack damage by two.")
+
+	armored.ap = 1
+	armored.enemies[0].x = 1
+	armored.enemies[0].y = 4
+	var skill: Dictionary = ENGINE.player_action(armored, player, "skill", Vector2i(1, 4), _seeded_rng())
+	var plain := armored.duplicate(true)
+	plain.ap = 1
+	plain.enemies[0].hp = 100
+	plain.enemies[0].exposure = 0
+	var plain_skill: Dictionary = ENGINE.player_action(plain, _player_fixture(), "skill", Vector2i(1, 4), _seeded_rng())
+	assert(int(skill.damage) == int(plain_skill.damage) + 4, "Flowing Cloud Sword should gain four damage per exposure stack.")
+	assert(int(armored.enemies[0].exposure) == 0, "Flowing Cloud Sword should consume all exposure stacks.")
 
 func _test_invalid_action_preserves_resources() -> void:
 	var battle := _fixture()

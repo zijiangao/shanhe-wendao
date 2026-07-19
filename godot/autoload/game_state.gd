@@ -413,6 +413,9 @@ func _valid_battle(value: Variant) -> bool:
 		var default_role := "archer" if "弓手" in enemy_name else ("brute" if "寨主" in enemy_name else ("duelist" if "剑侍" in enemy_name else "melee"))
 		if str(enemy.get("role", "")) not in ["melee", "archer", "brute", "duelist"]:
 			enemy.role = default_role
+		enemy.exposure = clampi(int(enemy.get("exposure", 0)), 0, 2)
+		if enemy.has("armor"):
+			enemy.armor = maxi(0, int(enemy.armor))
 		if int(enemy.x) < 0 or int(enemy.x) >= width or int(enemy.y) < 0 or int(enemy.y) >= height:
 			return false
 	return true
