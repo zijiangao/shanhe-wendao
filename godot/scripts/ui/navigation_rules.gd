@@ -1,7 +1,7 @@
 class_name NavigationRules
 extends RefCounted
 
-const OVERLAY_SCREENS := ["quests", "character", "achievements", "save", "settings", "dev"]
+const OVERLAY_SCREENS := ["quests", "character", "achievements", "save", "settings", "credits", "dev"]
 
 static func back_action(screen: String, previous_screen: String = "map") -> Dictionary:
 	if screen in ["battle", "dialogue", "choice", "defeat"]:

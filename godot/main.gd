@@ -19,6 +19,7 @@ const NAVIGATION_RULES := preload("res://scripts/ui/navigation_rules.gd")
 const TUTORIAL_RULES := preload("res://scripts/ui/tutorial_rules.gd")
 const DEMO_POLICY := preload("res://scripts/release/demo_policy.gd")
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
+const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
 var previous_screen: String = "menu"
@@ -50,6 +51,13 @@ func _handle_release_mode_verification() -> bool:
 	var arguments := OS.get_cmdline_user_args()
 	var expected_demo := "--verify-demo-build" in arguments
 	var expected_full := "--verify-full-build" in arguments
+	var verify_credits := "--verify-release-credits" in arguments
+	if verify_credits:
+		var credits_valid := FileAccess.file_exists(CREDITS_PATH) and FileAccess.file_exists("res://ASSET_PROVENANCE.md") and FileAccess.file_exists("res://THIRD_PARTY_NOTICES.md")
+		if not credits_valid:
+			push_error("Release credits or legal notices are missing from the package.")
+		get_tree().quit(0 if credits_valid else 3)
+		return true
 	if not expected_demo and not expected_full:
 		return false
 	var valid := DEMO_POLICY.is_demo_build() if expected_demo else not DEMO_POLICY.is_demo_build()
@@ -185,6 +193,12 @@ func _show_menu() -> void:
 	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "江湖路：青云 → 洛阳 → 华山 → 峨眉"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
+	var credits_button := _action_button("制作名单与版权", Color("#485e54"))
+	credits_button.pressed.connect(_switch_screen.bind("credits"))
+	panel.add_child(credits_button)
+	var quit_button := _action_button("退出游戏", Color("#68433d"))
+	quit_button.pressed.connect(func(): get_tree().quit())
+	panel.add_child(quit_button)
 	_update_status()
 	call_deferred("_focus_first_content_control")
 
@@ -213,6 +227,7 @@ func _rebuild() -> void:
 		"save": _show_saves()
 		"settings": _show_settings()
 		"achievements": _show_achievements()
+		"credits": _show_credits()
 		"battle": _show_battle()
 		"victory": _show_victory()
 		"defeat": _show_defeat()
@@ -741,6 +756,65 @@ func _show_achievements() -> void:
 		entry.add_theme_color_override("font_color", Color("#f2dfb3") if unlocked else Color("#b9b4aa"))
 		entry.add_theme_stylebox_override("normal", _box(Color("#294438") if unlocked else Color("#4b514d")))
 		list.add_child(entry)
+
+func _show_credits() -> void:
+	_clear_content()
+	var art := TextureRect.new()
+	art.texture = QINGYUN_TEXTURE
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#08130de8")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(210, 24)
+	panel.size = Vector2(860, 525)
+	panel.add_theme_constant_override("separation", 10)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "制 作 名 单 与 版 权"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_color_override("font_color", Color("#f2dfb3"))
+	panel.add_child(title)
+	var version := Label.new()
+	version.text = "《山河问道》 · Windows 0.11.0 · Godot 4.7.1"
+	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	version.add_theme_color_override("font_color", Color("#c9c7bc"))
+	panel.add_child(version)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 12)
+	scroll.add_child(list)
+	for section in _credit_sections():
+		var heading := Label.new()
+		heading.text = str(section.get("title", ""))
+		heading.add_theme_font_size_override("font_size", 21)
+		heading.add_theme_color_override("font_color", Color("#dfbf74"))
+		list.add_child(heading)
+		var body := Label.new()
+		body.text = "\n".join(PackedStringArray(section.get("lines", [])))
+		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		body.add_theme_font_size_override("font_size", 16)
+		body.add_theme_color_override("font_color", Color("#eee5d3"))
+		body.add_theme_stylebox_override("normal", _box(Color("#17382ecc")))
+		list.add_child(body)
+	var back := _action_button("返回", Color("#806c4f"))
+	back.pressed.connect(func(): screen = previous_screen if previous_screen != "credits" else "menu"; _rebuild())
+	panel.add_child(back)
+
+func _credit_sections() -> Array:
+	if not FileAccess.file_exists(CREDITS_PATH):
+		return [{"title": "版权信息不可用", "lines": ["credits.json 未被正确打包。"]}]
+	var file := FileAccess.open(CREDITS_PATH, FileAccess.READ)
+	var parsed = JSON.parse_string(file.get_as_text())
+	return parsed.get("sections", []) if typeof(parsed) == TYPE_DICTIONARY else []
 
 func _quest_objective() -> String:
 	return {

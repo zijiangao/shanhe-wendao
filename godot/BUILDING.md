@@ -20,6 +20,7 @@ $tests = @(
     "test_settings_manager.gd",
     "test_difficulty_rules.gd",
     "test_location_art.gd",
+    "test_release_credits.gd",
     "test_navigation_rules.gd",
     "test_tutorial_rules.gd",
     "test_cue_synth.gd",
@@ -48,4 +49,4 @@ The Windows release is written to `build/windows/ShanheWendao.exe` with `ShanheW
 
 The demo is written separately to `build/windows-demo/ShanheWendaoDemo.exe` with `ShanheWendaoDemo.pck`. Its `demo` custom feature enforces the Blackreed victory boundary; the full preset has no such feature.
 
-Before a public Steam release, replace the current provisional application icon only after the final brand and art-rights review, and configure code signing in the Windows export preset.
+Before a public Steam release, review `ASSET_PROVENANCE.md` and `THIRD_PARTY_NOTICES.md`, replace the current provisional application icon only after the final brand and art-rights review, and configure code signing in the Windows export preset.

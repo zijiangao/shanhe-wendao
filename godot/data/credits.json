@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "sections": [
+    {
+      "id": "production",
+      "title": "制作",
+      "lines": [
+        "设计、叙事、程序与美术指导：山河问道独立开发项目",
+        "开发协作与质量验证：OpenAI Codex"
+      ]
+    },
+    {
+      "id": "art",
+      "title": "视觉美术",
+      "lines": [
+        "本作场景、人物与战斗位图均为项目原创资产。",
+        "部分位图在人工美术指导下使用 OpenAI 图像生成工具制作，并经过筛选、接入与游戏内验证。",
+        "完整逐文件来源记录见仓库 ASSET_PROVENANCE.md。"
+      ]
+    },
+    {
+      "id": "audio",
+      "title": "声音",
+      "lines": [
+        "环境声与战斗提示音由游戏内程序化合成器实时生成。",
+        "当前版本未包含外部授权音乐或第三方音效包。"
+      ]
+    },
+    {
+      "id": "technology",
+      "title": "技术与许可",
+      "lines": [
+        "使用 Godot Engine 4.7.1 制作。Godot Engine 依据 MIT License 授权。",
+        "Godot 名称与标识属于各自权利人；本项目与 Godot Foundation 无隶属或背书关系。",
+        "完整第三方许可文本见仓库 THIRD_PARTY_NOTICES.md。"
+      ]
+    },
+    {
+      "id": "thanks",
+      "title": "特别感谢",
+      "lines": [
+        "感谢每一位试玩、反馈并陪伴《山河问道》走向正式版本的玩家。"
+      ]
+    }
+  ]
+}
