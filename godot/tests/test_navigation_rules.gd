@@ -11,6 +11,7 @@ func _initialize() -> void:
 	assert(not bool(RULES.back_action("battle").allowed), "Back must not abandon an active battle.")
 	assert(not bool(RULES.back_action("dialogue").allowed), "Back must not skip mandatory dialogue.")
 	assert(not bool(RULES.back_action("choice").allowed), "Back must not bypass a story choice.")
+	assert(not bool(RULES.back_action("defeat").allowed), "Defeat results require an explicit retry or retreat choice.")
 	assert(InputMap.has_action("ui_accept") and InputMap.has_action("ui_cancel"), "Godot UI confirm and cancel actions must be available for keyboard and controller navigation.")
 	assert(_has_joypad_event("ui_accept") and _has_joypad_event("ui_cancel"), "UI confirm and cancel should include joypad mappings.")
 	for action in ["ui_up", "ui_down", "ui_left", "ui_right"]:

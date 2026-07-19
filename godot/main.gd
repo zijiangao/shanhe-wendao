@@ -12,6 +12,7 @@ const TACTICAL_BATTLE_VIEW := preload("res://scenes/battle/tactical_battle_view.
 const BATTLE_RULES := preload("res://scripts/battle/battle_rules.gd")
 const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
 const NAVIGATION_RULES := preload("res://scripts/ui/navigation_rules.gd")
+const TUTORIAL_RULES := preload("res://scripts/ui/tutorial_rules.gd")
 
 var screen: String = "menu"
 var previous_screen: String = "menu"
@@ -27,6 +28,8 @@ var dialogue_return_screen: String = "location"
 var choice_event: String = ""
 var choice_prompt: String = ""
 var choice_options: Array = []
+var active_tutorial_step: String = ""
+var last_defeat_battle: String = ""
 
 func _ready() -> void:
 	GameState.state_changed.connect(_on_state_changed)
@@ -184,7 +187,9 @@ func _rebuild() -> void:
 		"settings": _show_settings()
 		"battle": _show_battle()
 		"victory": _show_victory()
+		"defeat": _show_defeat()
 	_update_status()
+	_show_contextual_tutorial()
 	call_deferred("_focus_first_content_control")
 
 func _focus_first_content_control() -> void:
@@ -218,7 +223,7 @@ func _show_map() -> void:
 
 func _continue_auto_save() -> void:
 	if SaveManager.load_auto():
-		_switch_screen("battle" if not GameState.data.battle.is_empty() else "map")
+		_switch_screen(_screen_after_load())
 	else:
 		_toast("自动存档读取失败，请检查存档文件。")
 
@@ -605,6 +610,7 @@ func _begin_blackreed_battle() -> void:
 			GameState.data.battle.result = "你提前发现了弓手位置。先处理远程威胁！"
 		if "secret_route" in GameState.data.investigations:
 			GameState.data.battle.player_x = 2
+		GameState.capture_battle_checkpoint()
 		battle_mode = "move"
 		SaveManager.save_auto()
 
@@ -616,6 +622,7 @@ func _begin_huashan_trial() -> void:
 		_toast("行动点不足，请先调息。")
 		return
 	battle_mode = "move"
+	GameState.capture_battle_checkpoint()
 	SaveManager.save_auto()
 
 func _show_quests() -> void:
@@ -937,6 +944,9 @@ func _show_settings() -> void:
 	var reset := _action_button("恢复默认设置", Color("#806c4f"))
 	reset.pressed.connect(func(): SettingsManager.data = SettingsManager.defaults(); SettingsManager.apply_settings(); SettingsManager.save_settings(); _rebuild())
 	panel.add_child(reset)
+	var reset_tutorial := _action_button("重新显示新手引导", Color("#315746"))
+	reset_tutorial.pressed.connect(_reset_tutorial)
+	panel.add_child(reset_tutorial)
 
 func _add_volume_setting(parent: VBoxContainer, label_text: String, key: String) -> void:
 	var row := HBoxContainer.new()
@@ -1036,8 +1046,15 @@ func _load_slot_requested(slot: int) -> void:
 	if not SaveManager.load_slot(slot):
 		_toast("存档 %d 读取失败或内容损坏。" % slot)
 		return
-	screen = "battle" if not GameState.data.battle.is_empty() else "map"
+	screen = _screen_after_load()
 	_rebuild()
+
+func _screen_after_load() -> String:
+	if not GameState.data.battle.is_empty():
+		return "battle"
+	if typeof(GameState.data.get("battle_retry", {})) == TYPE_DICTIONARY and not GameState.data.battle_retry.is_empty():
+		return "defeat"
+	return "map"
 
 func _show_battle() -> void:
 	_clear_content()
@@ -1303,14 +1320,70 @@ func _enemy_turn() -> void:
 	var outcome: Dictionary = BATTLE_ENGINE.enemy_turn(battle, int(GameState.data.hp))
 	GameState.data.hp = int(outcome.hero_hp)
 	if bool(outcome.hero_defeated):
+		last_defeat_battle = str(battle.get("battle_id", "blackreed"))
 		GameState.finish_battle(false)
-		screen = "map"
+		screen = "defeat"
 	else:
 		GameState.data.battle = outcome.battle
 		if _check_tactical_victory(outcome.battle):
 			SaveManager.save_auto()
 			_rebuild()
 			return
+	SaveManager.save_auto()
+	_rebuild()
+
+func _show_defeat() -> void:
+	_clear_content()
+	var art := TextureRect.new()
+	art.texture = BATTLE_TEXTURE
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#120b09dd")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(365, 75)
+	panel.size = Vector2(550, 430)
+	panel.add_theme_constant_override("separation", 18)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "胜 负 未 定"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 46)
+	title.add_theme_color_override("font_color", Color("#e7c7b5"))
+	panel.add_child(title)
+	var summary := Label.new()
+	summary.text = "沈羽力竭退出战场。\n\n你可以回到本场战斗开始时的状态，重新调整走位与目标优先级；也可以接受战败结果，回到舆图继续江湖行程。"
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	summary.add_theme_font_size_override("font_size", 19)
+	summary.add_theme_color_override("font_color", Color("#f1e8dc"))
+	summary.add_theme_stylebox_override("normal", _box(Color("#251a16dd")))
+	panel.add_child(summary)
+	var retry := _action_button("重试本场战斗 · 不额外消耗周数", Color("#8b493b"))
+	retry.disabled = GameState.data.get("battle_retry", {}).is_empty()
+	retry.pressed.connect(_retry_last_battle)
+	panel.add_child(retry)
+	var retreat := _action_button("接受战败 · 返回天下舆图", Color("#4d5550"))
+	retreat.pressed.connect(_accept_battle_defeat)
+	panel.add_child(retreat)
+
+func _retry_last_battle() -> void:
+	if not GameState.retry_last_battle():
+		_toast("无法找到本场战斗的重试记录。")
+		return
+	battle_mode = "move"
+	screen = "battle"
+	SaveManager.save_auto()
+	_rebuild()
+
+func _accept_battle_defeat() -> void:
+	GameState.abandon_battle_retry()
+	last_defeat_battle = ""
+	screen = "map"
 	SaveManager.save_auto()
 	_rebuild()
 
@@ -1397,6 +1470,73 @@ func _update_status() -> void:
 
 func _time_action_failure_message() -> String:
 	return "两年之期已至，无法再进行耗时行动。" if GameState.deadline_reached() else "行动点不足，请先调息。"
+
+func _show_contextual_tutorial() -> void:
+	active_tutorial_step = TUTORIAL_RULES.step_for(screen, GameState.data)
+	if active_tutorial_step.is_empty():
+		return
+	var tutorial: Dictionary = TUTORIAL_RULES.content(active_tutorial_step, _quest_objective())
+	if tutorial.is_empty():
+		return
+	var blocker := ColorRect.new()
+	blocker.color = Color("#07100bbb")
+	blocker.mouse_filter = Control.MOUSE_FILTER_STOP
+	blocker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blocker.z_index = 80
+	content.add_child(blocker)
+	var card := VBoxContainer.new()
+	card.position = Vector2(345, 105)
+	card.size = Vector2(590, 355)
+	card.add_theme_constant_override("separation", 16)
+	card.z_index = 81
+	content.add_child(card)
+	var panel := PanelContainer.new()
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", _box(Color("#172820f5")))
+	card.add_child(panel)
+	var text_box := VBoxContainer.new()
+	text_box.add_theme_constant_override("separation", 14)
+	panel.add_child(text_box)
+	var title := Label.new()
+	title.text = str(tutorial.title)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#f2dfb3"))
+	text_box.add_child(title)
+	var body := Label.new()
+	body.text = str(tutorial.body)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_font_size_override("font_size", 18)
+	body.add_theme_color_override("font_color", Color("#f4eee2"))
+	text_box.add_child(body)
+	var continue_button := _action_button("我知道了 · 继续", Color("#8b493b"))
+	continue_button.pressed.connect(_dismiss_tutorial)
+	card.add_child(continue_button)
+	var skip_button := Button.new()
+	skip_button.text = "跳过全部新手引导"
+	skip_button.flat = true
+	skip_button.add_theme_color_override("font_color", Color("#c8c3b7"))
+	skip_button.pressed.connect(_skip_all_tutorials)
+	card.add_child(skip_button)
+
+func _dismiss_tutorial() -> void:
+	TUTORIAL_RULES.mark_seen(GameState.data, active_tutorial_step)
+	active_tutorial_step = ""
+	SaveManager.save_auto()
+	_rebuild()
+
+func _skip_all_tutorials() -> void:
+	for step in TUTORIAL_RULES.STEPS:
+		TUTORIAL_RULES.mark_seen(GameState.data, step)
+	active_tutorial_step = ""
+	SaveManager.save_auto()
+	_rebuild()
+
+func _reset_tutorial() -> void:
+	TUTORIAL_RULES.reset(GameState.data)
+	SaveManager.save_auto()
+	_toast("新手引导已重置，进入舆图、青云门和战斗时将再次显示。")
+	_rebuild()
 
 func _clear_content() -> void:
 	for child in content.get_children():

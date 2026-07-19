@@ -42,6 +42,8 @@ func new_game() -> void:
 		"companions": [],
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
 		"emei_entry": "",
+		"tutorial": {"map": false, "location": false, "battle": false},
+		"battle_retry": {},
 		"log": ["你拜入青云门。距离厉千秋出关还有两年。"],
 		"battle": {}
 	}
@@ -121,6 +123,7 @@ func start_blackreed_battle() -> bool:
 			{"name": "弓手喽啰", "role": "archer", "hp": 13, "max_hp": 13, "attack": 4, "range": 4, "x": 5, "y": 0}
 		]
 	}
+	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
 	return true
@@ -148,6 +151,7 @@ func start_huashan_trial_battle() -> bool:
 			{"name": "守擂弟子", "role": "melee", "hp": 25, "max_hp": 25, "attack": 6, "range": 1, "x": 6, "y": 4}
 		]
 	}
+	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
 	return true
@@ -156,6 +160,7 @@ func finish_battle(victory: bool) -> void:
 	var battle_id: String = str(data.battle.get("battle_id", "blackreed"))
 	data.battle = {}
 	if victory:
+		data.battle_retry = {}
 		if battle_id == "huashan_trial":
 			data.xp += 30
 			data.renown += 3
@@ -177,6 +182,45 @@ func finish_battle(victory: bool) -> void:
 		data.silver = maxi(0, int(data.silver) - 10)
 		add_log("你战败后被渔民救回，损失十两银子。")
 	battle_finished.emit(victory)
+	state_changed.emit()
+
+func capture_battle_checkpoint() -> void:
+	if data.battle.is_empty():
+		return
+	data.battle_retry = {
+		"battle": data.battle.duplicate(true),
+		"hp": int(data.hp),
+		"qi": int(data.qi),
+		"silver": int(data.silver),
+		"week": int(data.week),
+		"energy": int(data.energy),
+		"skill_mastery": data.skill_mastery.duplicate(true),
+		"log": data.log.duplicate(true)
+	}
+
+func retry_last_battle() -> bool:
+	if typeof(data.get("battle_retry", {})) != TYPE_DICTIONARY or data.battle_retry.is_empty():
+		return false
+	var checkpoint: Dictionary = data.battle_retry
+	if not checkpoint.has("battle") or not _valid_battle(checkpoint.battle):
+		data.battle_retry = {}
+		return false
+	data.hp = clampi(int(checkpoint.get("hp", data.max_hp)), 1, int(data.max_hp))
+	data.qi = clampi(int(checkpoint.get("qi", 20)), 0, 20)
+	data.silver = maxi(0, int(checkpoint.get("silver", data.silver)))
+	data.week = clampi(int(checkpoint.get("week", data.week)), 1, FINAL_WEEK)
+	data.energy = clampi(int(checkpoint.get("energy", data.energy)), 0, 3)
+	if typeof(checkpoint.get("skill_mastery", {})) == TYPE_DICTIONARY:
+		data.skill_mastery = checkpoint.skill_mastery.duplicate(true)
+	if typeof(checkpoint.get("log", [])) == TYPE_ARRAY:
+		data.log = checkpoint.log.duplicate(true)
+	data.battle = checkpoint.battle.duplicate(true)
+	battle_started.emit()
+	state_changed.emit()
+	return true
+
+func abandon_battle_retry() -> void:
+	data.battle_retry = {}
 	state_changed.emit()
 
 func add_log(message: String) -> void:
@@ -234,6 +278,15 @@ func _migrate_and_validate() -> void:
 	for skill in ["cloud", "frost", "frost_guard"]:
 		if not data.skill_mastery.has(skill):
 			data.skill_mastery[skill] = 0
+	if typeof(data.tutorial) != TYPE_DICTIONARY:
+		data.tutorial = {"map": false, "location": false, "battle": false}
+	for step in ["map", "location", "battle"]:
+		data.tutorial[step] = bool(data.tutorial.get(step, false))
+	if typeof(data.battle_retry) != TYPE_DICTIONARY:
+		data.battle_retry = {}
+	elif not data.battle_retry.is_empty():
+		if not data.battle_retry.has("battle") or not _valid_battle(data.battle_retry.battle):
+			data.battle_retry = {}
 	if not _valid_battle(data.battle):
 		data.battle = {}
 	data.week = clampi(int(data.week), 1, FINAL_WEEK)
@@ -248,6 +301,8 @@ func _migrate_and_validate() -> void:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
 	if str(data.location) not in ["qingyun", "blackreed", "luoyang", "huashan", "emei"]:
 		data.location = "qingyun"
+	if not data.battle.is_empty() and data.battle_retry.is_empty():
+		capture_battle_checkpoint()
 
 func _valid_battle(value: Variant) -> bool:
 	if typeof(value) != TYPE_DICTIONARY:

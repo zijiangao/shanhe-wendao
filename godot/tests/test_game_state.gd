@@ -41,6 +41,35 @@ func _initialize() -> void:
 	assert(int(state.data.battle.enemies[0].range) == 4, "Legacy archer saves should recover their ranged attack distance.")
 	assert(str(state.data.battle.enemies[0].role) == "archer", "Legacy archer saves should recover their tactical role.")
 	assert(str(state.data.battle.objective.type) == "eliminate", "Legacy battles should default to an elimination objective.")
+	assert(not state.data.battle_retry.is_empty(), "An in-progress legacy battle should gain a retry checkpoint.")
+
+	state.new_game()
+	state.data.energy = 3
+	assert(state.start_blackreed_battle(), "The first tactical encounter should start.")
+	state.data.battle.player_x = 2
+	state.capture_battle_checkpoint()
+	var checkpoint_week := int(state.data.week)
+	var checkpoint_energy := int(state.data.energy)
+	var checkpoint_silver := int(state.data.silver)
+	var checkpoint_log: Array = state.data.log.duplicate(true)
+	state.data.skill_mastery.cloud = 99
+	state.data.hp = 1
+	state.finish_battle(false)
+	assert(state.data.battle.is_empty(), "A defeat should leave the active battle.")
+	assert(state.retry_last_battle(), "A defeated battle should be retryable from its checkpoint.")
+	assert(int(state.data.battle.player_x) == 2, "Retry should restore the finalized encounter setup.")
+	assert(int(state.data.week) == checkpoint_week and int(state.data.energy) == checkpoint_energy, "Retry must not spend another week or energy point.")
+	assert(int(state.data.silver) == checkpoint_silver, "Retry should restore pre-defeat currency.")
+	assert(int(state.data.skill_mastery.cloud) == 0, "Retry must not allow mastery farming through deliberate defeats.")
+	assert(state.data.log == checkpoint_log, "Retry should remove the abandoned defeat entry from the journal.")
+	state.abandon_battle_retry()
+	assert(state.data.battle_retry.is_empty(), "Accepting defeat should discard the retry checkpoint.")
+
+	var old_save: Dictionary = state.data.duplicate(true)
+	old_save.erase("tutorial")
+	old_save.erase("battle_retry")
+	assert(state.import_data(old_save), "Saves without onboarding fields should migrate.")
+	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("battle"), "Migration should add tutorial progress defaults.")
 
 	print("GameState tests passed.")
 	quit()
