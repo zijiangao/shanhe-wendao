@@ -2,7 +2,7 @@
 
 The project includes both a persistent local simulation and a dynamic GodotSteam adapter. At startup it attempts the live adapter only when the `Steam` engine singleton exists and its required API is compatible; initialization failure safely falls back to the local simulation. The repository still does not ship GodotSteam, a Steamworks redistributable, or an App ID, so current exported builds must not claim a live Steam connection.
 
-The live adapter waits for `current_stats_received` before writing account data. Achievement and integer-stat changes requested during startup are queued, merged, and flushed once after Steam reports a successful stats load. When selecting a GodotSteam build, pin a version compatible with the shipping Godot version, add its license and Steamworks redistributable notices, and rerun the adapter contract tests against the actual extension.
+The live adapter waits for `current_stats_received` before writing account data. Achievement and integer-stat changes requested during startup are queued, merged, and flushed once after Steam reports a successful stats load. `SteamService` pumps `run_callbacks` every frame, reports the account-stat synchronization state on the achievements screen, and calls `steamShutdown` during clean exit. When selecting a GodotSteam build, pin a version compatible with the shipping Godot version, add its license and Steamworks redistributable notices, and rerun the adapter contract tests against the actual extension.
 
 ## Achievements
 

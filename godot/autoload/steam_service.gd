@@ -17,6 +17,14 @@ func _ready() -> void:
 	GameState.state_changed.connect(_on_game_state_changed)
 	evaluate_state(GameState.data)
 
+func _process(_delta: float) -> void:
+	if backend != null and backend.has_method("poll"):
+		backend.poll()
+
+func _exit_tree() -> void:
+	if backend != null and backend.has_method("shutdown"):
+		backend.shutdown()
+
 func use_backend(next_backend) -> bool:
 	if next_backend == null or not next_backend.has_method("initialize"):
 		return false
@@ -28,6 +36,13 @@ func backend_name() -> String:
 
 func is_live() -> bool:
 	return bool(backend.is_live()) if backend != null and backend.has_method("is_live") else false
+
+func connection_status() -> String:
+	if not is_live():
+		return "%s · 本地模拟（等待 App ID/SDK）" % backend_name()
+	if backend.has_method("account_stats_ready") and not bool(backend.account_stats_ready()):
+		return "%s · 统计同步中" % backend_name()
+	return "%s · 已连接" % backend_name()
 
 func unlock(api_name: String) -> bool:
 	if backend == null or not definitions_by_id.has(api_name):

@@ -15,7 +15,7 @@ func initialize() -> bool:
 		if not Engine.has_singleton("Steam"):
 			return false
 		api = Engine.get_singleton("Steam")
-	if not _supports(["steamInitEx", "getAchievement", "setAchievement", "storeStats", "setStatInt", "getStatInt"]):
+	if not _supports(["steamInitEx", "run_callbacks", "getAchievement", "setAchievement", "storeStats", "setStatInt", "getStatInt"]):
 		return false
 	var result = api.call("steamInitEx")
 	ready = _init_succeeded(result)
@@ -32,6 +32,21 @@ func backend_name() -> String:
 
 func is_live() -> bool:
 	return ready
+
+func account_stats_ready() -> bool:
+	return ready and stats_ready
+
+func poll() -> void:
+	if ready:
+		api.call("run_callbacks")
+
+func shutdown() -> void:
+	if not ready:
+		return
+	if api.has_method("steamShutdown"):
+		api.call("steamShutdown")
+	ready = false
+	stats_ready = false
 
 func unlock_achievement(api_name: String) -> bool:
 	if not ready or bool(pending_achievements.get(api_name, false)) or (stats_ready and is_achievement_unlocked(api_name)):
@@ -94,7 +109,7 @@ func _init_succeeded(result) -> bool:
 	return bool(result)
 
 func _on_current_stats_received(_game_id: int, result: int, _user_id: int) -> void:
-	if result != 1:
+	if not ready or result != 1:
 		return
 	stats_ready = true
 	var changed := false

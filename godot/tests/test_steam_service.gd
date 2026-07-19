@@ -10,6 +10,8 @@ class FakeSteamApi extends RefCounted:
 	var stats: Dictionary = {}
 	var stored: int = 0
 	var requested: bool = false
+	var callbacks: int = 0
+	var shutdown_called: bool = false
 
 	func steamInitEx() -> Dictionary:
 		return {"status": 0, "verbal": "OK"}
@@ -17,6 +19,12 @@ class FakeSteamApi extends RefCounted:
 	func requestCurrentStats() -> bool:
 		requested = true
 		return true
+
+	func run_callbacks() -> void:
+		callbacks += 1
+
+	func steamShutdown() -> void:
+		shutdown_called = true
 
 	func getAchievement(api_name: String) -> Dictionary:
 		return {"achieved": bool(achievements.get(api_name, false))}
@@ -75,13 +83,19 @@ func _initialize() -> void:
 	var live_backend = LIVE_BACKEND.new(fake_api)
 	assert(live_backend.initialize() and live_backend.is_live(), "A compatible GodotSteam API should initialize the live backend.")
 	assert(fake_api.requested, "Live initialization should request current account stats.")
+	assert(not live_backend.account_stats_ready(), "Live account data should remain pending until Steam sends its stats callback.")
+	live_backend.poll()
+	assert(fake_api.callbacks == 1, "The live backend should pump Steam callbacks once per poll.")
 	assert(live_backend.unlock_achievement("ACH_FIRST_STEPS"), "Unlock requests should queue while Steam account stats are loading.")
 	assert(live_backend.set_stat("STAT_HIGHEST_MASTERY", 5), "Stat updates should queue while Steam account stats are loading.")
 	assert(fake_api.stored == 0, "Queued Steam progress must not flush before the stats callback.")
 	fake_api.current_stats_received.emit(0, 1, 0)
+	assert(live_backend.account_stats_ready(), "A successful Steam callback should mark account stats ready.")
 	assert(fake_api.stored == 1, "Queued progress should merge into one storeStats call after account stats arrive.")
 	assert(live_backend.is_achievement_unlocked("ACH_FIRST_STEPS") and live_backend.get_stat("STAT_HIGHEST_MASTERY") == 5, "Queued Steam progress should be visible after the callback.")
 	assert(not live_backend.unlock_achievement("ACH_FIRST_STEPS"), "The live backend must keep achievement unlocks idempotent.")
+	live_backend.shutdown()
+	assert(fake_api.shutdown_called and not live_backend.is_live(), "Shutdown should release Steam and clear the live state.")
 
 	var reloaded = LOCAL_BACKEND.new(TEST_PATH)
 	assert(reloaded.initialize(), "The local achievement file should reload.")

@@ -951,7 +951,7 @@ func _show_achievements() -> void:
 	title.add_theme_color_override("font_color", Color("#193128"))
 	panel.add_child(title)
 	var backend_label := Label.new()
-	backend_label.text = "Steam 服务：%s%s" % [SteamService.backend_name(), " · 已连接" if SteamService.is_live() else " · 本地模拟（等待 App ID/SDK）"]
+	backend_label.text = "Steam 服务：%s" % SteamService.connection_status()
 	backend_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	backend_label.add_theme_color_override("font_color", Color("#526159"))
 	panel.add_child(backend_label)
