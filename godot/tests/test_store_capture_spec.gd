@@ -15,7 +15,7 @@ func _initialize() -> void:
 		assert(SPEC.filename_for(id) == filename, "Every screenshot id must resolve to its stable filename.")
 		ids[id] = true
 		filenames[filename] = true
-	for required in ["world_map", "blackreed_investigation", "blackreed_tactics", "skill_impact", "huashan_companion", "luoyang_choice"]:
+	for required in ["world_map", "blackreed_investigation", "blackreed_tactics", "skill_impact", "huashan_companion", "luoyang_choice", "wuku_finale"]:
 		assert(ids.has(required), "The store capture set is missing %s." % required)
 	print("Store capture specification tests passed.")
 	quit()

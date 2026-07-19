@@ -19,6 +19,7 @@ const NAVIGATION_RULES := preload("res://scripts/ui/navigation_rules.gd")
 const TUTORIAL_RULES := preload("res://scripts/ui/tutorial_rules.gd")
 const DEMO_POLICY := preload("res://scripts/release/demo_policy.gd")
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
+const BATTLE_SCENE_SPEC := preload("res://scripts/battle/battle_scene_spec.gd")
 const STORE_CAPTURE_SPEC := preload("res://scripts/release/store_capture_spec.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
@@ -41,6 +42,7 @@ var last_defeat_battle: String = ""
 var store_capture_active: bool = false
 var enemy_turn_active: bool = false
 var active_battle_view: TacticalBattleView
+var last_battle_id: String = "blackreed"
 
 func _ready() -> void:
 	if _handle_release_mode_verification():
@@ -137,6 +139,16 @@ func _capture_store_screenshots() -> void:
 	screen = "choice"
 	_rebuild()
 	await _save_store_capture("luoyang_choice")
+
+	GameState.new_game()
+	GameState.data.location = "emei"
+	GameState.data.quest_stage = "final_assault"
+	GameState.data.companions = ["lin_qingshuang"]
+	GameState.start_final_battle()
+	battle_mode = "move"
+	screen = "battle"
+	_rebuild()
+	await _save_store_capture("wuku_finale")
 
 	print("Store screenshots saved to: %s" % output_path)
 	get_tree().quit(0)
@@ -1382,10 +1394,12 @@ func _show_battle() -> void:
 		_show_map()
 		return
 	var battle: Dictionary = GameState.data.battle
+	last_battle_id = str(battle.get("battle_id", "blackreed"))
+	var scene_style := BATTLE_SCENE_SPEC.scene_for(last_battle_id)
 	var view: TacticalBattleView = TACTICAL_BATTLE_VIEW.instantiate()
 	active_battle_view = view
 	content.add_child(view)
-	view.setup(BATTLE_TEXTURE, battle, GameState.data, battle_mode, _battle_cell_data(battle), BATTLE_RULES.enemy_preview(battle))
+	view.setup(_battle_texture(last_battle_id), battle, GameState.data, battle_mode, _battle_cell_data(battle), BATTLE_RULES.enemy_preview(battle), scene_style)
 	view.cell_selected.connect(_tactical_cell)
 	view.mode_selected.connect(_battle_mode_selected)
 	view.end_turn_requested.connect(_enemy_turn)
@@ -1669,7 +1683,7 @@ func _enemy_turn() -> void:
 func _show_defeat() -> void:
 	_clear_content()
 	var art := TextureRect.new()
-	art.texture = BATTLE_TEXTURE
+	art.texture = _battle_texture(last_defeat_battle)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1726,6 +1740,7 @@ func _check_tactical_victory(battle: Dictionary) -> bool:
 		return false
 	AudioFeedback.play("victory")
 	var battle_id: String = str(battle.get("battle_id", "blackreed"))
+	last_battle_id = battle_id
 	if battle_id == "wuku_finale":
 		last_rewards = {"title": "天 门 已 定", "story": "厉无咎的刀落在石阶上。武库机关仍在轰鸣，而决定它命运的人已经变成了你。", "xp": 60, "silver": 30, "renown": 8, "item": "武库钥印", "turns": battle.turn, "next_screen": "final_choice"}
 	elif battle_id == "huashan_trial":
@@ -1800,7 +1815,7 @@ func _battle_token(index: int) -> AtlasTexture:
 func _show_victory() -> void:
 	_clear_content()
 	var art := TextureRect.new()
-	art.texture = BATTLE_TEXTURE
+	art.texture = _battle_texture(last_battle_id)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1995,6 +2010,11 @@ func _reset_tutorial() -> void:
 func _clear_content() -> void:
 	for child in content.get_children():
 		child.queue_free()
+
+func _battle_texture(battle_id: String) -> Texture2D:
+	var scene_style := BATTLE_SCENE_SPEC.scene_for(battle_id)
+	var texture := load(str(scene_style.get("texture", ""))) as Texture2D
+	return texture if texture != null else BATTLE_TEXTURE
 
 func _action_button(text_value: String, color: Color) -> Button:
 	var button := Button.new()

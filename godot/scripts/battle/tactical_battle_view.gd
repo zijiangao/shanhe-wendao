@@ -14,7 +14,7 @@ const LIN_TOKEN := preload("res://assets/art/portrait-lin-qingshuang.png")
 
 var presentation_active: bool = false
 
-func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: String, cells: Array, enemy_preview: String) -> void:
+func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: String, cells: Array, enemy_preview: String, scene_style: Dictionary = {}) -> void:
 	var art := TextureRect.new()
 	art.texture = background
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -22,12 +22,12 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(art)
 	var shade := ColorRect.new()
-	shade.color = Color("#07110d55")
+	shade.color = Color(str(scene_style.get("shade", "#07110d55")))
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(shade)
 	var title := Label.new()
 	title.position = Vector2(30, 14)
-	title.text = "%s  ·  %s难度  ·  第 %d 回合" % [battle.name, DIFFICULTY_RULES.display_name(str(battle.get("difficulty", "standard"))), battle.turn]
+	title.text = "%s  ·  %s难度  ·  第 %d 回合" % [scene_style.get("title", battle.name), DIFFICULTY_RULES.display_name(str(battle.get("difficulty", "standard"))), battle.turn]
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color("#f1e3c6"))
 	add_child(title)
@@ -38,7 +38,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	turn_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	turn_banner.add_theme_font_size_override("font_size", 18)
 	turn_banner.add_theme_color_override("font_color", Color("#d9f2e5"))
-	turn_banner.add_theme_stylebox_override("normal", _box(Color("#27604b")))
+	turn_banner.add_theme_stylebox_override("normal", _box(Color(str(scene_style.get("accent", "#27604b")))))
 	add_child(turn_banner)
 	_animate_turn_banner(turn_banner)
 

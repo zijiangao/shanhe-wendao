@@ -17,6 +17,7 @@ $tests = @(
     "test_save_manager.gd",
     "test_battle_rules.gd",
     "test_battle_engine.gd",
+    "test_battle_scene_spec.gd",
     "test_settings_manager.gd",
     "test_difficulty_rules.gd",
     "test_location_art.gd",
@@ -58,7 +59,7 @@ The demo is written separately to `build/windows-demo/ShanheWendaoDemo.exe` with
 
 ## Capture Steam store screenshots
 
-After exporting the full Windows release, run the shipping executable with `--capture-store-screenshots`. It creates six deterministic 1920×1080 gameplay PNGs under the Godot user-data folder in `store_screenshots`. These are candidate captures from the actual release UI; visually review every image before uploading it to Steam.
+After exporting the full Windows release, run the shipping executable with `--capture-store-screenshots`. It creates seven deterministic 1920×1080 gameplay PNGs under the Godot user-data folder in `store_screenshots`. These are candidate captures from the actual release UI; visually review every image before uploading it to Steam.
 
 ```powershell
 & "..\build\windows\ShanheWendao.exe" -- --capture-store-screenshots

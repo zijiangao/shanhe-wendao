@@ -9,7 +9,8 @@ const SHOTS := [
 	{"id": "blackreed_tactics", "filename": "03-blackreed-tactics.png"},
 	{"id": "skill_impact", "filename": "04-skill-impact.png"},
 	{"id": "huashan_companion", "filename": "05-huashan-companion.png"},
-	{"id": "luoyang_choice", "filename": "06-luoyang-choice.png"}
+	{"id": "luoyang_choice", "filename": "06-luoyang-choice.png"},
+	{"id": "wuku_finale", "filename": "07-wuku-finale.png"}
 ]
 
 static func filename_for(id: String) -> String:
