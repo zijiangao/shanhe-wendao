@@ -1,0 +1,44 @@
+[
+  {
+    "api_name": "ACH_FIRST_STEPS",
+    "title": "山门初命",
+    "description": "拜见顾长风，接下第一桩江湖任务。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_BLACKREED_VICTORY",
+    "title": "黑苇破局",
+    "description": "击败黑苇寨主并取得玄铁令。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_PALACE_TRUTH",
+    "title": "夜宴真相",
+    "description": "查清太守府夜宴背后的阴谋。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_SWORD_COMPANIONS",
+    "title": "双剑同行",
+    "description": "邀请林清霜加入队伍。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_HUASHAN_TRIAL",
+    "title": "论剑有名",
+    "description": "通过华山双人试炼。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_EMEI_GUEST",
+    "title": "清音问心",
+    "description": "通过峨眉试问。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_PRACTICED_HAND",
+    "title": "剑不离手",
+    "description": "任一武学熟练度达到3。",
+    "hidden": false
+  }
+]

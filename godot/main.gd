@@ -34,6 +34,7 @@ var last_defeat_battle: String = ""
 func _ready() -> void:
 	GameState.state_changed.connect(_on_state_changed)
 	GameState.battle_started.connect(func(): screen = "battle"; _rebuild())
+	SteamService.achievement_unlocked.connect(_on_achievement_unlocked)
 	_build_shell()
 	_show_menu()
 
@@ -66,21 +67,21 @@ func _build_shell() -> void:
 	root.add_child(header_panel)
 
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 22)
+	header.add_theme_constant_override("separation", 12)
 	header_panel.add_child(header)
 
 	var brand := Label.new()
 	brand.text = "  山河问道  ·  两年江湖录"
 	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	brand.add_theme_font_size_override("font_size", 22)
+	brand.add_theme_font_size_override("font_size", 20)
 	brand.add_theme_color_override("font_color", Color("#eadfc7"))
 	header.add_child(brand)
 
-	for pair in [["天下舆图", "map"], ["任务", "quests"], ["人物", "character"], ["存档", "save"], ["设置", "settings"]]:
+	for pair in [["天下舆图", "map"], ["任务", "quests"], ["人物", "character"], ["成就", "achievements"], ["存档", "save"], ["设置", "settings"]]:
 		var button := Button.new()
 		button.text = pair[0]
 		button.flat = true
-		button.add_theme_font_size_override("font_size", 18)
+		button.add_theme_font_size_override("font_size", 16)
 		button.add_theme_color_override("font_color", Color("#d8d0bd"))
 		button.add_theme_color_override("font_hover_color", Color("#ffffff"))
 		button.add_theme_color_override("font_pressed_color", Color("#dfbf74"))
@@ -96,10 +97,10 @@ func _build_shell() -> void:
 		header.add_child(dev_button)
 
 	status_label = Label.new()
-	status_label.custom_minimum_size.x = 210
+	status_label.custom_minimum_size.x = 180
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 17)
+	status_label.add_theme_font_size_override("font_size", 15)
 	status_label.add_theme_color_override("font_color", Color("#dfbf74"))
 	header.add_child(status_label)
 
@@ -174,6 +175,7 @@ func _switch_screen(next: String) -> void:
 	_rebuild()
 
 func _rebuild() -> void:
+	SteamService.evaluate_state(GameState.data)
 	match screen:
 		"menu": _show_menu()
 		"map": _show_map()
@@ -186,6 +188,7 @@ func _rebuild() -> void:
 		"character": _show_character()
 		"save": _show_saves()
 		"settings": _show_settings()
+		"achievements": _show_achievements()
 		"battle": _show_battle()
 		"victory": _show_victory()
 		"defeat": _show_defeat()
@@ -660,6 +663,47 @@ func _show_quests() -> void:
 	hint.add_theme_font_size_override("font_size", 16)
 	hint.add_theme_color_override("font_color", Color("#cfc8b8"))
 	box.add_child(hint)
+
+func _show_achievements() -> void:
+	_clear_content()
+	var backdrop := ColorRect.new()
+	backdrop.color = Color("#d8cfbd")
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(backdrop)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(185, 28)
+	panel.size = Vector2(910, 520)
+	panel.add_theme_constant_override("separation", 10)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "江 湖 成 就    %d/%d" % [SteamService.unlocked_count(), SteamService.definitions.size()]
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#193128"))
+	panel.add_child(title)
+	var backend_label := Label.new()
+	backend_label.text = "Steam 服务：%s%s" % [SteamService.backend_name(), " · 已连接" if SteamService.is_live() else " · 本地模拟（等待 App ID/SDK）"]
+	backend_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	backend_label.add_theme_color_override("font_color", Color("#526159"))
+	panel.add_child(backend_label)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 8)
+	scroll.add_child(list)
+	for value in SteamService.definitions:
+		var definition: Dictionary = value
+		var unlocked: bool = SteamService.is_unlocked(str(definition.api_name))
+		var entry := Label.new()
+		entry.text = "%s  %s\n%s" % ["已解锁" if unlocked else "未解锁", str(definition.title), str(definition.description)]
+		entry.custom_minimum_size.y = 62
+		entry.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		entry.add_theme_font_size_override("font_size", 17)
+		entry.add_theme_color_override("font_color", Color("#f2dfb3") if unlocked else Color("#b9b4aa"))
+		entry.add_theme_stylebox_override("normal", _box(Color("#294438") if unlocked else Color("#4b514d")))
+		list.add_child(entry)
 
 func _quest_objective() -> String:
 	return {
@@ -1468,6 +1512,10 @@ func _intent_description(intent: String) -> String:
 
 func _on_state_changed() -> void:
 	_update_status()
+
+func _on_achievement_unlocked(_api_name: String, title: String) -> void:
+	AudioFeedback.play("victory", 1.2)
+	_toast("成就解锁 · %s" % title)
 
 func _update_status() -> void:
 	if status_label == null:

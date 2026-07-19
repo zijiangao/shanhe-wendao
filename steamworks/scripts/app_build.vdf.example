@@ -1,0 +1,14 @@
+"AppBuild"
+{
+    "AppID" "<APP_ID>"
+    "Desc" "Shanhe Wendao Windows build <VERSION>"
+    "ContentRoot" "..\\content"
+    "BuildOutput" "..\\output"
+    "SetLive" "<PRIVATE_BETA_BRANCH>"
+    "Preview" "0"
+
+    "Depots"
+    {
+        "<WINDOWS_DEPOT_ID>" "depot_build_windows.vdf"
+    }
+}

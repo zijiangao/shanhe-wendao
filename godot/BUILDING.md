@@ -20,7 +20,8 @@ $tests = @(
     "test_settings_manager.gd",
     "test_navigation_rules.gd",
     "test_tutorial_rules.gd",
-    "test_cue_synth.gd"
+    "test_cue_synth.gd",
+    "test_steam_service.gd"
 )
 
 foreach ($test in $tests) {
@@ -38,6 +39,6 @@ New-Item -ItemType Directory -Force -Path (Join-Path $PWD "build/windows") | Out
 & $godot --headless --path $project --export-release "Windows Desktop"
 ```
 
-The release executable is written to `build/windows/ShanheWendao.exe`. Its PCK is embedded, so the executable is the only runtime file currently produced. The `build` directory is intentionally ignored by Git.
+The Windows release is written to `build/windows/ShanheWendao.exe` with `ShanheWendao.pck` beside it. Both files are required. Keeping game content separate improves SteamPipe patch behavior. The `build` directory is intentionally ignored by Git.
 
 Before a public Steam release, replace the current provisional application icon only after the final brand and art-rights review, and configure code signing in the Windows export preset.
