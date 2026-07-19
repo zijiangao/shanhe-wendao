@@ -207,6 +207,18 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 		herb_text.add_theme_font_size_override("font_size", 15)
 		herb_text.add_theme_color_override("font_color", Color("#d8e5cf"))
 		herb_card.add_child(herb_text)
+	var mineral: Dictionary = result.get("mineral_discovery", {})
+	if not mineral.is_empty():
+		var mineral_card := PanelContainer.new()
+		mineral_card.add_theme_stylebox_override("panel", _box(Color("#443b31")))
+		page.add_child(mineral_card)
+		var mineral_text := Label.new()
+		mineral_text.text = "%s矿谱 · %s（%s）\n%s%s" % ["新收录 " if bool(mineral.get("first_discovery", false)) else "再掘得 ", str(mineral.name), str(mineral.rarity), str(mineral.description), "\n首次鉴矿：银两 +%d" % int(mineral.silver) if int(mineral.get("silver", 0)) > 0 else ""]
+		mineral_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		mineral_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		mineral_text.add_theme_font_size_override("font_size", 15)
+		mineral_text.add_theme_color_override("font_color", Color("#e5d8c7"))
+		mineral_card.add_child(mineral_text)
 	if not event.is_empty():
 		var event_card := PanelContainer.new()
 		event_card.add_theme_stylebox_override("panel", _box(Color(spec.accent, 0.18)))

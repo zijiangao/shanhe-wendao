@@ -8,12 +8,13 @@ const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rul
 const TRAINING_EVENT_RULES := preload("res://scripts/progression/training_event_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
+const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 
 signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 7
+const SAVE_VERSION := 8
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -45,6 +46,7 @@ func new_game() -> void:
 		"items": ["金疮药", "青锋剑"],
 		"materials": {"herbs": 0, "ore": 0},
 		"herbarium": {},
+		"mineralogy": {},
 		"consumables": {"healing_powder": 0},
 		"forge_level": 0,
 		"flags": [],
@@ -129,6 +131,11 @@ func complete_training(discipline: String, score: int, event_roll: int = -1) -> 
 		if not discovery.is_empty():
 			outcome.herb_discovery = discovery
 			data.xp += int(discovery.get("xp", 0))
+	if discipline == "mining":
+		var discovery := MINERALOGY_RULES.record(data, str(outcome.grade), event_roll if event_roll >= 0 else randi_range(0, 99))
+		if not discovery.is_empty():
+			outcome.mineral_discovery = discovery
+			data.silver += int(discovery.get("silver", 0))
 	if str(outcome.item) != "":
 		data.items.append(str(outcome.item))
 	if str(outcome.grade) == "S" and "training_s_grade" not in data.flags:
@@ -391,6 +398,8 @@ func _migrate_and_validate() -> void:
 		data.materials = {"herbs": 0, "ore": 0}
 	if typeof(data.get("herbarium", {})) != TYPE_DICTIONARY:
 		data.herbarium = {}
+	if typeof(data.get("mineralogy", {})) != TYPE_DICTIONARY:
+		data.mineralogy = {}
 	if typeof(data.consumables) != TYPE_DICTIONARY:
 		data.consumables = {"healing_powder": 0}
 	# Convert 0.27/0.28 herb items into the dedicated material inventory.
@@ -463,6 +472,12 @@ func _migrate_and_validate() -> void:
 		if count > 0:
 			normalized_herbarium[specimen_id] = count
 	data.herbarium = normalized_herbarium
+	var normalized_mineralogy := {}
+	for specimen_id in MINERALOGY_RULES.SPECIMENS:
+		var count := maxi(0, int(data.mineralogy.get(specimen_id, 0)))
+		if count > 0:
+			normalized_mineralogy[specimen_id] = count
+	data.mineralogy = normalized_mineralogy
 	data.consumables.healing_powder = maxi(0, int(data.consumables.get("healing_powder", 0)))
 	data.forge_level = clampi(int(data.get("forge_level", 0)), 0, CRAFTING_RULES.MAX_FORGE_LEVEL)
 	for stat in ["strength", "agility", "insight", "constitution"]:

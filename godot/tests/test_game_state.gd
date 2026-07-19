@@ -38,6 +38,11 @@ func _initialize() -> void:
 	assert(bool(event_training.herb_discovery.first_discovery) and int(event_training.herb_discovery.xp) == 2 and int(state.data.xp) == 14, "A first specimen should grant cultivation exactly once alongside training rewards.")
 	assert("training_s_grade" in state.data.flags and "training_event_seen" in state.data.flags, "Training milestones must persist for Steam achievement restoration.")
 	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Training should spend exactly one week and one energy.")
+	state.new_game()
+	var mining_training: Dictionary = state.complete_training("mining", 300, 0)
+	assert(int(state.data.materials.ore) == 5 and int(state.data.mineralogy.get("ironstone", 0)) == 1, "Mining should commit normal ore, encounter ore, and a score-eligible mineral discovery together.")
+	assert(str(mining_training.mineral_discovery.name) == "青铁石" and bool(mining_training.mineral_discovery.first_discovery), "The mining result should expose its newly recorded mineral.")
+	assert(int(mining_training.mineral_discovery.silver) == 2 and int(state.data.silver) == 44, "A first mineral appraisal should add its one-time silver bonus to normal mining income.")
 	state.data.materials.herbs = 2
 	assert(state.craft("healing_powder") and int(state.data.consumables.healing_powder) == 1, "GameState should expose medicine crafting through the saved inventory.")
 	assert("crafted_healing_powder" in state.data.flags, "Medicine crafting must persist its Steam milestone.")
@@ -50,10 +55,12 @@ func _initialize() -> void:
 	legacy_material_save.erase("consumables")
 	legacy_material_save.erase("forge_level")
 	legacy_material_save.erase("herbarium")
+	legacy_material_save.erase("mineralogy")
 	legacy_material_save.items.append("上品药材")
 	assert(state.import_data(legacy_material_save), "Version five saves should migrate into the crafting inventory.")
 	assert(int(state.data.materials.herbs) == 2 and "上品药材" not in state.data.items, "Legacy herb items should become two material units without polluting story items.")
 	assert(typeof(state.data.herbarium) == TYPE_DICTIONARY and state.data.herbarium.is_empty(), "Version-six saves should gain an empty herbarium.")
+	assert(typeof(state.data.mineralogy) == TYPE_DICTIONARY and state.data.mineralogy.is_empty(), "Older saves should gain an empty mineral ledger.")
 
 	var damaged_save := {"save_version": 1, "week": -20, "energy": 99, "max_hp": 0, "hp": -5, "location": "nowhere", "log": "invalid", "battle": {"width": 8}}
 	assert(state.import_data(damaged_save), "Older saves should be migrated.")

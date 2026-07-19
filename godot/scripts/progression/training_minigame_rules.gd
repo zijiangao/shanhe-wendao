@@ -227,4 +227,9 @@ static func reward_text(result: Dictionary) -> String:
 			parts.append("药谱心得 +%d" % int(discovery.xp))
 	if int(result.get("ore", 0)) > 0:
 		parts.append("矿石 +%d" % int(result.ore))
+	var mineral: Dictionary = result.get("mineral_discovery", {})
+	if not mineral.is_empty():
+		parts.append("%s%s（%s）" % ["新识 " if bool(mineral.get("first_discovery", false)) else "掘得 ", str(mineral.name), str(mineral.rarity)])
+		if int(mineral.get("silver", 0)) > 0:
+			parts.append("鉴矿所得 +%d银两" % int(mineral.silver))
 	return " · ".join(parts)
