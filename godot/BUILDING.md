@@ -21,6 +21,7 @@ $tests = @(
     "test_difficulty_rules.gd",
     "test_location_art.gd",
     "test_release_credits.gd",
+    "test_store_capture_spec.gd",
     "test_navigation_rules.gd",
     "test_tutorial_rules.gd",
     "test_cue_synth.gd",
@@ -48,5 +49,13 @@ New-Item -ItemType Directory -Force -Path (Join-Path $PWD "build/windows-demo") 
 The Windows release is written to `build/windows/ShanheWendao.exe` with `ShanheWendao.pck` beside it. Both files are required. Keeping game content separate improves SteamPipe patch behavior. The `build` directory is intentionally ignored by Git.
 
 The demo is written separately to `build/windows-demo/ShanheWendaoDemo.exe` with `ShanheWendaoDemo.pck`. Its `demo` custom feature enforces the Blackreed victory boundary; the full preset has no such feature.
+
+## Capture Steam store screenshots
+
+After exporting the full Windows release, run the shipping executable with `--capture-store-screenshots`. It creates six deterministic 1920×1080 gameplay PNGs under the Godot user-data folder in `store_screenshots`. These are candidate captures from the actual release UI; visually review every image before uploading it to Steam.
+
+```powershell
+& "..\build\windows\ShanheWendao.exe" -- --capture-store-screenshots
+```
 
 Before a public Steam release, review `ASSET_PROVENANCE.md` and `THIRD_PARTY_NOTICES.md`, replace the current provisional application icon only after the final brand and art-rights review, and configure code signing in the Windows export preset.

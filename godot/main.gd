@@ -19,6 +19,7 @@ const NAVIGATION_RULES := preload("res://scripts/ui/navigation_rules.gd")
 const TUTORIAL_RULES := preload("res://scripts/ui/tutorial_rules.gd")
 const DEMO_POLICY := preload("res://scripts/release/demo_policy.gd")
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
+const STORE_CAPTURE_SPEC := preload("res://scripts/release/store_capture_spec.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
@@ -37,6 +38,7 @@ var choice_prompt: String = ""
 var choice_options: Array = []
 var active_tutorial_step: String = ""
 var last_defeat_battle: String = ""
+var store_capture_active: bool = false
 
 func _ready() -> void:
 	if _handle_release_mode_verification():
@@ -46,6 +48,8 @@ func _ready() -> void:
 	SteamService.achievement_unlocked.connect(_on_achievement_unlocked)
 	_build_shell()
 	_show_menu()
+	if "--capture-store-screenshots" in OS.get_cmdline_user_args():
+		call_deferred("_capture_store_screenshots")
 
 func _handle_release_mode_verification() -> bool:
 	var arguments := OS.get_cmdline_user_args()
@@ -65,6 +69,86 @@ func _handle_release_mode_verification() -> bool:
 		push_error("Release mode verification failed.")
 	get_tree().quit(0 if valid else 2)
 	return true
+
+func _capture_store_screenshots() -> void:
+	store_capture_active = true
+	get_window().size = STORE_CAPTURE_SPEC.OUTPUT_SIZE
+	var output_path := ProjectSettings.globalize_path(STORE_CAPTURE_SPEC.OUTPUT_DIRECTORY)
+	DirAccess.make_dir_recursive_absolute(output_path)
+
+	GameState.new_game()
+	GameState.data.quest_stage = "emei_trial"
+	GameState.data.location = "qingyun"
+	GameState.data.companions = ["lin_qingshuang"]
+	GameState.data.faction_relations.huashan = 3
+	GameState.data.faction_relations.emei = 3
+	screen = "map"
+	_rebuild()
+	await _save_store_capture("world_map")
+
+	GameState.new_game()
+	GameState.data.quest_stage = "investigate"
+	GameState.data.location = "blackreed"
+	GameState.data.investigations = ["secret_route", "archer"]
+	screen = "location"
+	_rebuild()
+	await _save_store_capture("blackreed_investigation")
+
+	GameState.data.energy = 3
+	GameState.start_blackreed_battle()
+	battle_mode = "move"
+	screen = "battle"
+	_rebuild()
+	await _save_store_capture("blackreed_tactics")
+
+	var battle: Dictionary = GameState.data.battle
+	battle.enemies[0].x = 1
+	battle.enemies[0].y = 1
+	BATTLE_ENGINE.player_action(battle, GameState.data, "skill", Vector2i(1, 1), RandomNumberGenerator.new())
+	battle_mode = "inspect"
+	_rebuild()
+	await _save_store_capture("skill_impact")
+
+	GameState.new_game()
+	GameState.data.energy = 3
+	GameState.data.location = "huashan"
+	GameState.data.quest_stage = "huashan_trial"
+	GameState.data.companions = ["lin_qingshuang"]
+	GameState.start_huashan_trial_battle()
+	battle_mode = "move"
+	screen = "battle"
+	_rebuild()
+	await _save_store_capture("huashan_companion")
+
+	GameState.new_game()
+	GameState.data.location = "luoyang"
+	GameState.data.quest_stage = "chapter_complete"
+	choice_event = "baima_route"
+	choice_prompt = "太守府夜宴，你准备如何取得武库名录？"
+	choice_options = [
+		["侠义 · 公开赴宴", "以青云门弟子身份登门，保护席间无辜之人。", "heroism"],
+		["谋略 · 易容潜入", "伪装成账房，避开正面冲突寻找密库。", "strategy"],
+		["威势 · 持令问罪", "以玄铁令震慑守卫，迫使太守当面对质。", "authority"]
+	]
+	screen = "choice"
+	_rebuild()
+	await _save_store_capture("luoyang_choice")
+
+	print("Store screenshots saved to: %s" % output_path)
+	get_tree().quit(0)
+
+func _save_store_capture(id: String) -> void:
+	toast_label.text = ""
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var image := get_viewport().get_texture().get_image()
+	if image.get_size() != STORE_CAPTURE_SPEC.OUTPUT_SIZE:
+		image.resize(STORE_CAPTURE_SPEC.OUTPUT_SIZE.x, STORE_CAPTURE_SPEC.OUTPUT_SIZE.y, Image.INTERPOLATE_LANCZOS)
+	var filename := STORE_CAPTURE_SPEC.filename_for(id)
+	var result := image.save_png("%s/%s" % [STORE_CAPTURE_SPEC.OUTPUT_DIRECTORY, filename])
+	if result != OK:
+		push_error("Failed to save store screenshot: %s" % filename)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("ui_cancel"):
@@ -1788,6 +1872,8 @@ func _on_state_changed() -> void:
 	_update_status()
 
 func _on_achievement_unlocked(_api_name: String, title: String) -> void:
+	if store_capture_active:
+		return
 	AudioFeedback.play("victory", 1.2)
 	_toast("成就解锁 · %s" % title)
 
@@ -1800,6 +1886,8 @@ func _time_action_failure_message() -> String:
 	return "两年之期已至，无法再进行耗时行动。" if GameState.deadline_reached() else "行动点不足，请先调息。"
 
 func _show_contextual_tutorial() -> void:
+	if store_capture_active:
+		return
 	active_tutorial_step = TUTORIAL_RULES.step_for(screen, GameState.data)
 	if active_tutorial_step.is_empty():
 		return
