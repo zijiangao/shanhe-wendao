@@ -3,7 +3,7 @@ extends Control
 
 signal option_selected(id: String)
 
-func setup(background: Texture2D, prompt_text: String, options: Array) -> void:
+func setup(background: Texture2D, prompt_text: String, options: Array, title_text: String = "抉 择") -> void:
 	var art := TextureRect.new()
 	art.texture = background
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -20,7 +20,7 @@ func setup(background: Texture2D, prompt_text: String, options: Array) -> void:
 	panel.add_theme_constant_override("separation", 14)
 	add_child(panel)
 	var title := Label.new()
-	title.text = "抉 择"
+	title.text = title_text
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 36)
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
@@ -40,6 +40,7 @@ func setup(background: Texture2D, prompt_text: String, options: Array) -> void:
 		button.add_theme_stylebox_override("normal", _box(Color("#294438")))
 		button.add_theme_stylebox_override("hover", _box(Color("#3b604f")))
 		button.add_theme_stylebox_override("focus", _box(Color("#5b8f76")))
+		button.disabled = option.size() > 3 and bool(option[3])
 		button.pressed.connect(_emit_option.bind(str(option[2])))
 		panel.add_child(button)
 

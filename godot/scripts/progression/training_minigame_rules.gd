@@ -129,12 +129,15 @@ static func outcome(discipline: String, total_score: int) -> Dictionary:
 		"specialty_gain": tier,
 		"xp": xp,
 		"silver": 0,
-		"item": ""
+		"item": "",
+		"herbs": 0,
+		"ore": 0
 	}
 	if discipline == "herbalism":
-		result.item = "上品药材" if result_grade in ["S", "A"] else "寻常药材"
+		result.herbs = {"S": 3, "A": 2, "B": 1, "C": 1}[result_grade]
 	if discipline == "mining":
 		result.silver = {"S": 12, "A": 8, "B": 5, "C": 2}[result_grade]
+		result.ore = {"S": 3, "A": 2, "B": 1, "C": 1}[result_grade]
 	return result
 
 static func reward_text(result: Dictionary) -> String:
@@ -146,4 +149,8 @@ static func reward_text(result: Dictionary) -> String:
 		parts.append("银两 +%d" % int(result.silver))
 	if str(result.item) != "":
 		parts.append("获得%s" % str(result.item))
+	if int(result.get("herbs", 0)) > 0:
+		parts.append("药材 +%d" % int(result.herbs))
+	if int(result.get("ore", 0)) > 0:
+		parts.append("矿石 +%d" % int(result.ore))
 	return " · ".join(parts)

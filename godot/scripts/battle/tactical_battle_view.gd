@@ -104,7 +104,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 
 	var side := PanelContainer.new()
 	side.position = Vector2(840, 60)
-	side.size = Vector2(400, 478)
+	side.size = Vector2(400, 540)
 	side.add_theme_stylebox_override("panel", _box(Color("#14271ff2")))
 	add_child(side)
 	var side_box := VBoxContainer.new()
@@ -144,11 +144,12 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		actions.append(["寒锋守势", "frost_guard"])
 	else:
 		actions.append(["流云剑法 · 8真气", "skill"])
+		actions.append(["回春散 · %d" % int(player.get("consumables", {}).get("healing_powder", 0)), "heal"])
 		actions.append(["取消选择", "inspect"])
 	for action in actions:
 		var button := _action_button(action[0], Color("#8b493b") if mode == action[1] else Color("#315f4b"))
 		button.custom_minimum_size.x = 174
-		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < 8) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6)
+		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < 8) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp)))
 		button.pressed.connect(_emit_mode.bind(str(action[1])))
 		action_grid.add_child(button)
 	var end_button := _action_button("结束回合", Color("#806c4f"))
@@ -156,8 +157,8 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	end_button.pressed.connect(func(): end_turn_requested.emit())
 	action_grid.add_child(end_button)
 	var help := Label.new()
-	help.text = "移动：两格内，消耗1行动点\n普攻：受护甲减伤，制造破绽\n流云剑法：无视护甲，引爆破绽"
-	help.add_theme_font_size_override("font_size", 14)
+	help.text = "移动/攻击/服药：消耗1行动点 · 普攻制造破绽\n剑法无视护甲 · 回春散恢复12+采药加成"
+	help.add_theme_font_size_override("font_size", 13)
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
 	side_box.add_child(help)
 

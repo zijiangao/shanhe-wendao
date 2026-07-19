@@ -5,12 +5,13 @@ const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const ENCOUNTER_RULES := preload("res://scripts/battle/encounter_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 
 signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -40,6 +41,9 @@ func new_game() -> void:
 		"mining": 0,
 		"skills": ["cloud"],
 		"items": ["金疮药", "青锋剑"],
+		"materials": {"herbs": 0, "ore": 0},
+		"consumables": {"healing_powder": 0},
+		"forge_level": 0,
 		"flags": [],
 		"quest_stage": "meet_master",
 		"investigations": [],
@@ -63,7 +67,7 @@ func new_game() -> void:
 
 func power() -> int:
 	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
-	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2)
+	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2 + int(data.get("forge_level", 0)) * 2)
 
 func weeks_left() -> int:
 	return maxi(0, FINAL_WEEK - int(data.week))
@@ -115,10 +119,19 @@ func complete_training(discipline: String, score: int) -> Dictionary:
 	data[discipline] = int(data.get(discipline, 0)) + int(outcome.specialty_gain)
 	data.xp += int(outcome.xp)
 	data.silver += int(outcome.silver)
+	data.materials.herbs = int(data.materials.herbs) + int(outcome.get("herbs", 0))
+	data.materials.ore = int(data.materials.ore) + int(outcome.get("ore", 0))
 	if str(outcome.item) != "":
 		data.items.append(str(outcome.item))
 	add_log("专项修炼完成：%s级，%s。" % [str(outcome.grade), TRAINING_RULES.reward_text(outcome)])
 	return outcome
+
+func craft(recipe_id: String) -> bool:
+	if not CRAFTING_RULES.apply(data, recipe_id):
+		return false
+	add_log("青云工坊完成：%s。" % str(CRAFTING_RULES.RECIPES[recipe_id].title))
+	state_changed.emit()
+	return true
 
 func add_investigation(clue: String, message: String) -> bool:
 	if clue in data.investigations:
@@ -355,6 +368,20 @@ func _migrate_and_validate() -> void:
 		data.flags = []
 	if typeof(data.items) != TYPE_ARRAY:
 		data.items = []
+	if typeof(data.materials) != TYPE_DICTIONARY:
+		data.materials = {"herbs": 0, "ore": 0}
+	if typeof(data.consumables) != TYPE_DICTIONARY:
+		data.consumables = {"healing_powder": 0}
+	# Convert 0.27/0.28 herb items into the dedicated material inventory.
+	var migrated_items: Array = []
+	for item in data.items:
+		if str(item) == "上品药材":
+			data.materials.herbs = int(data.materials.get("herbs", 0)) + 2
+		elif str(item) == "寻常药材":
+			data.materials.herbs = int(data.materials.get("herbs", 0)) + 1
+		else:
+			migrated_items.append(item)
+	data.items = migrated_items
 	if typeof(data.investigations) != TYPE_ARRAY:
 		data.investigations = []
 	if typeof(data.palace_evidence) != TYPE_ARRAY:
@@ -407,6 +434,10 @@ func _migrate_and_validate() -> void:
 	data.silver = maxi(0, int(data.silver))
 	data.renown = maxi(0, int(data.renown))
 	data.xp = maxi(0, int(data.xp))
+	data.materials.herbs = maxi(0, int(data.materials.get("herbs", 0)))
+	data.materials.ore = maxi(0, int(data.materials.get("ore", 0)))
+	data.consumables.healing_powder = maxi(0, int(data.consumables.get("healing_powder", 0)))
+	data.forge_level = clampi(int(data.get("forge_level", 0)), 0, CRAFTING_RULES.MAX_FORGE_LEVEL)
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
 	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:

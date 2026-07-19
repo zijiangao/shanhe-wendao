@@ -36,6 +36,8 @@ static func player_action(battle: Dictionary, player: Dictionary, action: String
 			return _frost_dash(battle, player, target, rng)
 		"frost_guard":
 			return _frost_guard(battle, player)
+		"heal":
+			return _use_healing_powder(battle, player)
 		_:
 			return _failure("未知战斗行动：%s" % action)
 
@@ -53,7 +55,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	if not RULES.can_attack_cell(battle, target, false, int(player.qi)):
 		return _failure("普通攻击只能命中相邻敌人。")
 	var enemy_index := RULES.enemy_at(battle, target)
-	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2
+	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0))
 	var armor := RULES.enemy_armor(battle.enemies[enemy_index])
 	var damage := maxi(1, base_damage + _roll_bonus(rng) - armor)
 	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
@@ -76,7 +78,7 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	var enemy_index := RULES.enemy_at(battle, target)
 	var exposure := RULES.enemy_exposure(battle.enemies[enemy_index])
 	var exposure_bonus := exposure * 4
-	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
+	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
 	player.qi = int(player.qi) - 8
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
 	battle.enemies[enemy_index].exposure = 0
@@ -118,6 +120,23 @@ static func _frost_guard(battle: Dictionary, player: Dictionary) -> Dictionary:
 	battle.skill_flash = true
 	battle.skill_name = "寒 锋 守 势"
 	return _success(battle, 0)
+
+static func _use_healing_powder(battle: Dictionary, player: Dictionary) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) != "hero":
+		return _failure("回春散只能由沈羽使用。")
+	if int(player.get("hp", 0)) >= int(player.get("max_hp", 1)):
+		return _failure("当前气血已满，无需服药。")
+	var consumables: Dictionary = player.get("consumables", {})
+	if int(consumables.get("healing_powder", 0)) <= 0:
+		return _failure("行囊中没有回春散。")
+	var healing := 12 + int(player.get("herbalism", 0)) / 2
+	var before := int(player.hp)
+	player.hp = mini(int(player.max_hp), before + healing)
+	player.consumables.healing_powder = int(player.consumables.healing_powder) - 1
+	battle.ap = int(battle.ap) - 1
+	battle.result = "沈羽服下回春散，恢复%d点气血。" % (int(player.hp) - before)
+	_clear_effect(battle)
+	return {"ok": true, "battle": battle, "damage": 0, "healed": int(player.hp) - before, "error": ""}
 
 static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var total_hurt := 0

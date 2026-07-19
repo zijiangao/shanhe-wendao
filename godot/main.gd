@@ -26,6 +26,7 @@ const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
@@ -80,6 +81,8 @@ func _ready() -> void:
 		call_deferred("_verify_combat_feedback")
 	elif "--verify-training-flow" in OS.get_cmdline_user_args():
 		call_deferred("_verify_training_flow")
+	elif "--verify-crafting-flow" in OS.get_cmdline_user_args():
+		call_deferred("_verify_crafting_flow")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
 		call_deferred("_capture_store_screenshots")
 	elif "--capture-tactical-tutorial" in OS.get_cmdline_user_args():
@@ -119,6 +122,20 @@ func _verify_training_flow() -> void:
 	valid = valid and int(GameState.data.swordsmanship) == 3 and int(GameState.data.week) == start_week + 1
 	print("Training flow verification passed." if valid else "Training flow verification failed.")
 	get_tree().quit(0 if valid else 14)
+
+func _verify_crafting_flow() -> void:
+	GameState.new_game()
+	GameState.data.materials = {"herbs": 2, "ore": 3}
+	var medicine_ok := GameState.craft("healing_powder")
+	var forge_ok := GameState.craft("temper_blade")
+	var battle_ok := GameState.start_blackreed_battle()
+	GameState.data.hp = 20
+	var outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, "heal")
+	var valid := medicine_ok and forge_ok and battle_ok and bool(outcome.get("ok", false))
+	valid = valid and int(GameState.data.hp) == 32 and int(GameState.data.consumables.healing_powder) == 0
+	valid = valid and int(GameState.data.forge_level) == 1 and int(GameState.data.materials.herbs) == 0 and int(GameState.data.materials.ore) == 0
+	print("Crafting flow verification passed." if valid else "Crafting flow verification failed.")
+	get_tree().quit(0 if valid else 16)
 
 func _verify_steam_data() -> void:
 	var errors := SteamService.release_data_errors()
@@ -611,6 +628,7 @@ func _location_actions(location_id: String) -> Array:
 			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
 			{"id": "train", "text": "演武场 · 修炼", "x": 420, "y": 205},
 			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
+			{"id": "workshop", "text": "工坊 · 炼药与锻造", "x": 710, "y": 330},
 			{"id": "map", "text": "山门 · 返回舆图", "x": 910, "y": 420}
 		]
 	if location_id == "blackreed":
@@ -663,6 +681,12 @@ func _location_action_requested(action_id: String) -> void:
 			screen = "choice"
 			_rebuild()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
+		"workshop":
+			choice_event = "workshop"
+			choice_prompt = "青云工坊 · %s" % CRAFTING_RULES.inventory_text(GameState.data)
+			choice_options = CRAFTING_RULES.options(GameState.data)
+			screen = "choice"
+			_rebuild()
 		"fisher": _start_dialogue("clue_fisher", ONBOARDING_SPEC.dialogue_for("clue_fisher"))
 		"tracks": _start_dialogue("clue_tracks", ONBOARDING_SPEC.dialogue_for("clue_tracks"))
 		"herbs": _start_dialogue("clue_herbs", [["沈羽", "船舱里还有未受潮的金疮药，可以先处理伤势。"]])
@@ -825,13 +849,18 @@ func _show_choice() -> void:
 	_clear_content()
 	var view: ChoiceView = CHOICE_VIEW.instantiate()
 	content.add_child(view)
-	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options)
+	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, "青 云 工 坊" if choice_event == "workshop" else "抉 择")
 	view.option_selected.connect(_resolve_choice)
 
 func _resolve_choice(route: String) -> void:
 	if choice_event == "training":
 		_start_training(route)
 		return
+	elif choice_event == "workshop":
+		if not GameState.craft(route):
+			_toast("材料不足，或青锋剑已淬炼至最高等级。")
+			return
+		_toast("工坊制作完成。")
 	elif choice_event == "baima_route":
 		GameState.data.alignment[route] = int(GameState.data.alignment.get(route, 0)) + 1
 		GameState.data.luoyang_route = route
@@ -1159,7 +1188,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.28.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.29.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1439,7 +1468,7 @@ func _show_character() -> void:
 	item_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(item_title)
 	var items := Label.new()
-	items.text = "已装备：青锋剑\n携带物品：%s" % "、".join(PackedStringArray(GameState.data.items))
+	items.text = "已装备：青锋剑（淬炼 %d/3）\n材料：药材 %d · 矿石 %d · 回春散 %d\n剧情物品：%s" % [GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, "、".join(PackedStringArray(GameState.data.items))]
 	items.add_theme_font_size_override("font_size", 17)
 	items.add_theme_color_override("font_color", Color("#f4eee2"))
 	info.add_child(items)
@@ -1698,8 +1727,8 @@ func _show_battle() -> void:
 	view.end_turn_requested.connect(_enemy_turn)
 
 func _battle_mode_selected(next_mode: String) -> void:
-	if next_mode == "frost_guard":
-		_execute_player_action("frost_guard")
+	if next_mode in ["frost_guard", "heal"]:
+		_execute_player_action(next_mode)
 		return
 	battle_mode = next_mode
 	_rebuild()
@@ -1939,7 +1968,7 @@ func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) ->
 		AudioFeedback.play("error")
 		_toast(str(outcome.error))
 		return
-	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "frost_dash": "skill", "frost_guard": "turn"}.get(action, "confirm"))
+	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "frost_dash": "skill", "frost_guard": "turn", "heal": "confirm"}.get(action, "confirm"))
 	var battle: Dictionary = outcome.battle
 	if _check_tactical_victory(battle):
 		SaveManager.save_auto()

@@ -31,6 +31,16 @@ func _initialize() -> void:
 	var training: Dictionary = state.complete_training("swordsmanship", 300)
 	assert(training.grade == "S" and int(state.data.swordsmanship) == 3 and int(state.data.xp) == 12, "An S-grade training result should grant the full specialty reward.")
 	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Training should spend exactly one week and one energy.")
+	state.data.materials.herbs = 2
+	assert(state.craft("healing_powder") and int(state.data.consumables.healing_powder) == 1, "GameState should expose medicine crafting through the saved inventory.")
+	var legacy_material_save: Dictionary = state.data.duplicate(true)
+	legacy_material_save.save_version = 5
+	legacy_material_save.erase("materials")
+	legacy_material_save.erase("consumables")
+	legacy_material_save.erase("forge_level")
+	legacy_material_save.items.append("上品药材")
+	assert(state.import_data(legacy_material_save), "Version five saves should migrate into the crafting inventory.")
+	assert(int(state.data.materials.herbs) == 2 and "上品药材" not in state.data.items, "Legacy herb items should become two material units without polluting story items.")
 
 	var damaged_save := {"save_version": 1, "week": -20, "energy": 99, "max_hp": 0, "hp": -5, "location": "nowhere", "log": "invalid", "battle": {"width": 8}}
 	assert(state.import_data(damaged_save), "Older saves should be migrated.")

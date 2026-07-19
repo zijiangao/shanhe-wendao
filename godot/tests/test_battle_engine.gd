@@ -6,6 +6,7 @@ func _initialize() -> void:
 	_test_victory_detection()
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
+	_test_healing_powder()
 	_test_cultivation_damage_bonus()
 	_test_specialty_damage_bonus()
 	_test_armor_and_exposure_combo()
@@ -79,6 +80,21 @@ func _test_player_skills_and_resources() -> void:
 	assert(bool(guard.ok) and int(battle.ally.guard) == 8 and int(battle.ally.qi) == 13, "Frost Guard should grant guard and restore qi.")
 	assert(int(player.skill_mastery.frost_guard) == 1, "Frost Guard should increase its mastery.")
 	assert(bool(battle.skill_flash) and str(battle.skill_name) == "寒 锋 守 势", "Frost Guard should expose its own presentation title.")
+
+func _test_healing_powder() -> void:
+	var battle := _fixture()
+	battle.active_unit = "hero"
+	battle.ap = 2
+	var player := _player_fixture()
+	player.hp = 20
+	player.max_hp = 45
+	player.herbalism = 4
+	player.consumables = {"healing_powder": 1}
+	var result: Dictionary = ENGINE.player_action(battle, player, "heal")
+	assert(bool(result.ok) and int(result.healed) == 14 and int(player.hp) == 34, "Herbalism should improve the healing powder's battle recovery.")
+	assert(int(player.consumables.healing_powder) == 0 and int(battle.ap) == 1, "Healing should consume one item and one action point.")
+	var failed: Dictionary = ENGINE.player_action(battle, player, "heal")
+	assert(not bool(failed.ok) and int(battle.ap) == 1, "Using a missing healing powder must preserve action points.")
 
 func _test_cultivation_damage_bonus() -> void:
 	var low_battle := _fixture()
