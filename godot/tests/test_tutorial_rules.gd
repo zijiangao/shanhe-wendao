@@ -19,7 +19,7 @@ func _initialize() -> void:
 	RULES.mark_seen(state, "battle")
 	assert(RULES.step_for("battle", state) == "battle_tactics", "The tactical concepts page should follow the basic battle controls.")
 	var tactics_content: Dictionary = RULES.content("battle_tactics", "unused")
-	for concept in ["护甲", "破绽", "穿云箭", "岩石"]:
+	for concept in ["护甲", "破绽", "疾步2", "穿云箭", "岩石"]:
 		assert(concept in str(tactics_content.body), "The tactical tutorial should explain %s." % concept)
 	RULES.mark_seen(state, "battle_tactics")
 	assert(RULES.step_for("battle", state).is_empty(), "Both dismissed battle pages must stay completed.")

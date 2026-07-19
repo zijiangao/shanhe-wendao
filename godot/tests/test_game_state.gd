@@ -46,7 +46,10 @@ func _initialize() -> void:
 
 	state.new_game()
 	state.data.energy = 3
+	state.data.investigations = ["archer", "herbs"]
 	assert(state.start_blackreed_battle(), "The first tactical encounter should start.")
+	assert(state.data.battle.enemies.size() == 4 and str(state.data.battle.enemies.back().role) == "duelist", "Encounter preparation should be applied before GameState captures the battle.")
+	assert(int(state.data.battle.enemies[2].exposure) == 1, "Archer intelligence should carry into the live encounter.")
 	state.data.battle.player_x = 2
 	state.capture_battle_checkpoint()
 	var checkpoint_week := int(state.data.week)

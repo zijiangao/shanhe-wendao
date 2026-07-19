@@ -120,6 +120,7 @@ func _capture_store_screenshots() -> void:
 	await _save_store_capture("blackreed_investigation")
 
 	GameState.data.energy = 3
+	GameState.data.investigations = ["archer", "herbs"]
 	GameState.start_blackreed_battle()
 	GameState.data.battle.turn = 3
 	GameState.data.battle.enemies[2].y = GameState.data.battle.player_y
@@ -523,9 +524,9 @@ func _location_actions(location_id: String) -> Array:
 	if location_id == "blackreed":
 		var ready: bool = GameState.data.investigations.size() >= 2
 		return [
-			{"id": "fisher", "text": "渡口 · 已取得水路线索" if "secret_route" in GameState.data.investigations else "线索 1/2 · 询问渔民", "x": 70, "y": 170, "disabled": "secret_route" in GameState.data.investigations},
-			{"id": "tracks", "text": "芦荡 · 已识破弓手" if "archer" in GameState.data.investigations else "线索 2/2 · 搜寻箭痕", "x": 365, "y": 245, "disabled": "archer" in GameState.data.investigations},
-			{"id": "herbs", "text": "破船 · 已搜寻" if "herbs" in GameState.data.investigations else "破船 · 搜寻物资", "x": 685, "y": 330, "disabled": "herbs" in GameState.data.investigations},
+			{"id": "fisher", "text": "战术 · 已掌握暗道" if "secret_route" in GameState.data.investigations else "线索 1/2 · 暗道绕开巡逻", "x": 70, "y": 170, "disabled": "secret_route" in GameState.data.investigations},
+			{"id": "tracks", "text": "战术 · 已标记弓手" if "archer" in GameState.data.investigations else "线索 2/2 · 标记弓手破绽", "x": 365, "y": 245, "disabled": "archer" in GameState.data.investigations},
+			{"id": "herbs", "text": "补给 · 已备好金疮药" if "herbs" in GameState.data.investigations else "补给 · 恢复全部气血", "x": 685, "y": 330, "disabled": "herbs" in GameState.data.investigations},
 			{"id": "fight", "text": "寨门 · 主线：攻入山寨" if ready else "寨门 · 尚需两条线索", "x": 930, "y": 150, "disabled": not ready},
 			{"id": "map", "text": "渡口 · 返回舆图", "x": 930, "y": 430}
 		]
@@ -879,11 +880,6 @@ func _begin_blackreed_battle() -> void:
 		_toast("至少调查两处地点，摸清寨中情况。")
 		return
 	if GameState.start_blackreed_battle():
-		if "archer" in GameState.data.investigations:
-			GameState.data.battle.result = "你提前发现了弓手位置。先处理远程威胁！"
-		if "secret_route" in GameState.data.investigations:
-			GameState.data.battle.player_x = 2
-		GameState.capture_battle_checkpoint()
 		battle_mode = "move"
 		SaveManager.save_auto()
 

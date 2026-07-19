@@ -22,6 +22,8 @@ static func enemy_trait_text(enemy: Dictionary) -> String:
 		traits.append("护甲%d" % armor)
 	if exposure > 0:
 		traits.append("破绽%d" % exposure)
+	if str(enemy.get("role", "melee")) == "duelist":
+		traits.append("疾步2")
 	return " · ".join(traits)
 
 static func is_ally_at(battle: Dictionary, cell: Vector2i) -> bool:

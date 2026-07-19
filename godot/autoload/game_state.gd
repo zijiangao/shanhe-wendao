@@ -2,6 +2,7 @@ extends Node
 
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
+const ENCOUNTER_RULES := preload("res://scripts/battle/encounter_rules.gd")
 
 signal state_changed
 signal battle_started
@@ -129,6 +130,7 @@ func start_blackreed_battle() -> bool:
 			{"name": "弓手喽啰", "role": "archer", "hp": 13, "max_hp": 13, "attack": 4, "range": 4, "x": 5, "y": 0}
 		]
 	}
+	data.battle = ENCOUNTER_RULES.prepare_blackreed(data.battle, data.investigations)
 	_apply_current_difficulty()
 	capture_battle_checkpoint()
 	battle_started.emit()

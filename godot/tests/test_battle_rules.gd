@@ -61,6 +61,7 @@ func _initialize() -> void:
 	battle.enemies[0].exposure = 2
 	assert(RULES.enemy_exposure(battle.enemies[0]) == 2 and "破绽2" in RULES.enemy_trait_text(battle.enemies[0]), "Exposure stacks should be clamped and clearly described.")
 	assert(RULES.enemy_move_steps({"role": "duelist"}) == 2, "Duelists should have a two-cell movement allowance.")
+	assert("疾步2" in RULES.enemy_trait_text({"role": "duelist"}), "Duelist mobility must be visible on its battle cell and preview.")
 	var boss := {"name": "厉无咎", "role": "brute", "boss": true, "hp": 20, "max_hp": 46, "x": 3, "y": 2}
 	battle.enemies = [boss]
 	battle.turn = 3

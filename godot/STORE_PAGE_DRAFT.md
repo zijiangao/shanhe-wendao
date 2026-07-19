@@ -27,7 +27,7 @@ Train your martial arts, investigate the Black-Iron Token, and shape the fate of
 
 ### 观察敌意，再出剑
 
-战斗采用网格回合制。近战、弓手、重装头目与剑侍拥有不同行动模式；利用走位、视线、敌方预判和同伴技能，用有限的行动点扭转战局。
+战斗采用网格回合制。近战、弓手、重装头目与疾步剑客拥有不同行动模式；战前调查会改变敌方阵容与初始破绽。利用走位、视线、敌方预判和同伴技能，用有限的行动点扭转战局。
 
 ### 你的做法就是你的江湖
 
@@ -72,7 +72,7 @@ Complete Valve's content survey from the actual release build; this draft is not
 
 ## Demo promise
 
-The demo includes the opening Qingyun chapter, investigation at Blackreed Crossing, the first tactical battle, tutorial, saves, settings, controller navigation, and local achievement simulation. It ends immediately after the Blackreed victory. The same save format is accepted by the full build.
+The demo includes the opening Qingyun chapter, investigation choices that alter the Blackreed enemy formation, the first tactical battle, tutorial, saves, settings, controller navigation, and local achievement simulation. It ends immediately after the Blackreed victory. The same save format is accepted by the full build.
 
 ## Required graphical assets
 
@@ -91,7 +91,7 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 
 1. Qingyun world map with the current objective visible.
 2. Blackreed investigation scene with multiple interactable locations.
-3. Tactical battle showing movement highlights and a telegraphed archer suppression attack.
+3. Tactical battle showing the patrol variant, movement highlights, and a telegraphed archer suppression attack.
 4. A skill impact demonstrating armor-breaking exposure damage and distinct enemy roles.
 5. Companion battle at Huashan with the survival objective visible.
 6. A consequential story choice at the Luoyang banquet.
@@ -100,4 +100,4 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 
 Only upload screenshots captured from the actual build. Do not substitute concept art or generated promotional scenes for gameplay screenshots.
 
-The reviewed 0.23.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.
+The reviewed 0.24.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.

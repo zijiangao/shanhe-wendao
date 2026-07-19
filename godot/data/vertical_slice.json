@@ -9,6 +9,7 @@
     {"id": "cloud", "name": "流云剑法", "qi_cost": 8, "range": 1}
   ],
   "enemies": [
-    {"id": "blackreed_chief", "name": "黑苇寨主", "hp": 34, "attack": 7}
+    {"id": "blackreed_chief", "name": "黑苇寨主", "role": "brute", "hp": 34, "attack": 7},
+    {"id": "blackreed_patrol", "name": "巡寨快刀", "role": "duelist", "hp": 14, "attack": 4, "condition": "secret_route clue not found"}
   ]
 }
