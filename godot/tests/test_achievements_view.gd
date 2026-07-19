@@ -14,7 +14,7 @@ func _capture() -> void:
 		await process_frame
 	var scrolls: Array = main_scene.find_children("*", "ScrollContainer", true, false)
 	if not scrolls.is_empty():
-		(scrolls[0] as ScrollContainer).scroll_vertical = 490
+		(scrolls[0] as ScrollContainer).scroll_vertical = 9999
 	for frame in range(3):
 		await process_frame
 	await RenderingServer.frame_post_draw
@@ -25,6 +25,7 @@ func _capture() -> void:
 	for label in labels:
 		texts.append(str((label as Label).text))
 	var valid := result == OK and texts.any(func(value: String): return "江 湖 成 就" in value and "/19" in value)
-	valid = valid and texts.any(func(value: String): return "炉火纯青" in value) and texts.any(func(value: String): return "百炼成锋" in value)
+	valid = valid and texts.any(func(value: String): return "一艺通神" in value)
+	valid = valid and texts.any(func(value: String): return "百草入谱" in value)
 	print("Achievement preview saved to: %s" % ProjectSettings.globalize_path(output_path))
 	quit(0 if valid else 20)

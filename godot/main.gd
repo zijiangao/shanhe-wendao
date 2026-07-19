@@ -1330,7 +1330,8 @@ func _show_achievements() -> void:
 		var definition: Dictionary = value
 		var unlocked: bool = SteamService.is_unlocked(str(definition.api_name))
 		var entry := Label.new()
-		entry.text = "%s  %s\n%s" % ["已解锁" if unlocked else "未解锁", str(definition.title), str(definition.description)]
+		var progress := SteamService.progress_text(str(definition.api_name), GameState.data)
+		entry.text = "%s  %s%s\n%s" % ["已解锁" if unlocked else "未解锁", str(definition.title), "  ·  %s" % progress if not unlocked and not progress.is_empty() else "", str(definition.description)]
 		entry.custom_minimum_size.y = 62
 		entry.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		entry.add_theme_font_size_override("font_size", 17)
@@ -1362,7 +1363,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.42.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.43.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

@@ -66,6 +66,22 @@ func unlocked_count() -> int:
 			count += 1
 	return count
 
+func progress_text(api_name: String, state: Dictionary) -> String:
+	match api_name:
+		"ACH_SPECIALTY_MASTERY":
+			var highest := maxi(int(state.get("swordsmanship", 0)), maxi(int(state.get("bladesmanship", 0)), maxi(int(state.get("herbalism", 0)), int(state.get("mining", 0)))))
+			return "进度 %d/10" % mini(10, maxi(0, highest))
+		"ACH_PERFECT_TRAINING":
+			var best := 0
+			for record in TRAINING_RULES.normalize_records(state.get("training_records", {})).values():
+				best = maxi(best, int(record.best_score))
+			return "最高 %d/%d" % [best, TRAINING_RULES.MAX_TOTAL_SCORE]
+		"ACH_HERBARIUM_COMPLETE":
+			return "药谱 %d/%d" % [HERBARIUM_RULES.discovered_count(state.get("herbarium", {})), HERBARIUM_RULES.SPECIMENS.size()]
+		"ACH_MINERALOGY_COMPLETE":
+			return "矿谱 %d/%d" % [MINERALOGY_RULES.discovered_count(state.get("mineralogy", {})), MINERALOGY_RULES.SPECIMENS.size()]
+	return ""
+
 func release_data_errors() -> PackedStringArray:
 	var errors: PackedStringArray = []
 	if definitions.is_empty():

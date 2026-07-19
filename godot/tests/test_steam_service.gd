@@ -60,6 +60,17 @@ func _initialize() -> void:
 		assert(api_name.begins_with("ACH_"), "Steam achievement API names should use a stable ACH_ prefix.")
 		assert(not ids.has(api_name), "Achievement API names must be unique.")
 		ids[api_name] = true
+	var partial_state := {
+		"swordsmanship": 7,
+		"training_records": {"bladesmanship": {"best_score": 246, "best_streak": 2, "attempts": 3}},
+		"herbarium": {"dewgrass": 2, "cloudleaf": 1},
+		"mineralogy": {"ironstone": 1, "silver_sand": 1, "fire_copper": 1}
+	}
+	assert(service.progress_text("ACH_SPECIALTY_MASTERY", partial_state) == "进度 7/10", "Specialty achievement progress should expose the strongest discipline.")
+	assert(service.progress_text("ACH_PERFECT_TRAINING", partial_state) == "最高 246/315", "Perfect-training progress should expose the best saved score.")
+	assert(service.progress_text("ACH_HERBARIUM_COMPLETE", partial_state) == "药谱 2/4", "Herbarium progress should count unique discoveries.")
+	assert(service.progress_text("ACH_MINERALOGY_COMPLETE", partial_state) == "矿谱 3/4", "Mineralogy progress should count unique discoveries.")
+	assert(service.progress_text("ACH_FIRST_STEPS", partial_state).is_empty(), "Binary achievements should not show misleading numeric progress.")
 
 	var state := {
 		"quest_stage": "game_complete",
