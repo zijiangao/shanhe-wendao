@@ -9,6 +9,7 @@ const CHOICE_VIEW := preload("res://scenes/ui/choice_view.tscn")
 const WORLD_MAP_VIEW := preload("res://scenes/world/world_map_view.tscn")
 const LOCATION_VIEW := preload("res://scenes/world/location_view.tscn")
 const TACTICAL_BATTLE_VIEW := preload("res://scenes/battle/tactical_battle_view.tscn")
+const BATTLE_RULES := preload("res://scripts/battle/battle_rules.gd")
 
 var screen: String = "menu"
 var content: Control
@@ -930,7 +931,7 @@ func _show_battle() -> void:
 	var battle: Dictionary = GameState.data.battle
 	var view: TacticalBattleView = TACTICAL_BATTLE_VIEW.instantiate()
 	content.add_child(view)
-	view.setup(BATTLE_TEXTURE, battle, GameState.data, battle_mode, _battle_cell_data(battle), _enemy_preview(battle))
+	view.setup(BATTLE_TEXTURE, battle, GameState.data, battle_mode, _battle_cell_data(battle), BATTLE_RULES.enemy_preview(battle))
 	view.cell_selected.connect(_tactical_cell)
 	view.mode_selected.connect(_battle_mode_selected)
 	view.end_turn_requested.connect(_enemy_turn)
@@ -947,10 +948,11 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 	for y in range(int(battle.height)):
 		for x in range(int(battle.width)):
 			var data := {"x": x, "y": y, "text": "·", "disabled": false, "token": -1, "color": "#1d2b25bb" if battle_mode != "inspect" else "#294438dd"}
-			var move_valid: bool = battle_mode == "move" and _can_move_to(battle, x, y)
-			var attack_valid: bool = battle_mode == "attack" and _can_attack_cell(battle, x, y, false)
-			var skill_valid: bool = battle_mode == "skill" and _can_attack_cell(battle, x, y, true)
-			var frost_valid: bool = battle_mode == "frost_dash" and _can_frost_dash(battle, x, y)
+			var cell := Vector2i(x, y)
+			var move_valid: bool = battle_mode == "move" and BATTLE_RULES.can_move_to(battle, cell)
+			var attack_valid: bool = battle_mode == "attack" and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
+			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, cell, true, int(GameState.data.qi))
+			var frost_valid: bool = battle_mode == "frost_dash" and BATTLE_RULES.can_frost_dash(battle, cell)
 			if move_valid:
 				data.color = "#28678aee"
 			elif attack_valid:
@@ -959,7 +961,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				data.color = "#c18b2fee"
 			elif frost_valid:
 				data.color = "#668fbbee"
-			if _is_blocked(battle, x, y):
+			if BATTLE_RULES.is_blocked(battle, cell):
 				data.text = "岩石"
 				data.disabled = true
 				data.color = "#4b4b45ee"
@@ -967,12 +969,12 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				data.text = "%s沈羽\nAP %d" % ["▶ " if str(battle.get("active_unit", "hero")) == "hero" else "", battle.ap]
 				data.token = 0
 				data.color = "#3d916fee" if str(battle.get("active_unit", "hero")) == "hero" else "#2f7359"
-			elif _is_ally_at(battle, x, y):
+			elif BATTLE_RULES.is_ally_at(battle, cell):
 				data.text = "%s%s\n护卫 %d" % ["▶ " if str(battle.get("active_unit", "hero")) == "ally" else "", battle.ally.name, battle.ally.guard]
 				data.token = 4
 				data.color = "#8068a9ee" if str(battle.get("active_unit", "hero")) == "ally" else "#594a78ee"
 			else:
-				var enemy_index: int = _enemy_at(battle, x, y)
+				var enemy_index: int = BATTLE_RULES.enemy_at(battle, cell)
 				if enemy_index >= 0:
 					var enemy: Dictionary = battle.enemies[enemy_index]
 					data.text = "%s\n%d/%d" % [enemy.name, enemy.hp, enemy.max_hp]
@@ -1025,13 +1027,14 @@ func _show_battle_legacy() -> void:
 	content.add_child(board)
 	for y in range(6):
 		for x in range(8):
+			var position := Vector2i(x, y)
 			var cell := Button.new()
 			cell.custom_minimum_size = Vector2(94, 66)
 			cell.add_theme_font_size_override("font_size", 15)
 			cell.add_theme_color_override("font_color", Color("#fff4dc"))
-			var move_valid: bool = battle_mode == "move" and _can_move_to(battle, x, y)
-			var attack_valid: bool = battle_mode == "attack" and _can_attack_cell(battle, x, y, false)
-			var skill_valid: bool = battle_mode == "skill" and _can_attack_cell(battle, x, y, true)
+			var move_valid: bool = battle_mode == "move" and BATTLE_RULES.can_move_to(battle, position)
+			var attack_valid: bool = battle_mode == "attack" and BATTLE_RULES.can_attack_cell(battle, position, false, int(GameState.data.qi))
+			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, position, true, int(GameState.data.qi))
 			var cell_color := Color("#1d2b25bb") if battle_mode != "inspect" else Color("#294438dd")
 			if move_valid:
 				cell_color = Color("#28678aee")
@@ -1040,7 +1043,7 @@ func _show_battle_legacy() -> void:
 			elif skill_valid:
 				cell_color = Color("#9a732bee")
 			cell.add_theme_stylebox_override("normal", _box(cell_color))
-			if _is_blocked(battle, x, y):
+			if BATTLE_RULES.is_blocked(battle, position):
 				cell.text = "岩石"
 				cell.disabled = true
 				cell.add_theme_stylebox_override("disabled", _box(Color("#4b4b45ee")))
@@ -1050,7 +1053,7 @@ func _show_battle_legacy() -> void:
 				cell.expand_icon = true
 				cell.add_theme_stylebox_override("normal", _box(Color("#2f7359")))
 			else:
-				var enemy_index: int = _enemy_at(battle, x, y)
+				var enemy_index: int = BATTLE_RULES.enemy_at(battle, position)
 				if enemy_index >= 0:
 					var enemy: Dictionary = battle.enemies[enemy_index]
 					cell.text = "%s\n%d/%d" % [enemy.name, enemy.hp, enemy.max_hp]
@@ -1115,7 +1118,7 @@ func _show_battle_legacy() -> void:
 	result.add_theme_stylebox_override("normal", _box(Color("#21382f")))
 	side_box.add_child(result)
 	var preview := Label.new()
-	preview.text = "敌方预判\n" + _enemy_preview(battle)
+	preview.text = "敌方预判\n" + BATTLE_RULES.enemy_preview(battle)
 	preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	preview.add_theme_font_size_override("font_size", 14)
 	preview.add_theme_color_override("font_color", Color("#e5c8b6"))
@@ -1153,7 +1156,7 @@ func _tactical_cell(x: int, y: int) -> void:
 		GameState.data.battle = battle
 		_rebuild()
 		return
-	if _is_ally_at(battle, x, y):
+	if BATTLE_RULES.is_ally_at(battle, Vector2i(x, y)):
 		battle.active_unit = "ally"
 		battle.result = "当前由林清霜行动。"
 		GameState.data.battle = battle
@@ -1162,15 +1165,15 @@ func _tactical_cell(x: int, y: int) -> void:
 	if int(battle.ap) <= 0:
 		_toast("行动点已用尽，请结束回合。")
 		return
-	var active: Vector2i = _active_position(battle)
+	var active: Vector2i = BATTLE_RULES.active_position(battle)
 	var active_name: String = "林清霜" if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
 	var distance: int = absi(x - active.x) + absi(y - active.y)
-	var enemy_index: int = _enemy_at(battle, x, y)
+	var enemy_index: int = BATTLE_RULES.enemy_at(battle, Vector2i(x, y))
 	if battle_mode == "move":
-		if not _can_move_to(battle, x, y):
+		if not BATTLE_RULES.can_move_to(battle, Vector2i(x, y)):
 			_toast("只能移动到两格内的空地。")
 			return
-		_set_active_position(battle, x, y)
+		BATTLE_RULES.set_active_position(battle, Vector2i(x, y))
 		battle.ap -= 1
 		battle.result = "%s施展身法，移动到新的位置。" % active_name
 		battle.effect = {}
@@ -1204,14 +1207,14 @@ func _tactical_cell(x: int, y: int) -> void:
 		battle.effect = {"x": x, "y": y, "text": "-%d" % damage, "type": "skill"}
 		battle.skill_flash = true
 	elif battle_mode == "frost_dash":
-		if not _can_frost_dash(battle, x, y):
+		if not BATTLE_RULES.can_frost_dash(battle, Vector2i(x, y)):
 			_toast("霜华刺只能突进攻击两格内的敌人。")
 			return
 		var damage: int = int(battle.ally.attack) + 6 + int(GameState.data.skill_mastery.frost / 3) + randi_range(0, 2)
 		battle.ally.qi -= 6
 		GameState.data.skill_mastery.frost += 1
 		battle.enemies[enemy_index].hp -= damage
-		var path: Array[Vector2i] = _find_path(battle, Vector2i(int(battle.ally.x), int(battle.ally.y)), Vector2i(x, y), true)
+		var path: Array[Vector2i] = BATTLE_RULES.find_path(battle, Vector2i(int(battle.ally.x), int(battle.ally.y)), Vector2i(x, y), true)
 		if path.size() >= 2:
 			battle.ally.x = path[path.size() - 2].x
 			battle.ally.y = path[path.size() - 2].y
@@ -1254,7 +1257,7 @@ func _enemy_turn() -> void:
 				GameState.data.hp -= hurt
 			total_hurt += hurt
 		else:
-			var path: Array[Vector2i] = _find_path(battle, Vector2i(int(enemy.x), int(enemy.y)), target, true)
+			var path: Array[Vector2i] = BATTLE_RULES.find_path(battle, Vector2i(int(enemy.x), int(enemy.y)), target, true)
 			if path.size() > 1:
 				enemy.x = path[1].x
 				enemy.y = path[1].y
@@ -1272,62 +1275,6 @@ func _enemy_turn() -> void:
 	SaveManager.save_auto()
 	_rebuild()
 
-func _enemy_at(battle: Dictionary, x: int, y: int) -> int:
-	for index in range(battle.enemies.size()):
-		var enemy: Dictionary = battle.enemies[index]
-		if int(enemy.hp) > 0 and int(enemy.x) == x and int(enemy.y) == y:
-			return index
-	return -1
-
-func _is_ally_at(battle: Dictionary, x: int, y: int) -> bool:
-	return battle.has("ally") and not battle.ally.is_empty() and int(battle.ally.hp) > 0 and int(battle.ally.x) == x and int(battle.ally.y) == y
-
-func _active_position(battle: Dictionary) -> Vector2i:
-	if str(battle.get("active_unit", "hero")) == "ally" and battle.has("ally") and int(battle.ally.hp) > 0:
-		return Vector2i(int(battle.ally.x), int(battle.ally.y))
-	return Vector2i(int(battle.player_x), int(battle.player_y))
-
-func _set_active_position(battle: Dictionary, x: int, y: int) -> void:
-	if str(battle.get("active_unit", "hero")) == "ally" and battle.has("ally"):
-		battle.ally.x = x
-		battle.ally.y = y
-	else:
-		battle.player_x = x
-		battle.player_y = y
-
-func _is_blocked(battle: Dictionary, x: int, y: int) -> bool:
-	if x < 0 or y < 0 or x >= int(battle.width) or y >= int(battle.height):
-		return true
-	for point in battle.blocked:
-		if int(point[0]) == x and int(point[1]) == y:
-			return true
-	return false
-
-func _can_move_to(battle: Dictionary, x: int, y: int) -> bool:
-	if _is_blocked(battle, x, y) or _enemy_at(battle, x, y) >= 0 or _is_ally_at(battle, x, y) or (x == int(battle.player_x) and y == int(battle.player_y)):
-		return false
-	var path: Array[Vector2i] = _find_path(battle, _active_position(battle), Vector2i(x, y), false)
-	return path.size() >= 2 and path.size() <= 3
-
-func _can_attack_cell(battle: Dictionary, x: int, y: int, skill: bool) -> bool:
-	if _enemy_at(battle, x, y) < 0:
-		return false
-	var active: Vector2i = _active_position(battle)
-	var dx: int = absi(x - active.x)
-	var dy: int = absi(y - active.y)
-	if skill:
-		return str(battle.get("active_unit", "hero")) != "ally" and dx + dy <= 3 and (dx == 0 or dy == 0) and int(GameState.data.qi) >= 8
-	return dx + dy == 1
-
-func _can_frost_dash(battle: Dictionary, x: int, y: int) -> bool:
-	if str(battle.get("active_unit", "hero")) != "ally" or _enemy_at(battle, x, y) < 0 or int(battle.ally.qi) < 6:
-		return false
-	var distance: int = absi(x - int(battle.ally.x)) + absi(y - int(battle.ally.y))
-	if distance > 2:
-		return false
-	var path: Array[Vector2i] = _find_path(battle, Vector2i(int(battle.ally.x), int(battle.ally.y)), Vector2i(x, y), true)
-	return path.size() >= 2 and path.size() <= 3
-
 func _use_frost_guard() -> void:
 	var battle: Dictionary = GameState.data.battle
 	if str(battle.get("active_unit", "hero")) != "ally" or int(battle.ap) <= 0:
@@ -1342,49 +1289,6 @@ func _use_frost_guard() -> void:
 	GameState.data.battle = battle
 	SaveManager.save_auto()
 	_rebuild()
-
-func _find_path(battle: Dictionary, start: Vector2i, goal: Vector2i, allow_goal_occupied: bool) -> Array[Vector2i]:
-	var frontier: Array[Vector2i] = [start]
-	var came_from: Dictionary = {start: start}
-	while not frontier.is_empty():
-		var current: Vector2i = frontier.pop_front()
-		if current == goal:
-			break
-		for direction in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]:
-			var next: Vector2i = current + direction
-			if came_from.has(next) or _is_blocked(battle, next.x, next.y):
-				continue
-			var occupied: bool = _enemy_at(battle, next.x, next.y) >= 0 or _is_ally_at(battle, next.x, next.y) or (next.x == int(battle.player_x) and next.y == int(battle.player_y))
-			if occupied and not (allow_goal_occupied and next == goal):
-				continue
-			came_from[next] = current
-			frontier.append(next)
-	if not came_from.has(goal):
-		return []
-	var path: Array[Vector2i] = [goal]
-	var cursor: Vector2i = goal
-	while cursor != start:
-		cursor = came_from[cursor]
-		path.push_front(cursor)
-	return path
-
-func _enemy_preview(battle: Dictionary) -> String:
-	var lines: PackedStringArray = []
-	for enemy in battle.enemies:
-		if int(enemy.hp) <= 0:
-			continue
-		var target_name := "沈羽"
-		var target := Vector2i(int(battle.player_x), int(battle.player_y))
-		var distance: int = absi(int(enemy.x) - target.x) + absi(int(enemy.y) - target.y)
-		if battle.has("ally") and int(battle.ally.hp) > 0:
-			var ally_target := Vector2i(int(battle.ally.x), int(battle.ally.y))
-			var ally_distance: int = absi(int(enemy.x) - ally_target.x) + absi(int(enemy.y) - ally_target.y)
-			if ally_distance < distance:
-				target = ally_target
-				distance = ally_distance
-				target_name = str(battle.ally.name)
-		lines.append("· %s：%s%s" % [enemy.name, "准备攻击" if distance == 1 else "向", target_name if distance == 1 else target_name + "接近"])
-	return "\n".join(lines)
 
 func _check_tactical_victory(battle: Dictionary) -> bool:
 	for enemy in battle.enemies:
