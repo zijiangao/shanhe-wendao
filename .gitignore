@@ -5,6 +5,7 @@
 /godot/.mono/
 
 # Exported builds
+/build/
 /godot/build/
 /godot/export/
 
