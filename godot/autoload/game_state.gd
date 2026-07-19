@@ -4,7 +4,7 @@ signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -42,6 +42,7 @@ func new_game() -> void:
 		"companions": [],
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
 		"emei_entry": "",
+		"ending": {},
 		"tutorial": {"map": false, "location": false, "battle": false},
 		"battle_retry": {},
 		"log": ["你拜入青云门。距离厉千秋出关还有两年。"],
@@ -156,12 +157,50 @@ func start_huashan_trial_battle() -> bool:
 	state_changed.emit()
 	return true
 
+func start_final_battle() -> bool:
+	if not spend_week():
+		return false
+	data.qi = 20
+	data.hp = data.max_hp
+	var trusted_su: bool = "su_trust" in data.flags
+	data.battle = {
+		"battle_id": "wuku_finale",
+		"name": "武库天门决战",
+		"width": 8,
+		"height": 6,
+		"player_x": 1,
+		"player_y": 3,
+		"ap": 2,
+		"active_unit": "hero",
+		"turn": 1,
+		"objective": {"type": "eliminate"},
+		"result": "厉无咎率玄甲亲卫守住武库天门。林清霜并肩出剑，苏晚晴则在阵外截断援兵。" if trusted_su else "厉无咎率玄甲亲卫守住武库天门。林清霜与你并肩迎敌。",
+		"blocked": [[3, 1], [3, 4], [5, 2]],
+		"ally": {"name": "林清霜", "hp": 34, "max_hp": 34, "qi": 15, "max_qi": 15, "attack": 6, "guard": 0, "x": 1, "y": 4},
+		"enemies": [
+			{"name": "厉无咎", "role": "brute", "hp": 46, "max_hp": 46, "attack": 8, "range": 1, "x": 6, "y": 2},
+			{"name": "玄甲亲卫", "role": "melee", "hp": 22, "max_hp": 22, "attack": 6, "range": 1, "x": 6, "y": 4},
+			{"name": "武库弩手", "role": "archer", "hp": 12 if trusted_su else 17, "max_hp": 12 if trusted_su else 17, "attack": 5, "range": 4, "x": 5, "y": 0}
+		]
+	}
+	capture_battle_checkpoint()
+	battle_started.emit()
+	state_changed.emit()
+	return true
+
 func finish_battle(victory: bool) -> void:
 	var battle_id: String = str(data.battle.get("battle_id", "blackreed"))
 	data.battle = {}
 	if victory:
 		data.battle_retry = {}
-		if battle_id == "huashan_trial":
+		if battle_id == "wuku_finale":
+			data.xp += 60
+			data.renown += 8
+			data.silver += 30
+			if "武库钥印" not in data.items:
+				data.items.append("武库钥印")
+			add_log("你与同伴击败厉无咎，武库的命运将由你决定。")
+		elif battle_id == "huashan_trial":
 			data.xp += 30
 			data.renown += 3
 			data.silver += 10
@@ -183,6 +222,26 @@ func finish_battle(victory: bool) -> void:
 		add_log("你战败后被渔民救回，损失十两银子。")
 	battle_finished.emit(victory)
 	state_changed.emit()
+
+func complete_game(legacy: String) -> void:
+	var titles: Dictionary = {"destroy": "山河同心", "seal": "持令守序", "preserve": "问道藏锋"}
+	var route: String = str({"destroy": "heroism", "seal": "authority", "preserve": "strategy"}.get(legacy, "heroism"))
+	var support: int = int(data.alignment.get(route, 0)) * 2 + int(data.master_relation)
+	support += int(data.faction_relations.get("huashan", 0)) + int(data.faction_relations.get("emei", 0))
+	support += 2 if "su_trust" in data.flags else 0
+	support += 2 if "lin_qingshuang" in data.companions else 0
+	var rank: String = "传说" if support >= 10 and weeks_left() >= 20 else ("圆满" if support >= 6 else "余波未平")
+	var base_story: String = str({
+		"destroy": "你击碎武库机关，将兵谱公之于众。各派不再争夺一把钥匙，而是共同守住百姓身后的山河。",
+		"seal": "你以玄铁令重立盟约，将武库交由各派共守。江湖从此多了一条规矩：力量必须接受众人的监督。",
+		"preserve": "你封存杀伐之术，只带走医理与机关篇。武库没有成为王座，却化作救人济世的一盏暗灯。"
+	}.get(legacy, "武库尘埃落定，新的江湖由此开始。"))
+	var companion_story: String = "林清霜与你并肩走出天门，苏晚晴也兑现承诺，三派从此互通音讯。" if "su_trust" in data.flags else "林清霜与你并肩走出天门，但峨眉对武库的余波仍保持警惕。"
+	data.ending = {"id": legacy, "title": titles.get(legacy, "山河问道"), "rank": rank, "story": base_story + "\n\n" + companion_story, "week": int(data.week), "support": support}
+	data.quest_stage = "game_complete"
+	if "game_complete" not in data.flags:
+		data.flags.append("game_complete")
+	add_log("终章完成：%s（%s）。" % [data.ending.title, rank])
 
 func capture_battle_checkpoint() -> void:
 	if data.battle.is_empty():
@@ -275,6 +334,8 @@ func _migrate_and_validate() -> void:
 		data.log = normalized_log
 	if typeof(data.skill_mastery) != TYPE_DICTIONARY:
 		data.skill_mastery = {"cloud": 0, "frost": 0, "frost_guard": 0}
+	if typeof(data.ending) != TYPE_DICTIONARY:
+		data.ending = {}
 	for skill in ["cloud", "frost", "frost_guard"]:
 		if not data.skill_mastery.has(skill):
 			data.skill_mastery[skill] = 0

@@ -11,7 +11,7 @@ func _initialize() -> void:
 	var backend = LOCAL_BACKEND.new(TEST_PATH)
 	assert(service.use_backend(backend), "The local Steam backend should initialize without the SDK.")
 	assert(not service.is_live(), "The local backend must never claim a live Steam connection.")
-	assert(service.definitions.size() == 7, "The initial commercial achievement set should remain complete.")
+	assert(service.definitions.size() == 11, "The commercial achievement set should include finale and ending awards.")
 	var ids: Dictionary = {}
 	for definition in service.definitions:
 		var api_name := str(definition.api_name)
@@ -20,14 +20,20 @@ func _initialize() -> void:
 		ids[api_name] = true
 
 	var state := {
-		"quest_stage": "emei_trial",
-		"flags": ["villain_revealed"],
+		"quest_stage": "game_complete",
+		"flags": ["villain_revealed", "game_complete"],
 		"companions": ["lin_qingshuang"],
 		"items": ["思过崖通行令"],
-		"skill_mastery": {"cloud": 3, "frost": 0, "frost_guard": 0}
+		"skill_mastery": {"cloud": 3, "frost": 0, "frost_guard": 0},
+		"ending": {"id": "destroy"}
 	}
 	service.evaluate_state(state)
-	assert(service.unlocked_count() == service.definitions.size(), "A completed progression state should unlock all initial achievements.")
+	assert(service.unlocked_count() == 9, "One completed route should unlock progression plus exactly one of three endings.")
+	state.ending.id = "seal"
+	service.evaluate_state(state)
+	state.ending.id = "preserve"
+	service.evaluate_state(state)
+	assert(service.unlocked_count() == service.definitions.size(), "Completing all ending routes should unlock the full achievement set.")
 	assert(backend.get_stat("STAT_HIGHEST_MASTERY") == 3, "Steam stat progress should mirror the highest mastery.")
 	assert(not service.unlock("ACH_FIRST_STEPS"), "Unlocking an existing achievement must be idempotent.")
 

@@ -71,5 +71,23 @@ func _initialize() -> void:
 	assert(state.import_data(old_save), "Saves without onboarding fields should migrate.")
 	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("battle"), "Migration should add tutorial progress defaults.")
 
+	state.new_game()
+	state.data.energy = 3
+	state.data.companions.append("lin_qingshuang")
+	state.data.flags.append("su_trust")
+	assert(state.start_final_battle(), "The final tactical encounter should start from a valid story state.")
+	assert(str(state.data.battle.battle_id) == "wuku_finale", "The finale must use its own stable battle identifier.")
+	assert(state.data.battle.has("ally") and state.data.battle.enemies.size() == 3, "The finale should include the companion and complete enemy squad.")
+	state.finish_battle(true)
+	assert("武库钥印" in state.data.items and int(state.data.xp) == 60, "Final victory rewards should be granted exactly once.")
+	state.data.alignment.strategy = 2
+	state.data.master_relation = 2
+	state.data.faction_relations.huashan = 3
+	state.data.faction_relations.emei = 3
+	state.complete_game("preserve")
+	assert(str(state.data.quest_stage) == "game_complete", "Resolving a legacy must mark the main story complete.")
+	assert(str(state.data.ending.id) == "preserve" and str(state.data.ending.title) == "问道藏锋", "The chosen legacy should produce the matching ending.")
+	assert(str(state.data.ending.rank) == "传说", "Strong relationships and timely completion should earn the top ending rank.")
+
 	print("GameState tests passed.")
 	quit()

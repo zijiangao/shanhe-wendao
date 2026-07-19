@@ -46,7 +46,7 @@ Train your martial arts, investigate the Black-Iron Token, and shape the fate of
 
 `RPG`, `Turn-Based Strategy`, `Tactical RPG`, `Choices Matter`, `Martial Arts`, `Story Rich`, `Singleplayer`, `2D`, `Atmospheric`, `Multiple Endings`
 
-Do not select `Multiple Endings` until multiple complete endings are implemented and tested in the release candidate.
+`Multiple Endings` is now supported by three complete finale choices: 山河同心、持令守序、问道藏锋. Revalidate all three routes in the final release candidate before store submission.
 
 ## Draft system requirements
 

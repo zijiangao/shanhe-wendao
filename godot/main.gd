@@ -211,6 +211,8 @@ func _rebuild() -> void:
 		"battle": _show_battle()
 		"victory": _show_victory()
 		"defeat": _show_defeat()
+		"final_choice": _show_final_choice()
+		"ending": _show_ending()
 		"demo_complete": _show_demo_complete()
 	_update_status()
 	_show_contextual_tutorial()
@@ -311,7 +313,7 @@ func _location_actions(location_id: String) -> Array:
 			{"id": "emei_gate", "text": "清音桥 · 选择入山方式" if not entered else "清音桥 · 已获准入山", "x": 75, "y": 175, "disabled": entered},
 			{"id": "meet_su", "text": "清音阁 · 苏晚晴", "x": 370, "y": 255, "disabled": not entered or str(GameState.data.quest_stage) != "emei_meet_su"},
 			{"id": "elephant_pool", "text": "洗象池 · 门派试问", "x": 680, "y": 345, "disabled": str(GameState.data.quest_stage) != "emei_investigate"},
-			{"id": "emei_peak", "text": "金顶 · 尚未开放", "x": 930, "y": 155, "disabled": true},
+			{"id": "emei_peak", "text": "金顶 · 追入后山密道" if str(GameState.data.quest_stage) == "emei_trial" else ("金顶 · 武库天门决战" if str(GameState.data.quest_stage) == "final_assault" else "金顶 · 尘埃落定"), "x": 930, "y": 155, "disabled": str(GameState.data.quest_stage) not in ["emei_trial", "final_assault"]},
 			{"id": "map", "text": "山道 · 返回舆图", "x": 930, "y": 440}
 		]
 	return [
@@ -352,6 +354,11 @@ func _location_action_requested(action_id: String) -> void:
 		"emei_gate": _start_story_dialogue("emei_gate")
 		"meet_su": _start_story_dialogue("meet_su")
 		"elephant_pool": _start_dialogue("elephant_pool", [["苏晚晴", "洗象池旁有两条路：一边是受伤同门，一边是厉无咎留下的脚印。你先救谁？"], ["沈羽", "线索可以再追，人命不能重来。先救人。"], ["苏晚晴", "这个回答，至少不像厉无咎。"]])
+		"emei_peak":
+			if str(GameState.data.quest_stage) == "emei_trial":
+				_start_dialogue("emei_peak", [["苏晚晴", "金顶佛光下有一道逆行剑痕，正通往封闭百年的后山密道。"], ["林清霜", "厉无咎在等我们。他想用武库天门作最后一道局。"], ["沈羽", "那便让这场追逐在这里结束。武库属于谁，等打赢之后再问。"]])
+			else:
+				_begin_final_battle()
 
 func _add_scene_action(text_value: String, at: Vector2, callback: Callable) -> Button:
 	var button := _action_button(text_value, Color("#263f34ee"))
@@ -477,6 +484,9 @@ func _finish_dialogue_event(event_id: String) -> void:
 			if "su_trust" not in GameState.data.flags:
 				GameState.data.flags.append("su_trust")
 			GameState.add_log("你选择先救峨眉弟子，获得苏晚晴的初步信任。")
+		"emei_peak":
+			GameState.data.quest_stage = "final_assault"
+			GameState.add_log("你在峨眉金顶找到武库天门，厉无咎正在密道尽头等候。")
 
 func _add_palace_evidence(kind: String, favored_route: String) -> void:
 	if kind in GameState.data.palace_evidence:
@@ -539,8 +549,10 @@ func _resolve_choice(route: String) -> void:
 				GameState.data.renown += 2
 				GameState.data.faction_relations.emei += 1
 				GameState.add_log("你耗费一周帮助山民，峨眉为你打开山门。")
+	elif choice_event == "final_legacy":
+		GameState.complete_game(route)
 	choice_event = ""
-	screen = "map" if str(GameState.data.quest_stage) == "chapter2_complete" else "location"
+	screen = "ending" if str(GameState.data.quest_stage) == "game_complete" else ("map" if str(GameState.data.quest_stage) == "chapter2_complete" else "location")
 	SaveManager.save_auto()
 	_rebuild()
 
@@ -740,16 +752,19 @@ func _quest_objective() -> String:
 		"emei_meet_su": "在清音阁拜访苏晚晴，查明后山闯阵者。",
 		"emei_investigate": "前往洗象池接受峨眉试问，争取继续追查厉无咎。",
 		"emei_trial": "峨眉试问已通过：下一步前往金顶追查后山密道。"
+		,"final_assault": "武库天门已经开启：在金顶密道与厉无咎展开最终决战。"
+		,"final_choice": "厉无咎已败：决定武库与江湖的未来。"
+		,"game_complete": "山河已定。可在结局页回顾这段江湖旅程。"
 	}.get(str(GameState.data.get("quest_stage", "meet_master")), "继续调查江湖异动。")
 
 func _luoyang_unlocked() -> bool:
-	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter_complete", "luoyang_investigate", "chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial"]
+	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter_complete", "luoyang_investigate", "chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial", "final_assault", "final_choice", "game_complete"]
 
 func _huashan_unlocked() -> bool:
-	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial"]
+	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial", "final_assault", "final_choice", "game_complete"]
 
 func _emei_unlocked() -> bool:
-	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial"]
+	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial", "final_assault", "final_choice", "game_complete"]
 
 func _emei_entry_name(route: String) -> String:
 	return {"recommend": "华山引荐", "renown": "江湖声望", "aid": "帮助山民"}.get(route, "尚未入山")
@@ -784,7 +799,7 @@ func _show_dev_menu() -> void:
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	box.add_child(grid)
-	for entry in [["新游戏 · 青云门", "new"], ["第一章 · 黑苇调查", "blackreed"], ["战棋 · 黑苇遭遇战", "battle"], ["第二章 · 初到洛阳", "luoyang"], ["太守府 · 谋略路线", "palace"], ["第二章 · 已完成", "chapter2"], ["第三章 · 华山试炼", "huashan"], ["第四章 · 初到峨眉", "emei"]]:
+	for entry in [["新游戏 · 青云门", "new"], ["第一章 · 黑苇调查", "blackreed"], ["战棋 · 黑苇遭遇战", "battle"], ["第二章 · 初到洛阳", "luoyang"], ["太守府 · 谋略路线", "palace"], ["第二章 · 已完成", "chapter2"], ["第三章 · 华山试炼", "huashan"], ["第四章 · 初到峨眉", "emei"], ["终章 · 武库天门", "finale"]]:
 		var button := _action_button(entry[0], Color("#315f4b"))
 		button.custom_minimum_size.x = 440
 		button.pressed.connect(_dev_jump.bind(str(entry[1])))
@@ -837,6 +852,14 @@ func _dev_jump(target: String) -> void:
 			GameState.data.location = "emei"
 			GameState.data.companions.append("lin_qingshuang")
 			GameState.data.faction_relations.huashan = 3
+			screen = "location"
+		"finale":
+			GameState.data.quest_stage = "final_assault"
+			GameState.data.location = "emei"
+			GameState.data.companions.append("lin_qingshuang")
+			GameState.data.flags.append("su_trust")
+			GameState.data.faction_relations.huashan = 3
+			GameState.data.faction_relations.emei = 3
 			screen = "location"
 	SaveManager.save_auto()
 	_rebuild()
@@ -1463,12 +1486,14 @@ func _check_tactical_victory(battle: Dictionary) -> bool:
 		return false
 	AudioFeedback.play("victory")
 	var battle_id: String = str(battle.get("battle_id", "blackreed"))
-	if battle_id == "huashan_trial":
+	if battle_id == "wuku_finale":
+		last_rewards = {"title": "天 门 已 定", "story": "厉无咎的刀落在石阶上。武库机关仍在轰鸣，而决定它命运的人已经变成了你。", "xp": 60, "silver": 30, "renown": 8, "item": "武库钥印", "turns": battle.turn, "next_screen": "final_choice"}
+	elif battle_id == "huashan_trial":
 		last_rewards = {"title": "剑 会 胜 出", "story": "你与林清霜剑路相合，通过华山双人试炼。守台长老准许你们前往思过崖查看残图。", "xp": 30, "silver": 10, "renown": 3, "item": "思过崖通行令", "turns": battle.turn}
 	else:
 		last_rewards = {"title": "大 捷", "story": "黑苇寨众溃散，渡口重归平静。你从寨主身上搜出一枚玄铁令，厉千秋的阴谋终于露出端倪。", "xp": 22, "silver": 15, "renown": 4, "item": "玄铁令", "turns": battle.turn}
 	GameState.finish_battle(true)
-	GameState.data.quest_stage = "huashan_trial_complete" if battle_id == "huashan_trial" else "return_master"
+	GameState.data.quest_stage = "final_choice" if battle_id == "wuku_finale" else ("huashan_trial_complete" if battle_id == "huashan_trial" else "return_master")
 	screen = "demo_complete" if DEMO_POLICY.should_end_after_victory(battle_id) else "victory"
 	return true
 
@@ -1568,9 +1593,68 @@ func _show_victory() -> void:
 	rewards.add_theme_color_override("font_color", Color("#fff0d2"))
 	rewards.add_theme_stylebox_override("normal", _box(Color("#17382eee")))
 	panel.add_child(rewards)
-	var continue_button := _action_button("收剑归鞘 · 返回天下舆图", Color("#8b493b"))
-	continue_button.pressed.connect(func(): screen = "map"; _rebuild())
+	var next_screen := str(last_rewards.get("next_screen", "map"))
+	var continue_button := _action_button("进入武库 · 作出最终抉择" if next_screen == "final_choice" else "收剑归鞘 · 返回天下舆图", Color("#8b493b"))
+	continue_button.pressed.connect(func(): screen = next_screen; _rebuild())
 	panel.add_child(continue_button)
+
+func _begin_final_battle() -> void:
+	if not GameState.start_final_battle():
+		_toast(_time_action_failure_message())
+		return
+	battle_mode = "move"
+	screen = "battle"
+	SaveManager.save_auto()
+	_rebuild()
+
+func _show_final_choice() -> void:
+	choice_event = "final_legacy"
+	choice_prompt = "厉无咎已败。面对足以改写天下的武库，你准备留下怎样的江湖？"
+	choice_options = [
+		["侠义 · 毁去兵库", "击碎杀伐机关，公开证据，让各派共同见证。", "destroy"],
+		["威势 · 共守盟约", "以玄铁令重立秩序，由三派共同监管武库。", "seal"],
+		["谋略 · 藏锋济世", "封存兵法，只保留医理与机关术造福百姓。", "preserve"]
+	]
+	_show_choice()
+
+func _show_ending() -> void:
+	_clear_content()
+	var ending: Dictionary = GameState.data.get("ending", {})
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(270, 45)
+	panel.size = Vector2(740, 500)
+	panel.add_theme_constant_override("separation", 16)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "终 章 · %s" % str(ending.get("title", "山河问道"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 44)
+	title.add_theme_color_override("font_color", Color("#dfbf74"))
+	panel.add_child(title)
+	var rank := Label.new()
+	rank.text = "结局评价：%s    完成周数：%d / 104" % [ending.get("rank", "江湖未定"), ending.get("week", GameState.data.week)]
+	rank.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rank.add_theme_font_size_override("font_size", 20)
+	panel.add_child(rank)
+	var story := Label.new()
+	story.text = str(ending.get("story", "你的江湖仍在路上。"))
+	story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	story.custom_minimum_size.y = 210
+	story.add_theme_font_size_override("font_size", 19)
+	story.add_theme_color_override("font_color", Color("#eee5d3"))
+	story.add_theme_stylebox_override("normal", _box(Color("#17382eee")))
+	panel.add_child(story)
+	var credits := Label.new()
+	credits.text = "《山河问道》主线完结\n感谢行走这段江湖。你的结局与存档已经保存。"
+	credits.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	credits.add_theme_color_override("font_color", Color("#c9c7bc"))
+	panel.add_child(credits)
+	var achievements := _action_button("查看通关成就", Color("#315746"))
+	achievements.pressed.connect(func(): screen = "achievements"; _rebuild())
+	panel.add_child(achievements)
+	var menu := _action_button("返回主菜单", Color("#806c4f"))
+	menu.pressed.connect(func(): screen = "menu"; _rebuild())
+	panel.add_child(menu)
 
 func _intent_name(intent: String) -> String:
 	return {"strike": "迅猛攻势", "heavy": "两格重击", "guard": "护住要害"}.get(intent, intent)

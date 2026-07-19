@@ -2,7 +2,10 @@
   "content_version": 1,
   "chapters": {
     "blackreed": {"name": "黑苇疑云", "next": "luoyang"},
-    "luoyang": {"name": "洛阳风云", "next": "huashan"}
+    "luoyang": {"name": "洛阳风云", "next": "huashan"},
+    "huashan": {"name": "华山论剑", "next": "emei"},
+    "emei": {"name": "峨眉问心", "next": "finale"},
+    "finale": {"name": "武库天门", "next": "ending"}
   },
   "dialogues": {
     "baima_intro": [

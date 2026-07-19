@@ -40,5 +40,29 @@
     "title": "剑不离手",
     "description": "任一武学熟练度达到3。",
     "hidden": false
+  },
+  {
+    "api_name": "ACH_WUKU_VICTORY",
+    "title": "天门决胜",
+    "description": "在武库天门击败厉无咎。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_ENDING_DESTROY",
+    "title": "山河同心",
+    "description": "选择毁去兵库，让各派共同见证真相。",
+    "hidden": true
+  },
+  {
+    "api_name": "ACH_ENDING_SEAL",
+    "title": "持令守序",
+    "description": "选择重立盟约，由三派共同守护武库。",
+    "hidden": true
+  },
+  {
+    "api_name": "ACH_ENDING_PRESERVE",
+    "title": "问道藏锋",
+    "description": "选择封存兵法，将武库学问用于济世。",
+    "hidden": true
   }
 ]
