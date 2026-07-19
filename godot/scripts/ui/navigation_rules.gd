@@ -2,6 +2,17 @@ class_name NavigationRules
 extends RefCounted
 
 const OVERLAY_SCREENS := ["quests", "character", "achievements", "save", "settings", "credits", "dev"]
+const PAUSABLE_SCREENS := ["map", "location", "dialogue", "choice", "palace", "battle", "victory", "defeat", "final_choice", "ending", "demo_complete", "training"]
+const MODAL_GAMEPLAY_SCREENS := ["dialogue", "choice", "battle", "defeat", "training", "pause"]
+
+static func can_pause(screen: String) -> bool:
+	return screen in PAUSABLE_SCREENS
+
+static func blocks_header_navigation(screen: String) -> bool:
+	return screen in MODAL_GAMEPLAY_SCREENS
+
+static func should_save_on_quit(screen: String, state: Dictionary) -> bool:
+	return screen != "menu" and not state.is_empty()
 
 static func back_action(screen: String, previous_screen: String = "map") -> Dictionary:
 	if screen in ["battle", "dialogue", "choice", "defeat"]:

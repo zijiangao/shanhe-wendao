@@ -60,8 +60,12 @@ var training_scores: Array = []
 var training_result: Dictionary = {}
 var training_last_feedback: String = ""
 var active_training_view: TrainingMinigameView
+var pause_return_screen: String = "map"
+var pause_started_ms: int = 0
+var pause_save_ok: bool = true
 
 func _ready() -> void:
+	get_tree().auto_accept_quit = false
 	if _handle_release_mode_verification():
 		return
 	GameState.state_changed.connect(_on_state_changed)
@@ -83,6 +87,8 @@ func _ready() -> void:
 		call_deferred("_verify_training_flow")
 	elif "--verify-crafting-flow" in OS.get_cmdline_user_args():
 		call_deferred("_verify_crafting_flow")
+	elif "--verify-pause-flow" in OS.get_cmdline_user_args():
+		call_deferred("_verify_pause_flow")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
 		call_deferred("_capture_store_screenshots")
 	elif "--capture-tactical-tutorial" in OS.get_cmdline_user_args():
@@ -136,6 +142,20 @@ func _verify_crafting_flow() -> void:
 	valid = valid and int(GameState.data.forge_level) == 1 and int(GameState.data.materials.herbs) == 0 and int(GameState.data.materials.ore) == 0
 	print("Crafting flow verification passed." if valid else "Crafting flow verification failed.")
 	get_tree().quit(0 if valid else 16)
+
+func _verify_pause_flow() -> void:
+	GameState.new_game()
+	_start_training("swordsmanship")
+	var original_started := training_started_ms
+	_open_pause()
+	var opened := screen == "pause" and pause_return_screen == "training" and pause_save_ok
+	pause_started_ms -= 750
+	_resume_from_pause()
+	var resumed := screen == "training" and training_started_ms >= original_started + 700
+	var modal_blocked := NAVIGATION_RULES.blocks_header_navigation("battle") and not NAVIGATION_RULES.blocks_header_navigation("map")
+	var valid := opened and resumed and modal_blocked
+	print("Pause and safe-exit flow verification passed." if valid else "Pause and safe-exit flow verification failed.")
+	get_tree().quit(0 if valid else 18)
 
 func _verify_steam_data() -> void:
 	var errors := SteamService.release_data_errors()
@@ -383,6 +403,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not event.is_action_pressed("ui_cancel"):
 		return
+	if screen == "pause":
+		_resume_from_pause()
+		get_viewport().set_input_as_handled()
+		return
+	if NAVIGATION_RULES.can_pause(screen):
+		_open_pause()
+		get_viewport().set_input_as_handled()
+		return
 	var action: Dictionary = NAVIGATION_RULES.back_action(screen, previous_screen)
 	if bool(action.allowed):
 		screen = str(action.target)
@@ -511,12 +539,110 @@ func _show_menu() -> void:
 	credits_button.pressed.connect(_switch_screen.bind("credits"))
 	panel.add_child(credits_button)
 	var quit_button := _action_button("退出游戏", Color("#68433d"))
-	quit_button.pressed.connect(func(): get_tree().quit())
+	quit_button.pressed.connect(_safe_quit)
 	panel.add_child(quit_button)
 	_update_status()
 	call_deferred("_focus_first_content_control")
 
+func _open_pause() -> void:
+	if not NAVIGATION_RULES.can_pause(screen):
+		return
+	pause_return_screen = screen
+	pause_started_ms = Time.get_ticks_msec()
+	pause_save_ok = SaveManager.save_auto()
+	screen = "pause"
+	_rebuild()
+
+func _resume_from_pause() -> void:
+	if pause_return_screen == "training" and pause_started_ms > 0:
+		training_started_ms += maxi(0, Time.get_ticks_msec() - pause_started_ms)
+	screen = pause_return_screen if NAVIGATION_RULES.can_pause(pause_return_screen) else "map"
+	pause_started_ms = 0
+	_rebuild()
+
+func _show_pause() -> void:
+	_clear_content()
+	var art := TextureRect.new()
+	art.texture = _location_texture(str(GameState.data.location))
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#07110de6")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(390, 65)
+	panel.size = Vector2(500, 490)
+	panel.add_theme_constant_override("separation", 12)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "暂 歇 江 湖"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 40)
+	title.add_theme_color_override("font_color", Color("#f2dfb3"))
+	panel.add_child(title)
+	var status := Label.new()
+	status.text = ("已安全保存自动存档" if pause_save_ok else "自动存档失败，请先检查存档页") + "\n第 %d 周 · %s · 当前地点：%s" % [GameState.data.week, GROWTH_RULES.rank_name(int(GameState.data.xp)), GameState.place_name(str(GameState.data.location))]
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.add_theme_font_size_override("font_size", 17)
+	status.add_theme_color_override("font_color", Color("#b8c9bf") if pause_save_ok else Color("#e5a39a"))
+	panel.add_child(status)
+	var resume := _action_button("继续江湖", Color("#315f4b"))
+	resume.pressed.connect(_resume_from_pause)
+	panel.add_child(resume)
+	var settings := _action_button("设置", Color("#485e54"))
+	settings.pressed.connect(func(): previous_screen = "pause"; screen = "settings"; _rebuild())
+	panel.add_child(settings)
+	var menu := _action_button("保存并返回主菜单", Color("#806c4f"))
+	menu.pressed.connect(_pause_to_menu)
+	panel.add_child(menu)
+	var quit := _action_button("保存并退出游戏", Color("#68433d"))
+	quit.pressed.connect(_safe_quit)
+	panel.add_child(quit)
+	var hint := Label.new()
+	hint.text = "Esc / 手柄 B：继续游戏"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
+	panel.add_child(hint)
+
+func _pause_to_menu() -> void:
+	if not SaveManager.save_auto():
+		pause_save_ok = false
+		_toast("保存失败，为保护进度已取消返回主菜单。")
+		_rebuild()
+		return
+	pause_started_ms = 0
+	screen = "menu"
+	_rebuild()
+
+func _safe_quit() -> void:
+	# The autoload owns a default in-memory state even before the player starts or
+	# loads a journey. Never overwrite an existing autosave when quitting at menu.
+	if NAVIGATION_RULES.should_save_on_quit(screen, GameState.data) and not SaveManager.save_auto():
+		pause_save_ok = false
+		_toast("保存失败，为保护进度已取消退出。")
+		if screen == "pause":
+			_rebuild()
+		return
+	get_tree().quit()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_safe_quit()
+
 func _switch_screen(next: String) -> void:
+	if NAVIGATION_RULES.blocks_header_navigation(screen):
+		if screen == "pause" and next == "settings":
+			previous_screen = "pause"
+			screen = "settings"
+			_rebuild()
+			return
+		else:
+			AudioFeedback.play("error")
+			_toast("当前流程不能直接切换页面，请先按 Esc / 手柄 B 打开暂停菜单。")
+		return
 	if next != "menu" and screen == "menu" and GameState.data.is_empty():
 		GameState.new_game()
 	if next in NAVIGATION_RULES.OVERLAY_SCREENS:
@@ -541,6 +667,7 @@ func _rebuild() -> void:
 		"quests": _show_quests()
 		"dialogue": _show_dialogue()
 		"choice": _show_choice()
+		"pause": _show_pause()
 		"training": _show_training()
 		"palace": _show_palace()
 		"dev": _show_dev_menu()
@@ -1188,7 +1315,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.29.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.30.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

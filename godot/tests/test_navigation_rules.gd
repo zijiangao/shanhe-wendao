@@ -13,6 +13,10 @@ func _initialize() -> void:
 	assert(not bool(RULES.back_action("dialogue").allowed), "Back must not skip mandatory dialogue.")
 	assert(not bool(RULES.back_action("choice").allowed), "Back must not bypass a story choice.")
 	assert(not bool(RULES.back_action("defeat").allowed), "Defeat results require an explicit retry or retreat choice.")
+	assert(RULES.can_pause("battle") and RULES.can_pause("dialogue") and RULES.can_pause("training"), "Modal gameplay should expose the safe pause menu.")
+	assert(not RULES.can_pause("settings") and RULES.blocks_header_navigation("battle"), "Overlay pages should navigate back normally while battles block header bypasses.")
+	assert(not RULES.should_save_on_quit("menu", {"week": 1}), "Quitting from the startup menu must not overwrite an existing autosave with default memory state.")
+	assert(RULES.should_save_on_quit("location", {"week": 2}), "Quitting an active journey should request a safety save.")
 	assert(InputMap.has_action("ui_accept") and InputMap.has_action("ui_cancel"), "Godot UI confirm and cancel actions must be available for keyboard and controller navigation.")
 	assert(_has_joypad_event("ui_accept") and _has_joypad_event("ui_cancel"), "UI confirm and cancel should include joypad mappings.")
 	for action in ["ui_up", "ui_down", "ui_left", "ui_right"]:
