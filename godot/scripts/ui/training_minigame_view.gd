@@ -105,7 +105,7 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 		buttons[direction] = button
 		grid.add_child(button)
 	feedback_label = Label.new()
-	feedback_label.text = (last_feedback + "\n" if last_feedback != "" else "") + "方向键 / WASD / 手柄方向 / 点击按钮"
+	feedback_label.text = (last_feedback + "\n" if last_feedback != "" else "") + "方向键 / 自定义键位 / 手柄方向 / 点击按钮"
 	feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	feedback_label.add_theme_color_override("font_color", _quality_color(last_quality) if last_feedback != "" else Color("#aeb9b1"))
 	page.add_child(feedback_label)
@@ -166,12 +166,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		direction = "down"
 	elif event.is_action_pressed("ui_left"):
 		direction = "left"
-	elif event is InputEventKey and event.pressed and not event.echo:
-		match event.physical_keycode:
-			KEY_W: direction = "up"
-			KEY_D: direction = "right"
-			KEY_S: direction = "down"
-			KEY_A: direction = "left"
 	if direction != "":
 		get_viewport().set_input_as_handled()
 		direction_selected.emit(direction)

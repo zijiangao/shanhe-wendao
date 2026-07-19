@@ -1,7 +1,7 @@
 class_name NavigationRules
 extends RefCounted
 
-const OVERLAY_SCREENS := ["quests", "character", "achievements", "save", "settings", "credits", "dev"]
+const OVERLAY_SCREENS := ["quests", "character", "achievements", "save", "settings", "controls", "credits", "dev"]
 const PAUSABLE_SCREENS := ["map", "location", "dialogue", "choice", "palace", "battle", "victory", "defeat", "final_choice", "ending", "demo_complete", "training"]
 const MODAL_GAMEPLAY_SCREENS := ["dialogue", "choice", "battle", "defeat", "training", "pause"]
 

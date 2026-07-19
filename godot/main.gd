@@ -63,6 +63,7 @@ var training_streak: int = 0
 var training_best_streak: int = 0
 var training_last_quality: String = ""
 var active_training_view: TrainingMinigameView
+var rebinding_action: String = ""
 var pause_return_screen: String = "map"
 var pause_started_ms: int = 0
 var pause_save_ok: bool = true
@@ -403,6 +404,22 @@ func _save_store_capture(id: String) -> void:
 		push_error("Failed to save store screenshot: %s" % filename)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if screen == "controls" and rebinding_action != "" and event is InputEventKey and event.pressed and not event.echo:
+		var key_event := event as InputEventKey
+		if key_event.keycode == KEY_ESCAPE or key_event.physical_keycode == KEY_ESCAPE:
+			rebinding_action = ""
+			_rebuild()
+		else:
+			var keycode := int(key_event.physical_keycode if key_event.physical_keycode != 0 else key_event.keycode)
+			if SettingsManager.set_key_binding(rebinding_action, keycode):
+				rebinding_action = ""
+				AudioFeedback.play("confirm")
+				_rebuild()
+			else:
+				AudioFeedback.play("error")
+				_toast("该按键不能用于方向操作，请选择其他按键。")
+		get_viewport().set_input_as_handled()
+		return
 	if enemy_turn_active:
 		return
 	if not event.is_action_pressed("ui_cancel"):
@@ -678,6 +695,7 @@ func _rebuild() -> void:
 		"character": _show_character()
 		"save": _show_saves()
 		"settings": _show_settings()
+		"controls": _show_controls()
 		"achievements": _show_achievements()
 		"credits": _show_credits()
 		"battle": _show_battle()
@@ -1330,7 +1348,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.34.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.35.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1731,12 +1749,72 @@ func _show_settings() -> void:
 	hint.add_theme_color_override("font_color", Color("#526159"))
 	hint.add_theme_stylebox_override("normal", _box(Color("#ede5d5")))
 	panel.add_child(hint)
+	var utility_row := HBoxContainer.new()
+	utility_row.add_theme_constant_override("separation", 12)
+	panel.add_child(utility_row)
+	var controls := _action_button("键位设置", Color("#315746"))
+	controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	controls.pressed.connect(func(): previous_screen = "settings"; screen = "controls"; rebinding_action = ""; _rebuild())
+	utility_row.add_child(controls)
 	var reset := _action_button("恢复默认设置", Color("#806c4f"))
+	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reset.pressed.connect(func(): SettingsManager.data = SettingsManager.defaults(); SettingsManager.apply_settings(); SettingsManager.save_settings(); _rebuild())
-	panel.add_child(reset)
+	utility_row.add_child(reset)
 	var reset_tutorial := _action_button("重新显示新手引导", Color("#315746"))
 	reset_tutorial.pressed.connect(_reset_tutorial)
 	panel.add_child(reset_tutorial)
+
+func _show_controls() -> void:
+	_clear_content()
+	var backdrop := ColorRect.new()
+	backdrop.color = Color("#d8cfbd")
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(backdrop)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(250, 32)
+	panel.size = Vector2(780, 510)
+	panel.add_theme_constant_override("separation", 14)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "键 位 设 置"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", Color("#193128"))
+	panel.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "方向键与手柄方向始终可用；点击一项后按下新的键盘按键。重复键位会自动交换。"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.add_theme_color_override("font_color", Color("#526159"))
+	panel.add_child(subtitle)
+	var labels := {"ui_up": "向上 / 剑式上", "ui_right": "向右 / 剑式右", "ui_down": "向下 / 剑式下", "ui_left": "向左 / 剑式左"}
+	for action in SettingsManager.REBINDABLE_ACTIONS:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 18)
+		panel.add_child(row)
+		var action_label := Label.new()
+		action_label.text = str(labels[action])
+		action_label.custom_minimum_size.x = 280
+		action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		action_label.add_theme_font_size_override("font_size", 19)
+		action_label.add_theme_color_override("font_color", Color("#193128"))
+		row.add_child(action_label)
+		var binding := _action_button("请按新键…" if rebinding_action == action else SettingsManager.key_label(action), Color("#8b493b") if rebinding_action == action else Color("#315746"))
+		binding.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		binding.disabled = rebinding_action != "" and rebinding_action != action
+		binding.pressed.connect(func(): rebinding_action = str(action); _rebuild())
+		row.add_child(binding)
+	var hint := Label.new()
+	hint.text = "Esc 取消录入。Enter 与 Esc 保留给确认和返回，不能绑定。"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_color_override("font_color", Color("#526159"))
+	panel.add_child(hint)
+	var reset_keys := _action_button("恢复 WASD 默认键位", Color("#806c4f"))
+	reset_keys.pressed.connect(func(): rebinding_action = ""; SettingsManager.reset_key_bindings(); _rebuild())
+	panel.add_child(reset_keys)
+	var back := _action_button("返回设置", Color("#315746"))
+	back.pressed.connect(func(): rebinding_action = ""; screen = "settings"; previous_screen = "map"; _rebuild())
+	panel.add_child(back)
 
 func _add_volume_setting(parent: VBoxContainer, label_text: String, key: String) -> void:
 	var row := HBoxContainer.new()

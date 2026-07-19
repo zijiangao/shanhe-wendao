@@ -45,7 +45,7 @@ Train your martial arts, investigate the Black-Iron Token, and shape the fate of
 - 可操作同伴、武学熟练度与多种战斗目标
 - 影响构筑与长期路线的互斥战后奖励
 - 侠义、谋略、威势三种叙事倾向
-- 自动存档、多存档位、键鼠与手柄导航
+- 自动存档、多存档位、键盘重绑定、鼠标与手柄导航
 - 15 项覆盖主线、结局、修炼与工坊进度的 Steam 成就
 - 可独立关闭战斗震屏与命中闪光的反馈设置
 - 水墨武侠美术风格
@@ -108,4 +108,4 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 
 Only upload screenshots captured from the actual build. Do not substitute concept art or generated promotional scenes for gameplay screenshots.
 
-The reviewed 0.34.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.
+The reviewed 0.35.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.

@@ -15,6 +15,7 @@ func _capture() -> void:
 	var check_buttons := main_scene.find_children("*", "CheckButton", true, false)
 	var output_path := "user://settings_preview.png"
 	var result := main_scene.get_viewport().get_texture().get_image().save_png(output_path)
-	var valid: bool = result == OK and check_buttons.size() >= 3
+	var buttons: Array = main_scene.find_children("*", "Button", true, false)
+	var valid: bool = result == OK and check_buttons.size() >= 3 and buttons.any(func(button: Button): return button.text == "键位设置")
 	print("Settings preview saved to: %s" % ProjectSettings.globalize_path(output_path))
 	quit(0 if valid else 10)
