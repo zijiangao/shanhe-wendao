@@ -21,6 +21,7 @@ const DEMO_POLICY := preload("res://scripts/release/demo_policy.gd")
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const BATTLE_SCENE_SPEC := preload("res://scripts/battle/battle_scene_spec.gd")
 const STORE_CAPTURE_SPEC := preload("res://scripts/release/store_capture_spec.gd")
+const ONBOARDING_SPEC := preload("res://scripts/release/onboarding_spec.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
@@ -52,7 +53,9 @@ func _ready() -> void:
 	SteamService.achievement_unlocked.connect(_on_achievement_unlocked)
 	_build_shell()
 	_show_menu()
-	if "--verify-battle-presentation" in OS.get_cmdline_user_args():
+	if "--verify-onboarding-flow" in OS.get_cmdline_user_args():
+		call_deferred("_verify_onboarding_flow")
+	elif "--verify-battle-presentation" in OS.get_cmdline_user_args():
 		call_deferred("_verify_battle_presentation")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
 		call_deferred("_capture_store_screenshots")
@@ -110,7 +113,9 @@ func _capture_store_screenshots() -> void:
 	var battle: Dictionary = GameState.data.battle
 	battle.enemies[0].x = 1
 	battle.enemies[0].y = 1
-	BATTLE_ENGINE.player_action(battle, GameState.data, "skill", Vector2i(1, 1), RandomNumberGenerator.new())
+	var capture_rng := RandomNumberGenerator.new()
+	capture_rng.seed = STORE_CAPTURE_SPEC.RNG_SEED
+	BATTLE_ENGINE.player_action(battle, GameState.data, "skill", Vector2i(1, 1), capture_rng)
 	battle_mode = "inspect"
 	_rebuild()
 	await _save_store_capture("skill_impact")
@@ -176,6 +181,25 @@ func _verify_battle_presentation() -> void:
 	var valid := is_instance_valid(active_battle_view) and not active_battle_view.presentation_active
 	print("Battle presentation verification passed." if valid else "Battle presentation verification failed.")
 	get_tree().quit(0 if valid else 4)
+
+func _verify_onboarding_flow() -> void:
+	GameState.new_game()
+	screen = ONBOARDING_SPEC.NEW_GAME_SCREEN
+	_rebuild()
+	var initial_valid := screen == "location" and str(GameState.data.location) == "qingyun"
+	var qingyun_actions := _location_actions("qingyun")
+	var main_action_valid := qingyun_actions.any(func(action: Dictionary): return str(action.get("id", "")) == "master" and "主线" in str(action.get("text", "")))
+	_finish_dialogue_event("accept_mission")
+	screen = ONBOARDING_SPEC.OPENING_RETURN_SCREEN
+	var mission_valid := screen == "map" and str(GameState.data.quest_stage) == "investigate" and "黑苇渡" in _quest_objective()
+	GameState.data.location = "blackreed"
+	GameState.add_investigation("secret_route", "verification")
+	GameState.add_investigation("archer", "verification")
+	var blackreed_actions := _location_actions("blackreed")
+	var fight_unlocked := blackreed_actions.any(func(action: Dictionary): return str(action.get("id", "")) == "fight" and not bool(action.get("disabled", true)) and "主线" in str(action.get("text", "")))
+	var valid := initial_valid and main_action_valid and mission_valid and fight_unlocked
+	print("Onboarding flow verification passed." if valid else "Onboarding flow verification failed.")
+	get_tree().quit(0 if valid else 5)
 
 func _save_store_capture(id: String) -> void:
 	toast_label.text = ""
@@ -307,7 +331,7 @@ func _show_menu() -> void:
 	panel.add_child(subtitle)
 
 	var new_button := _action_button("开启新的江湖", Color("#9f4032"))
-	new_button.pressed.connect(func(): GameState.new_game(); SaveManager.save_auto(); _switch_screen("map"))
+	new_button.pressed.connect(_start_new_game)
 	panel.add_child(new_button)
 
 	var continue_button := _action_button("继续自动存档", Color("#315746"))
@@ -334,6 +358,12 @@ func _switch_screen(next: String) -> void:
 	if next in NAVIGATION_RULES.OVERLAY_SCREENS:
 		previous_screen = screen
 	screen = next
+	_rebuild()
+
+func _start_new_game() -> void:
+	GameState.new_game()
+	SaveManager.save_auto()
+	screen = ONBOARDING_SPEC.NEW_GAME_SCREEN
 	_rebuild()
 
 func _rebuild() -> void:
@@ -430,7 +460,7 @@ func _show_location() -> void:
 func _location_actions(location_id: String) -> Array:
 	if location_id == "qingyun":
 		return [
-			{"id": "master", "text": "正殿 · 拜见师父", "x": 90, "y": 155},
+			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
 			{"id": "train", "text": "演武场 · 修炼", "x": 420, "y": 205},
 			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
 			{"id": "map", "text": "山门 · 返回舆图", "x": 910, "y": 420}
@@ -438,10 +468,10 @@ func _location_actions(location_id: String) -> Array:
 	if location_id == "blackreed":
 		var ready: bool = GameState.data.investigations.size() >= 2
 		return [
-			{"id": "fisher", "text": "渡口 · 已询问" if "secret_route" in GameState.data.investigations else "渡口 · 询问渔民", "x": 70, "y": 170, "disabled": "secret_route" in GameState.data.investigations},
-			{"id": "tracks", "text": "芦荡 · 已调查" if "archer" in GameState.data.investigations else "芦荡 · 搜寻脚印", "x": 365, "y": 245, "disabled": "archer" in GameState.data.investigations},
+			{"id": "fisher", "text": "渡口 · 已取得水路线索" if "secret_route" in GameState.data.investigations else "线索 1/2 · 询问渔民", "x": 70, "y": 170, "disabled": "secret_route" in GameState.data.investigations},
+			{"id": "tracks", "text": "芦荡 · 已识破弓手" if "archer" in GameState.data.investigations else "线索 2/2 · 搜寻箭痕", "x": 365, "y": 245, "disabled": "archer" in GameState.data.investigations},
 			{"id": "herbs", "text": "破船 · 已搜寻" if "herbs" in GameState.data.investigations else "破船 · 搜寻物资", "x": 685, "y": 330, "disabled": "herbs" in GameState.data.investigations},
-			{"id": "fight", "text": "寨门 · 发起战斗" if ready else "寨门 · 尚需两条线索", "x": 930, "y": 150, "disabled": not ready},
+			{"id": "fight", "text": "寨门 · 主线：攻入山寨" if ready else "寨门 · 尚需两条线索", "x": 930, "y": 150, "disabled": not ready},
 			{"id": "map", "text": "渡口 · 返回舆图", "x": 930, "y": 430}
 		]
 	if location_id == "huashan":
@@ -484,8 +514,8 @@ func _location_action_requested(action_id: String) -> void:
 				_toast(_time_action_failure_message())
 			_rebuild()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
-		"fisher": _start_dialogue("clue_fisher", [["老渔翁", "夜里总有船避开灯火，往北面的芦荡去。"], ["沈羽", "暗道入口应当就在水边。"]])
-		"tracks": _start_dialogue("clue_tracks", [["沈羽", "脚印一深一浅，还有箭羽留下的刮痕。"], ["沈羽", "寨中藏有弓手，交战时需先行提防。"]])
+		"fisher": _start_dialogue("clue_fisher", ONBOARDING_SPEC.dialogue_for("clue_fisher"))
+		"tracks": _start_dialogue("clue_tracks", ONBOARDING_SPEC.dialogue_for("clue_tracks"))
 		"herbs": _start_dialogue("clue_herbs", [["沈羽", "船舱里还有未受潮的金疮药，可以先处理伤势。"]])
 		"fight": _begin_blackreed_battle()
 		"gate": _start_dialogue("luoyang_gate", [["守城军士", "近日太守府戒备森严，夜里还有禁军出入。"], ["沈羽", "玄铁令的消息恐怕已经传进官府。"]])
@@ -516,7 +546,7 @@ func _add_scene_action(text_value: String, at: Vector2, callback: Callable) -> B
 
 func _qingyun_master_event() -> void:
 	match str(GameState.data.quest_stage):
-		"meet_master": _start_dialogue("accept_mission", [["顾长风", "黑苇渡商旅失踪，官府却闭口不谈。你入门虽短，心性尚可，便下山查一查。"], ["沈羽", "弟子领命。若此事牵涉江湖势力，定会留下线索。"], ["顾长风", "记住，先察后动。剑快不如眼明。"]])
+		"meet_master": _start_dialogue("accept_mission", ONBOARDING_SPEC.OPENING_DIALOGUE, ONBOARDING_SPEC.OPENING_RETURN_SCREEN)
 		"return_master": _start_dialogue("finish_chapter", [["沈羽", "弟子在寨主身上取得玄铁令，背后似与厉千秋有关。"], ["顾长风", "此令牵涉洛阳旧案。你先养伤，随后持令前往洛阳白马寺。"], ["沈羽", "弟子明白。"]])
 		_: _start_dialogue("master_chat", [["顾长风", "江湖路远，莫忘入门时的本心。"]])
 
@@ -1396,6 +1426,7 @@ func _show_battle() -> void:
 	var battle: Dictionary = GameState.data.battle
 	last_battle_id = str(battle.get("battle_id", "blackreed"))
 	var scene_style := BATTLE_SCENE_SPEC.scene_for(last_battle_id)
+	scene_style.static_capture = store_capture_active
 	var view: TacticalBattleView = TACTICAL_BATTLE_VIEW.instantiate()
 	active_battle_view = view
 	content.add_child(view)

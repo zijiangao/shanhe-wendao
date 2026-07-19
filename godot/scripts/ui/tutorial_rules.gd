@@ -18,12 +18,12 @@ static func content(step: String, objective: String) -> Dictionary:
 		"map":
 			return {
 				"title": "初入江湖 · 天下舆图",
-				"body": "当前目标：%s\n\n选择地点后可前往或进入当前地点。旅行和修炼会消耗周数，右上角可查看剩余时间。" % objective
+				"body": "当前目标：%s\n\n选择黑苇渡即可直接启程。旅行和修炼会消耗周数，右上角可查看剩余时间。" % objective
 			}
 		"location":
 			return {
 				"title": "场景行动",
-				"body": "当前目标：%s\n\n点击场景中的人物或地点推进主线。如果不清楚下一步，可随时打开顶部“任务”。" % objective
+				"body": "当前目标：%s\n\n先点击带“主线”标记的正殿。演武场和藏经阁是可选准备，不会阻挡剧情。" % objective
 			}
 		"battle":
 			return {

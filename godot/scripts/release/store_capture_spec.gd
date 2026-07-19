@@ -3,6 +3,7 @@ extends RefCounted
 
 const OUTPUT_SIZE := Vector2i(1920, 1080)
 const OUTPUT_DIRECTORY := "user://store_screenshots"
+const RNG_SEED := 20260719
 const SHOTS := [
 	{"id": "world_map", "filename": "01-world-map.png"},
 	{"id": "blackreed_investigation", "filename": "02-blackreed-investigation.png"},

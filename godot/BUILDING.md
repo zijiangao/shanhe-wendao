@@ -23,6 +23,7 @@ $tests = @(
     "test_location_art.gd",
     "test_release_credits.gd",
     "test_store_capture_spec.gd",
+    "test_onboarding_spec.gd",
     "test_navigation_rules.gd",
     "test_tutorial_rules.gd",
     "test_cue_synth.gd",
@@ -42,6 +43,12 @@ The main scene also provides a release presentation verifier. It instantiates th
 
 ```powershell
 & $godot --headless --path $project -- --verify-battle-presentation
+```
+
+The onboarding verifier checks the shipping new-game route from Qingyun mission acceptance through unlocking the first Blackreed battle:
+
+```powershell
+& $godot --headless --path $project -- --verify-onboarding-flow
 ```
 
 ## Export Windows Release

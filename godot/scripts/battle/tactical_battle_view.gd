@@ -40,7 +40,9 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	turn_banner.add_theme_color_override("font_color", Color("#d9f2e5"))
 	turn_banner.add_theme_stylebox_override("normal", _box(Color(str(scene_style.get("accent", "#27604b")))))
 	add_child(turn_banner)
-	_animate_turn_banner(turn_banner)
+	var static_capture := bool(scene_style.get("static_capture", false))
+	if not static_capture:
+		_animate_turn_banner(turn_banner)
 
 	var board := GridContainer.new()
 	board.columns = 8
@@ -82,7 +84,8 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		effect_label.add_theme_color_override("font_color", Color("#fff0a8"))
 		effect_label.add_theme_stylebox_override("normal", _box(Color("#a33127e8") if effect.type == "damage" else Color("#315f4be8")))
 		add_child(effect_label)
-		_animate_impact(effect_label, str(effect.get("type", "damage")) == "damage")
+		if not static_capture:
+			_animate_impact(effect_label, str(effect.get("type", "damage")) == "damage")
 	if battle.has("skill_flash") and bool(battle.skill_flash):
 		var skill_name := Label.new()
 		skill_name.position = Vector2(250, 260)
@@ -95,7 +98,8 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		skill_name.add_theme_color_override("font_color", Color("#fff2bd"))
 		skill_name.add_theme_stylebox_override("normal", _box(Color("#315f4be8")))
 		add_child(skill_name)
-		_animate_skill_name(skill_name)
+		if not static_capture:
+			_animate_skill_name(skill_name)
 
 	var side := PanelContainer.new()
 	side.position = Vector2(840, 60)
