@@ -115,9 +115,9 @@ func start_blackreed_battle() -> bool:
 		"result": "寨主率两名喽啰封住渡口。每回合有两个行动点。",
 		"blocked": [[3, 1], [3, 2], [5, 4]],
 		"enemies": [
-			{"name": "黑苇寨主", "hp": 34, "max_hp": 34, "attack": 7, "x": 6, "y": 2},
-			{"name": "持刀喽啰", "hp": 16, "max_hp": 16, "attack": 4, "x": 6, "y": 4},
-			{"name": "弓手喽啰", "hp": 13, "max_hp": 13, "attack": 4, "x": 5, "y": 0}
+			{"name": "黑苇寨主", "role": "brute", "hp": 34, "max_hp": 34, "attack": 7, "range": 1, "x": 6, "y": 2},
+			{"name": "持刀喽啰", "role": "melee", "hp": 16, "max_hp": 16, "attack": 4, "range": 1, "x": 6, "y": 4},
+			{"name": "弓手喽啰", "role": "archer", "hp": 13, "max_hp": 13, "attack": 4, "range": 4, "x": 5, "y": 0}
 		]
 	}
 	battle_started.emit()
@@ -142,8 +142,8 @@ func start_huashan_trial_battle() -> bool:
 		"blocked": [[3, 1], [4, 4]],
 		"ally": {"name": "林清霜", "hp": 30, "max_hp": 30, "qi": 15, "max_qi": 15, "attack": 5, "guard": 0, "x": 1, "y": 4},
 		"enemies": [
-			{"name": "华山剑侍", "hp": 22, "max_hp": 22, "attack": 5, "x": 6, "y": 1},
-			{"name": "守擂弟子", "hp": 25, "max_hp": 25, "attack": 6, "x": 6, "y": 4}
+			{"name": "华山剑侍", "role": "duelist", "hp": 22, "max_hp": 22, "attack": 5, "range": 1, "x": 6, "y": 1},
+			{"name": "守擂弟子", "role": "melee", "hp": 25, "max_hp": 25, "attack": 6, "range": 1, "x": 6, "y": 4}
 		]
 	}
 	battle_started.emit()
@@ -265,6 +265,8 @@ func _valid_battle(value: Variant) -> bool:
 	for enemy in battle.enemies:
 		if typeof(enemy) != TYPE_DICTIONARY or not enemy.has("hp") or not enemy.has("x") or not enemy.has("y"):
 			return false
+		var default_range := 4 if "弓手" in str(enemy.get("name", "")) else 1
+		enemy.range = maxi(1, int(enemy.get("range", default_range)))
 		if int(enemy.x) < 0 or int(enemy.x) >= width or int(enemy.y) < 0 or int(enemy.y) >= height:
 			return false
 	return true

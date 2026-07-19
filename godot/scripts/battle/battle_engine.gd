@@ -101,8 +101,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		var target: Vector2i = target_data.position
 		var target_is_ally: bool = target_data.is_ally
 		var enemy_position := Vector2i(int(enemy.x), int(enemy.y))
-		var distance := _distance(enemy_position, target)
-		if distance == 1:
+		if RULES.can_enemy_attack(battle, enemy, target):
 			var hurt := int(enemy.attack) + _roll_bonus(rng)
 			if target_is_ally:
 				var blocked := mini(hurt, int(battle.ally.guard))
@@ -136,17 +135,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 	}
 
 static func select_target(battle: Dictionary, enemy: Dictionary) -> Dictionary:
-	var enemy_position := Vector2i(int(enemy.x), int(enemy.y))
-	var target := Vector2i(int(battle.player_x), int(battle.player_y))
-	var target_is_ally := false
-	var distance := _distance(enemy_position, target)
-	if battle.has("ally") and int(battle.ally.hp) > 0:
-		var ally_target := Vector2i(int(battle.ally.x), int(battle.ally.y))
-		var ally_distance := _distance(enemy_position, ally_target)
-		if ally_distance < distance:
-			target = ally_target
-			target_is_ally = true
-	return {"position": target, "is_ally": target_is_ally}
+	return RULES.enemy_target(battle, enemy)
 
 static func _distance(from: Vector2i, to: Vector2i) -> int:
 	return absi(from.x - to.x) + absi(from.y - to.y)

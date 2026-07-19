@@ -35,5 +35,10 @@ func _initialize() -> void:
 	assert(state.data.location == "qingyun" and state.data.log.is_empty(), "Invalid location and log data should be repaired.")
 	assert(state.data.battle.is_empty(), "Incomplete battle data should be discarded.")
 
+	var legacy_battle_save: Dictionary = state.data.duplicate(true)
+	legacy_battle_save.battle = {"width": 4, "height": 3, "player_x": 0, "player_y": 1, "ap": 2, "turn": 1, "blocked": [], "enemies": [{"name": "弓手喽啰", "hp": 10, "x": 3, "y": 1}]}
+	assert(state.import_data(legacy_battle_save), "A structurally valid legacy battle should migrate.")
+	assert(int(state.data.battle.enemies[0].range) == 4, "Legacy archer saves should recover their ranged attack distance.")
+
 	print("GameState tests passed.")
 	quit()

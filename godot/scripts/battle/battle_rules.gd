@@ -47,8 +47,45 @@ static func can_attack_cell(battle: Dictionary, cell: Vector2i, skill: bool, her
 	var delta := cell - active_position(battle)
 	var distance := absi(delta.x) + absi(delta.y)
 	if skill:
-		return str(battle.get("active_unit", "hero")) != "ally" and distance <= 3 and (delta.x == 0 or delta.y == 0) and hero_qi >= 8
+		return str(battle.get("active_unit", "hero")) != "ally" and distance <= 3 and hero_qi >= 8 and has_clear_line(battle, active_position(battle), cell)
 	return distance == 1
+
+static func can_enemy_attack(battle: Dictionary, enemy: Dictionary, target: Vector2i) -> bool:
+	var origin := Vector2i(int(enemy.x), int(enemy.y))
+	var distance := absi(target.x - origin.x) + absi(target.y - origin.y)
+	var attack_range := maxi(1, int(enemy.get("range", 1)))
+	if distance > attack_range:
+		return false
+	return distance == 1 or has_clear_line(battle, origin, target)
+
+static func enemy_target(battle: Dictionary, enemy: Dictionary) -> Dictionary:
+	var enemy_position := Vector2i(int(enemy.x), int(enemy.y))
+	var hero_target := Vector2i(int(battle.player_x), int(battle.player_y))
+	var best := {"position": hero_target, "is_ally": false, "name": "沈羽"}
+	if not battle.has("ally") or int(battle.ally.hp) <= 0:
+		return best
+	var ally_target := Vector2i(int(battle.ally.x), int(battle.ally.y))
+	var hero_attackable := can_enemy_attack(battle, enemy, hero_target)
+	var ally_attackable := can_enemy_attack(battle, enemy, ally_target)
+	if ally_attackable and not hero_attackable:
+		return {"position": ally_target, "is_ally": true, "name": str(battle.ally.name)}
+	if hero_attackable and not ally_attackable:
+		return best
+	if absi(ally_target.x - enemy_position.x) + absi(ally_target.y - enemy_position.y) < absi(hero_target.x - enemy_position.x) + absi(hero_target.y - enemy_position.y):
+		return {"position": ally_target, "is_ally": true, "name": str(battle.ally.name)}
+	return best
+
+static func has_clear_line(battle: Dictionary, from: Vector2i, to: Vector2i) -> bool:
+	var delta := to - from
+	if delta.x != 0 and delta.y != 0:
+		return false
+	var direction := Vector2i(signi(delta.x), signi(delta.y))
+	var steps := absi(delta.x) + absi(delta.y)
+	for step in range(1, steps):
+		var cursor := from + direction * step
+		if is_blocked(battle, cursor) or is_occupied(battle, cursor):
+			return false
+	return true
 
 static func can_frost_dash(battle: Dictionary, cell: Vector2i) -> bool:
 	if str(battle.get("active_unit", "hero")) != "ally" or enemy_at(battle, cell) < 0 or int(battle.ally.qi) < 6:
@@ -88,15 +125,9 @@ static func enemy_preview(battle: Dictionary) -> String:
 	for enemy in battle.enemies:
 		if int(enemy.hp) <= 0:
 			continue
-		var target_name := "沈羽"
-		var target := Vector2i(int(battle.player_x), int(battle.player_y))
-		var distance := absi(int(enemy.x) - target.x) + absi(int(enemy.y) - target.y)
-		if battle.has("ally") and int(battle.ally.hp) > 0:
-			var ally_target := Vector2i(int(battle.ally.x), int(battle.ally.y))
-			var ally_distance := absi(int(enemy.x) - ally_target.x) + absi(int(enemy.y) - ally_target.y)
-			if ally_distance < distance:
-				target = ally_target
-				distance = ally_distance
-				target_name = str(battle.ally.name)
-		lines.append("· %s：%s%s" % [enemy.name, "准备攻击" if distance == 1 else "向", target_name if distance == 1 else target_name + "接近"])
+		var target_data := enemy_target(battle, enemy)
+		var target: Vector2i = target_data.position
+		var target_name: String = target_data.name
+		var can_attack := can_enemy_attack(battle, enemy, target)
+		lines.append("· %s：%s%s" % [enemy.name, "准备远程攻击" if can_attack and int(enemy.get("range", 1)) > 1 else ("准备攻击" if can_attack else "向"), target_name if can_attack else target_name + "接近"])
 	return "\n".join(lines)

@@ -8,6 +8,7 @@ func _initialize() -> void:
 	_test_player_skills_and_resources()
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
+	_test_ranged_enemy_attack_and_cover()
 	_test_enemy_movement_and_turn_reset()
 	_test_guard_and_ally_knockout()
 	_test_hero_defeat()
@@ -41,6 +42,8 @@ func _test_player_skills_and_resources() -> void:
 	battle.ap = 2
 	battle.enemies[0].x = 1
 	battle.enemies[0].y = 4
+	battle.ally.x = 0
+	battle.ally.y = 3
 	var player := _player_fixture()
 	var cloud: Dictionary = ENGINE.player_action(battle, player, "skill", Vector2i(1, 4), _seeded_rng())
 	assert(bool(cloud.ok) and int(player.qi) == 12, "Flowing Cloud Sword should consume eight qi.")
@@ -96,6 +99,25 @@ func _test_complete_battle_simulation() -> void:
 		rounds += 1
 	assert(ENGINE.is_victory(battle) and hero_hp > 0, "A complete battle should be simulatable without any UI nodes.")
 
+func _test_ranged_enemy_attack_and_cover() -> void:
+	var battle := _fixture()
+	battle.erase("ally")
+	battle.enemies[0].x = 5
+	battle.enemies[0].y = 1
+	battle.enemies[0].range = 4
+	var exposed: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
+	assert(int(exposed.hero_hp) < 20, "A ranged enemy should damage a visible target without moving adjacent.")
+
+	battle = _fixture()
+	battle.erase("ally")
+	battle.enemies[0].x = 5
+	battle.enemies[0].y = 1
+	battle.enemies[0].range = 4
+	battle.blocked = [[3, 1]]
+	var covered: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
+	assert(int(covered.hero_hp) == 20, "Cover should prevent a ranged enemy from dealing damage.")
+	assert(Vector2i(int(battle.enemies[0].x), int(battle.enemies[0].y)) != Vector2i(5, 1), "A ranged enemy without line of sight should reposition.")
+
 func _test_enemy_movement_and_turn_reset() -> void:
 	var battle := _fixture()
 	var outcome: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
@@ -138,7 +160,7 @@ func _fixture() -> Dictionary:
 		"blocked": [],
 		"result": "",
 		"ally": {"name": "林清霜", "hp": 30, "guard": 0, "qi": 15, "max_qi": 15, "attack": 5, "x": 1, "y": 3},
-		"enemies": [{"name": "剑客", "hp": 10, "attack": 8, "x": 4, "y": 1}]
+		"enemies": [{"name": "剑客", "hp": 10, "attack": 8, "range": 1, "x": 4, "y": 1}]
 	}
 
 func _player_fixture() -> Dictionary:

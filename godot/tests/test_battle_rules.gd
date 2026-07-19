@@ -20,10 +20,24 @@ func _initialize() -> void:
 	assert(RULES.can_attack_cell(battle, Vector2i(1, 0), false, 0), "Normal attacks should hit adjacent enemies.")
 	battle.enemies[0].x = 1
 	battle.enemies[0].y = 4
+	battle.ally.x = 0
+	battle.ally.y = 2
 	assert(RULES.can_attack_cell(battle, Vector2i(1, 4), true, 8), "Hero skills should hit aligned enemies within three cells.")
 	assert(not RULES.can_attack_cell(battle, Vector2i(1, 4), true, 7), "Hero skills should enforce their qi cost.")
+	battle.blocked.append([1, 2])
+	assert(not RULES.can_attack_cell(battle, Vector2i(1, 4), true, 8), "Skills should not pass through blocked terrain.")
+	battle.blocked.clear()
+	battle.enemies[0].x = 5
+	battle.enemies[0].y = 1
+	battle.enemies[0].range = 4
+	assert(RULES.can_enemy_attack(battle, battle.enemies[0], Vector2i(1, 1)), "A ranged enemy should attack along a clear line within range.")
+	battle.blocked.append([3, 1])
+	assert(not RULES.can_enemy_attack(battle, battle.enemies[0], Vector2i(1, 1)), "Terrain should block ranged enemy attacks.")
+	battle.blocked.clear()
 
 	battle.active_unit = "ally"
+	battle.ally.x = 1
+	battle.ally.y = 2
 	battle.enemies[0].x = 3
 	battle.enemies[0].y = 2
 	assert(RULES.can_frost_dash(battle, Vector2i(3, 2)), "The ally dash should reach an enemy within two path steps.")
@@ -34,6 +48,7 @@ func _initialize() -> void:
 	battle.ally.y = 2
 	battle.enemies[0].x = 4
 	battle.enemies[0].y = 2
+	battle.enemies[0].range = 1
 	var preview: String = RULES.enemy_preview(battle)
 	assert("准备攻击林清霜" in preview, "Enemy previews should identify the nearest target.")
 
@@ -50,7 +65,7 @@ func _fixture() -> Dictionary:
 		"blocked": [[2, 1]],
 		"ally": {"name": "林清霜", "hp": 30, "qi": 15, "x": 1, "y": 2},
 		"enemies": [
-			{"name": "剑客", "hp": 10, "x": 4, "y": 1},
-			{"name": "败兵", "hp": 0, "x": 4, "y": 3}
+			{"name": "剑客", "hp": 10, "range": 1, "x": 4, "y": 1},
+			{"name": "败兵", "hp": 0, "range": 1, "x": 4, "y": 3}
 		]
 	}
