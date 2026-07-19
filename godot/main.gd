@@ -59,7 +59,7 @@ func _build_shell() -> void:
 	brand.add_theme_color_override("font_color", Color("#eadfc7"))
 	header.add_child(brand)
 
-	for pair in [["天下舆图", "map"], ["任务", "quests"], ["人物", "character"], ["存档", "save"]]:
+	for pair in [["天下舆图", "map"], ["任务", "quests"], ["人物", "character"], ["存档", "save"], ["设置", "settings"]]:
 		var button := Button.new()
 		button.text = pair[0]
 		button.flat = true
@@ -165,6 +165,7 @@ func _rebuild() -> void:
 		"dev": _show_dev_menu()
 		"character": _show_character()
 		"save": _show_saves()
+		"settings": _show_settings()
 		"battle": _show_battle()
 		"victory": _show_victory()
 	_update_status()
@@ -847,6 +848,91 @@ func _show_character() -> void:
 	mastery.add_theme_font_size_override("font_size", 15)
 	mastery.add_theme_color_override("font_color", Color("#cfc8b8"))
 	info.add_child(mastery)
+
+func _show_settings() -> void:
+	_clear_content()
+	var backdrop := ColorRect.new()
+	backdrop.color = Color("#d8cfbd")
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(backdrop)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(300, 28)
+	panel.size = Vector2(680, 520)
+	panel.add_theme_constant_override("separation", 12)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "设 置"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", Color("#193128"))
+	panel.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "设置会立即生效，并独立于游戏存档保存。"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_color_override("font_color", Color("#526159"))
+	panel.add_child(subtitle)
+	_add_volume_setting(panel, "主音量", "master_volume")
+	_add_volume_setting(panel, "音乐音量", "music_volume")
+	_add_volume_setting(panel, "音效音量", "sfx_volume")
+
+	var display_row := HBoxContainer.new()
+	display_row.add_theme_constant_override("separation", 18)
+	panel.add_child(display_row)
+	var fullscreen := CheckButton.new()
+	fullscreen.text = "全屏显示"
+	fullscreen.button_pressed = bool(SettingsManager.data.fullscreen)
+	fullscreen.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	fullscreen.add_theme_font_size_override("font_size", 18)
+	fullscreen.toggled.connect(func(enabled: bool): SettingsManager.update_setting("fullscreen", enabled))
+	display_row.add_child(fullscreen)
+	var scale_label := Label.new()
+	scale_label.text = "界面缩放"
+	scale_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	scale_label.add_theme_font_size_override("font_size", 18)
+	display_row.add_child(scale_label)
+	var scale_options := OptionButton.new()
+	for scale in SettingsManager.UI_SCALES:
+		scale_options.add_item("%d%%" % int(float(scale) * 100.0))
+		if is_equal_approx(float(scale), float(SettingsManager.data.ui_scale)):
+			scale_options.selected = scale_options.item_count - 1
+	scale_options.item_selected.connect(func(index: int): SettingsManager.update_setting("ui_scale", SettingsManager.UI_SCALES[index]))
+	display_row.add_child(scale_options)
+
+	var hint := Label.new()
+	hint.text = "推荐 Steam Deck 使用 115% 或 130% 界面缩放。后续加入的音乐与音效会分别接入当前音量通道。"
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_color_override("font_color", Color("#526159"))
+	hint.add_theme_stylebox_override("normal", _box(Color("#ede5d5")))
+	panel.add_child(hint)
+	var reset := _action_button("恢复默认设置", Color("#806c4f"))
+	reset.pressed.connect(func(): SettingsManager.data = SettingsManager.defaults(); SettingsManager.apply_settings(); SettingsManager.save_settings(); _rebuild())
+	panel.add_child(reset)
+
+func _add_volume_setting(parent: VBoxContainer, label_text: String, key: String) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	parent.add_child(row)
+	var label := Label.new()
+	label.text = label_text
+	label.custom_minimum_size.x = 120
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color("#193128"))
+	row.add_child(label)
+	var slider := HSlider.new()
+	slider.min_value = 0
+	slider.max_value = 100
+	slider.step = 1
+	slider.value = float(SettingsManager.data.get(key, 0.8)) * 100.0
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.value_changed.connect(func(value: float): SettingsManager.update_setting(key, value / 100.0))
+	row.add_child(slider)
+	var value_label := Label.new()
+	value_label.text = "%d%%" % int(slider.value)
+	value_label.custom_minimum_size.x = 60
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	slider.value_changed.connect(func(value: float): value_label.text = "%d%%" % int(value))
+	row.add_child(value_label)
 
 func _show_saves() -> void:
 	_clear_content()
