@@ -49,6 +49,9 @@ static func is_valid_discipline(id: String) -> bool:
 static func weekly_focus(week: int) -> String:
 	return str(WEEKLY_FOCUS_ORDER[posmod(maxi(1, week) - 1, WEEKLY_FOCUS_ORDER.size())])
 
+static func discipline_short_name(discipline: String) -> String:
+	return str(DISCIPLINES.get(discipline, {}).get("title", discipline)).split(" · ")[0]
+
 static func specialty_rank_index(level: int) -> int:
 	var result := 0
 	for index in range(SPECIALTY_RANKS.size()):

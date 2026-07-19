@@ -132,6 +132,7 @@ func _verify_training_flow() -> void:
 			await get_tree().create_timer(0.25).timeout
 	var valid := screen == "training" and str(training_result.get("grade", "")) == "S"
 	valid = valid and int(training_result.get("score", 0)) == 315 and int(training_result.get("best_streak", 0)) == 3
+	valid = valid and bool(training_result.get("weekly_focus", false)) and int(training_result.get("weekly_focus_bonus", 0)) == TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS
 	valid = valid and int(GameState.data.swordsmanship) == 3 and int(GameState.data.week) == start_week + 1
 	print("Training flow verification passed." if valid else "Training flow verification failed.")
 	get_tree().quit(0 if valid else 14)
@@ -787,9 +788,10 @@ func _show_location() -> void:
 
 func _location_actions(location_id: String) -> Array:
 	if location_id == "qingyun":
+		var weekly_focus_name := TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week)))
 		return [
 			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
-			{"id": "train", "text": "演武场 · 修炼", "x": 420, "y": 205},
+			{"id": "train", "text": "演武场 · 本周%s" % weekly_focus_name, "x": 420, "y": 205},
 			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
 			{"id": "workshop", "text": "工坊 · 炼药与锻造", "x": 710, "y": 330},
 			{"id": "map", "text": "山门 · 返回舆图", "x": 910, "y": 420}
@@ -1363,7 +1365,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.44.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.45.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1619,7 +1621,7 @@ func _show_character() -> void:
 	specialty_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(specialty_title)
 	var specialties := Label.new()
-	specialties.text = "剑法 %d·%s  ·  刀法 %d·%s  ·  采药 %d·%s  ·  挖矿 %d·%s\n修炼战绩：%s\n剑法强化流云剑法，刀法强化普通攻击；采集精通后提高材料产量。" % [GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining)), TRAINING_RULES.records_text(GameState.data.training_records)]
+	specialties.text = "本周专精：%s（完成额外修为 +%d）\n剑法 %d·%s  ·  刀法 %d·%s  ·  采药 %d·%s  ·  挖矿 %d·%s\n修炼战绩：%s\n剑法强化流云剑法，刀法强化普通攻击；采集精通后提高材料产量。" % [TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week))), TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS, GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining)), TRAINING_RULES.records_text(GameState.data.training_records)]
 	specialties.add_theme_font_size_override("font_size", 15)
 	specialties.add_theme_color_override("font_color", Color("#f4eee2"))
 	specialties.add_theme_stylebox_override("normal", _box(Color("#223a30")))

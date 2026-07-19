@@ -5,6 +5,7 @@ const RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 func _init() -> void:
 	assert(RULES.options().size() == 4, "Training should offer four distinct specialties.")
 	assert(RULES.weekly_focus(1) == "swordsmanship" and RULES.weekly_focus(4) == "mining" and RULES.weekly_focus(5) == "swordsmanship", "Weekly training focus should rotate deterministically across all disciplines.")
+	assert(RULES.discipline_short_name("herbalism") == "采药", "Weekly-focus labels should reuse the shipping discipline names.")
 	assert(RULES.specialty_rank_name(0) == "初学" and RULES.specialty_rank_name(3) == "熟手", "Early specialty thresholds should have stable names.")
 	assert(RULES.specialty_rank_name(6) == "精通" and RULES.specialty_rank_name(10) == "大成", "Advanced specialty thresholds should have stable names.")
 	assert(RULES.next_specialty_level(5) == 6 and RULES.next_specialty_level(10) == -1, "Specialty progress should expose the next threshold and cap cleanly.")
