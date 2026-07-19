@@ -4,6 +4,7 @@ const RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 
 func _init() -> void:
 	assert(RULES.options().size() == 4, "Training should offer four distinct specialties.")
+	assert(RULES.weekly_focus(1) == "swordsmanship" and RULES.weekly_focus(4) == "mining" and RULES.weekly_focus(5) == "swordsmanship", "Weekly training focus should rotate deterministically across all disciplines.")
 	assert(RULES.specialty_rank_name(0) == "初学" and RULES.specialty_rank_name(3) == "熟手", "Early specialty thresholds should have stable names.")
 	assert(RULES.specialty_rank_name(6) == "精通" and RULES.specialty_rank_name(10) == "大成", "Advanced specialty thresholds should have stable names.")
 	assert(RULES.next_specialty_level(5) == 6 and RULES.next_specialty_level(10) == -1, "Specialty progress should expose the next threshold and cap cleanly.")
@@ -11,8 +12,9 @@ func _init() -> void:
 	assert(RULES.cloud_qi_cost(9) == 8 and RULES.cloud_qi_cost(10) == 6, "Sword mastery should reduce Flowing Cloud Sword's qi cost only at level ten.")
 	assert(RULES.attack_exposure_gain(9) == 1 and RULES.attack_exposure_gain(10) == 2, "Blade mastery should double normal-attack exposure at level ten.")
 	assert(RULES.medicine_mastery_bonus(10) == 5 and RULES.tempering_silver_discount(10) == 3, "Gathering mastery should expose stable medicine and forging perks.")
-	var ranked_options := RULES.options({"swordsmanship": 3, "mining": 10})
+	var ranked_options := RULES.options({"week": 2, "swordsmanship": 3, "mining": 10})
 	assert("熟手 3级" in str(ranked_options[0][1]) and "已达大成" in str(ranked_options[3][1]), "Training choices should explain current rank and next milestone.")
+	assert("本周专精" not in str(ranked_options[0][1]) and "本周专精 · 额外修为 +3" in str(ranked_options[1][1]), "Only the rotating weekly focus should advertise its cultivation bonus.")
 	assert(RULES.MAX_TOTAL_SCORE == 315, "The displayed maximum must match three perfect rounds plus capped streak bonuses.")
 	assert(RULES.score_round(true, 500) == 100, "Fast correct reactions should earn full points.")
 	assert(RULES.score_round(true, 1200) == 70, "Slower correct reactions should receive partial points.")
@@ -24,6 +26,10 @@ func _init() -> void:
 	var mining := RULES.outcome("mining", 180)
 	assert(mining.grade == "B" and mining.silver == 5 and mining.ore == 1, "Mining currency and ore output should scale with the grade.")
 	assert(RULES.outcome("invalid", 300).is_empty(), "Unknown specialties must be rejected.")
+	var focus_reward := RULES.outcome("swordsmanship", 180)
+	focus_reward.weekly_focus_bonus = 3
+	focus_reward.xp = int(focus_reward.xp) + 3
+	assert("本周专精 +3修为" in RULES.reward_text(focus_reward), "Training rewards should make the weekly bonus explicit.")
 	var records := RULES.empty_records()
 	var first_record := RULES.record_attempt(records, "swordsmanship", 315, 3)
 	assert(first_record.new_best and first_record.best_score == 315 and first_record.best_grade == "S" and first_record.attempts == 1, "A first training attempt should establish an exact personal best up to the combo maximum.")

@@ -6,6 +6,8 @@ const COMBO_SCORE_THRESHOLD := 85
 const COMBO_BONUS_PER_STEP := 5
 const MAX_COMBO_BONUS := 10
 const MAX_TOTAL_SCORE := 315
+const WEEKLY_FOCUS_XP_BONUS := 3
+const WEEKLY_FOCUS_ORDER := ["swordsmanship", "bladesmanship", "herbalism", "mining"]
 const SPECIALTY_RANKS := [
 	{"level": 0, "name": "初学"},
 	{"level": 3, "name": "熟手"},
@@ -43,6 +45,9 @@ const DISCIPLINES := {
 
 static func is_valid_discipline(id: String) -> bool:
 	return DISCIPLINES.has(id)
+
+static func weekly_focus(week: int) -> String:
+	return str(WEEKLY_FOCUS_ORDER[posmod(maxi(1, week) - 1, WEEKLY_FOCUS_ORDER.size())])
 
 static func specialty_rank_index(level: int) -> int:
 	var result := 0
@@ -122,14 +127,16 @@ static func records_text(records: Variant) -> String:
 		entries.append("%s %s·%d（%d次）" % [entry[1], grade(int(record.best_score)) if int(record.attempts) > 0 else "—", int(record.best_score), int(record.attempts)])
 	return " · ".join(entries)
 
-static func options(specialties: Dictionary = {}) -> Array:
+static func options(state: Dictionary = {}) -> Array:
 	var result: Array = []
+	var focus := weekly_focus(int(state.get("week", 1)))
 	for entry in [["swordsmanship", "剑法 · 听风辨势"], ["bladesmanship", "刀法 · 破阵斩隙"], ["herbalism", "采药 · 寻香识草"], ["mining", "挖矿 · 听音寻脉"]]:
 		var discipline := str(entry[0])
-		var level := maxi(0, int(specialties.get(discipline, 0)))
+		var level := maxi(0, int(state.get(discipline, 0)))
 		var next_level := next_specialty_level(level)
 		var progress := "已达大成" if next_level < 0 else "距下境界 %d级" % (next_level - level)
-		result.append([str(entry[1]), "%s %d级 · %s · %s\n小游戏成绩决定本周成长与收益。" % [specialty_rank_name(level), level, progress, perk_text(discipline, level)], discipline])
+		var focus_text := "【本周专精 · 额外修为 +%d】\n" % WEEKLY_FOCUS_XP_BONUS if discipline == focus else ""
+		result.append([str(entry[1]), "%s%s %d级 · %s · %s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, progress, perk_text(discipline, level)], discipline])
 	return result
 
 static func score_round(correct: bool, elapsed_ms: int) -> int:
@@ -300,6 +307,8 @@ static func reward_text(result: Dictionary) -> String:
 		return ""
 	var title := str(DISCIPLINES[str(result.discipline)].title).split(" · ")[0]
 	var parts: Array[String] = ["%s +%d" % [title, int(result.specialty_gain)], "修为 +%d" % int(result.xp)]
+	if int(result.get("weekly_focus_bonus", 0)) > 0:
+		parts.append("本周专精 +%d修为" % int(result.weekly_focus_bonus))
 	if int(result.silver) > 0:
 		parts.append("银两 +%d" % int(result.silver))
 	if str(result.item) != "":

@@ -121,8 +121,13 @@ func train(focus: String = "strength") -> bool:
 func complete_training(discipline: String, score: int, event_roll: int = -1, best_streak: int = 0) -> Dictionary:
 	var safe_score := clampi(score, 0, TRAINING_RULES.MAX_TOTAL_SCORE)
 	var outcome := TRAINING_RULES.outcome(discipline, safe_score)
+	var focus_week := int(data.get("week", 1))
 	if outcome.is_empty() or not spend_week():
 		return {}
+	if discipline == TRAINING_RULES.weekly_focus(focus_week):
+		outcome.weekly_focus = true
+		outcome.weekly_focus_bonus = TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS
+		outcome.xp = int(outcome.xp) + TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS
 	outcome.score = safe_score
 	outcome.best_streak = clampi(best_streak, 0, TRAINING_RULES.ROUND_COUNT)
 	outcome.record = TRAINING_RULES.record_attempt(data.training_records, discipline, safe_score, best_streak)
