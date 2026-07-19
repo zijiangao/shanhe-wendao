@@ -13,8 +13,9 @@ var buttons: Dictionary = {}
 var discipline_id: String = ""
 var round_started_ms: int = 0
 var timing_fill: ColorRect
+var timing_window: ColorRect
 
-func setup(discipline: String, round_index: int, challenge: Dictionary, input_index: int, scores: Array, started_ms: int, last_feedback: String = "", result: Dictionary = {}) -> void:
+func setup(discipline: String, round_index: int, challenge: Dictionary, input_index: int, scores: Array, started_ms: int, last_feedback: String = "", result: Dictionary = {}, streak: int = 0, best_streak: int = 0, last_quality: String = "") -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	discipline_id = discipline
 	round_started_ms = started_ms
@@ -55,6 +56,12 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	progress_label.add_theme_color_override("font_color", Color("#dfbf74"))
 	page.add_child(progress_label)
+	var streak_label := Label.new()
+	streak_label.text = "势如破竹 · %d 连" % streak if streak >= 2 else "连续获得 85 分以上可提升连击奖励"
+	streak_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	streak_label.add_theme_font_size_override("font_size", 18)
+	streak_label.add_theme_color_override("font_color", spec.accent.lightened(0.22) if streak >= 2 else Color("#829087"))
+	page.add_child(streak_label)
 	prompt_label = Label.new()
 	prompt_label.text = str(challenge.get("prompt", "凝神准备"))
 	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -98,8 +105,18 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	feedback_label = Label.new()
 	feedback_label.text = (last_feedback + "\n" if last_feedback != "" else "") + "方向键 / WASD / 手柄方向 / 点击按钮"
 	feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	feedback_label.add_theme_color_override("font_color", Color("#dfbf74") if last_feedback != "" else Color("#aeb9b1"))
+	feedback_label.add_theme_color_override("font_color", _quality_color(last_quality) if last_feedback != "" else Color("#aeb9b1"))
 	page.add_child(feedback_label)
+	if last_feedback != "":
+		feedback_label.modulate.a = 0.0
+		feedback_label.position.y = 8.0
+		var feedback_tween := create_tween().set_parallel(true)
+		feedback_tween.tween_property(feedback_label, "modulate:a", 1.0, 0.16)
+		feedback_tween.tween_property(feedback_label, "position:y", 0.0, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if streak >= 2:
+		streak_label.scale = Vector2(0.88, 0.88)
+		streak_label.pivot_offset = streak_label.size * 0.5
+		create_tween().tween_property(streak_label, "scale", Vector2.ONE, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _process(_delta: float) -> void:
 	if timing_fill == null or round_started_ms <= 0:
@@ -108,7 +125,10 @@ func _process(_delta: float) -> void:
 	var ratio := clampf(float(elapsed) / 2200.0, 0.0, 1.0)
 	timing_fill.position.x = 700.0 * ratio - 3.0
 	var ideal := 1000 if discipline_id == "bladesmanship" else 1200
-	timing_fill.color = Color("#d7bd67") if absi(elapsed - ideal) <= 150 else Color("#75877c")
+	var in_window := absi(elapsed - ideal) <= 150
+	timing_fill.color = Color("#f4d878") if in_window else Color("#75877c")
+	if timing_window != null:
+		timing_window.modulate.a = 0.72 + 0.28 * sin(float(elapsed) * 0.018) if in_window else 0.55
 
 func _add_timing_meter(page: VBoxContainer, spec: Dictionary) -> void:
 	var track := Control.new()
@@ -121,11 +141,11 @@ func _add_timing_meter(page: VBoxContainer, spec: Dictionary) -> void:
 	background.size = Vector2(700, 18)
 	track.add_child(background)
 	var ideal := 1000 if discipline_id == "bladesmanship" else 1200
-	var window := ColorRect.new()
-	window.color = Color(spec.accent, 0.55)
-	window.position = Vector2(700.0 * float(ideal - 150) / 2200.0, 0)
-	window.size = Vector2(700.0 * 300.0 / 2200.0, 18)
-	track.add_child(window)
+	timing_window = ColorRect.new()
+	timing_window.color = Color(spec.accent, 0.8)
+	timing_window.position = Vector2(700.0 * float(ideal - 150) / 2200.0, 0)
+	timing_window.size = Vector2(700.0 * 300.0 / 2200.0, 18)
+	track.add_child(timing_window)
 	timing_fill = ColorRect.new()
 	timing_fill.color = Color("#75877c")
 	timing_fill.position = Vector2(-3, -5)
@@ -173,7 +193,8 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	verdict.add_theme_color_override("font_color", Color("#f2dfb3"))
 	page.add_child(verdict)
 	var score := Label.new()
-	score.text = "总分 %d / 300\n%s" % [int(result.score), RULES.reward_text(result)]
+	var streak_text := "\n最佳连击 %d" % int(result.get("best_streak", 0)) if int(result.get("best_streak", 0)) >= 2 else ""
+	score.text = "总分 %d / 330%s\n%s" % [int(result.score), streak_text, RULES.reward_text(result)]
 	score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score.add_theme_font_size_override("font_size", 21)
 	score.add_theme_color_override("font_color", Color("#e9e1cf"))
@@ -191,6 +212,14 @@ func _sum(values: Array) -> int:
 	for value in values:
 		total += int(value)
 	return total
+
+func _quality_color(quality: String) -> Color:
+	return {
+		"perfect": Color("#f4d878"),
+		"great": Color("#9fd5b8"),
+		"ok": Color("#c7c2ad"),
+		"miss": Color("#d27a68")
+	}.get(quality, Color("#dfbf74"))
 
 func _box(color: Color) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()

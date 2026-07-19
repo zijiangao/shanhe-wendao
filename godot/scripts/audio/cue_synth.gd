@@ -13,7 +13,12 @@ const CUES := {
 	"heavy_hit": {"frequency": 64.0, "duration": 0.31, "volume": 0.38, "wave": "noise", "sweep": -0.28},
 	"turn": {"frequency": 440.0, "duration": 0.12, "volume": 0.16, "wave": "triangle"},
 	"victory": {"frequency": 523.25, "duration": 0.55, "volume": 0.23, "wave": "sine", "sweep": 0.5},
-	"defeat": {"frequency": 196.0, "duration": 0.55, "volume": 0.22, "wave": "triangle", "sweep": -0.55}
+	"defeat": {"frequency": 196.0, "duration": 0.55, "volume": 0.22, "wave": "triangle", "sweep": -0.55},
+	"training_perfect": {"frequency": 784.0, "duration": 0.22, "volume": 0.22, "wave": "sine", "sweep": 0.45},
+	"training_good": {"frequency": 587.33, "duration": 0.16, "volume": 0.19, "wave": "triangle", "sweep": 0.2},
+	"training_ok": {"frequency": 392.0, "duration": 0.12, "volume": 0.16, "wave": "triangle"},
+	"training_miss": {"frequency": 130.81, "duration": 0.2, "volume": 0.2, "wave": "square", "sweep": -0.25},
+	"training_result": {"frequency": 523.25, "duration": 0.48, "volume": 0.22, "wave": "sine", "sweep": 0.6}
 }
 
 static func make_cue(cue: String) -> AudioStreamWAV:

@@ -59,6 +59,9 @@ var training_started_ms: int = 0
 var training_scores: Array = []
 var training_result: Dictionary = {}
 var training_last_feedback: String = ""
+var training_streak: int = 0
+var training_best_streak: int = 0
+var training_last_quality: String = ""
 var active_training_view: TrainingMinigameView
 var pause_return_screen: String = "map"
 var pause_started_ms: int = 0
@@ -125,6 +128,7 @@ func _verify_training_flow() -> void:
 		if round_index + 1 < TRAINING_RULES.ROUND_COUNT:
 			await get_tree().create_timer(0.25).timeout
 	var valid := screen == "training" and str(training_result.get("grade", "")) == "S"
+	valid = valid and int(training_result.get("score", 0)) == 315 and int(training_result.get("best_streak", 0)) == 3
 	valid = valid and int(GameState.data.swordsmanship) == 3 and int(GameState.data.week) == start_week + 1
 	print("Training flow verification passed." if valid else "Training flow verification failed.")
 	get_tree().quit(0 if valid else 14)
@@ -1049,6 +1053,9 @@ func _start_training(discipline: String) -> void:
 	training_scores = []
 	training_result = {}
 	training_last_feedback = ""
+	training_streak = 0
+	training_best_streak = 0
+	training_last_quality = ""
 	choice_event = ""
 	_next_training_target()
 	screen = "training"
@@ -1072,7 +1079,7 @@ func _show_training() -> void:
 		return
 	active_training_view = TRAINING_VIEW.new()
 	content.add_child(active_training_view)
-	active_training_view.setup(training_discipline, training_round, training_challenge, training_input_index, training_scores, training_started_ms, training_last_feedback, training_result)
+	active_training_view.setup(training_discipline, training_round, training_challenge, training_input_index, training_scores, training_started_ms, training_last_feedback, training_result, training_streak, training_best_streak, training_last_quality)
 	active_training_view.direction_selected.connect(_training_direction_selected)
 	active_training_view.continue_requested.connect(_finish_training_screen)
 
@@ -1088,9 +1095,15 @@ func _training_direction_selected(direction: String) -> void:
 		_rebuild()
 		return
 	var elapsed := maxi(0, Time.get_ticks_msec() - training_started_ms)
-	var round_score := TRAINING_RULES.score_challenge(training_discipline, correct, elapsed)
+	var evaluation: Dictionary = TRAINING_RULES.evaluate_challenge(training_discipline, correct, elapsed, training_streak)
+	var round_score := int(evaluation.score)
 	training_scores.append(round_score)
-	training_last_feedback = "%s · +%d 分" % [TRAINING_RULES.timing_feedback(training_discipline, elapsed, correct), round_score]
+	training_streak = int(evaluation.streak)
+	training_best_streak = maxi(training_best_streak, training_streak)
+	training_last_quality = str(evaluation.quality)
+	var bonus_text := " · 连击 +%d" % int(evaluation.combo_bonus) if int(evaluation.combo_bonus) > 0 else ""
+	training_last_feedback = "%s · +%d 分%s" % [str(evaluation.feedback), round_score, bonus_text]
+	AudioFeedback.play({"perfect": "training_perfect", "great": "training_good", "ok": "training_ok", "miss": "training_miss"}.get(training_last_quality, "training_ok"), 1.0 + 0.04 * float(training_streak))
 	training_round += 1
 	if training_round >= TRAINING_RULES.ROUND_COUNT:
 		var total := 0
@@ -1102,6 +1115,8 @@ func _training_direction_selected(direction: String) -> void:
 			screen = "location"
 		else:
 			training_result.score = total
+			training_result.best_streak = training_best_streak
+			AudioFeedback.play("training_result", 1.12 if str(training_result.grade) == "S" else 1.0)
 			SaveManager.save_auto()
 		_rebuild()
 		return
@@ -1315,7 +1330,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.30.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.31.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

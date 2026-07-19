@@ -2,6 +2,9 @@ class_name TrainingMinigameRules
 extends RefCounted
 
 const ROUND_COUNT := 3
+const COMBO_SCORE_THRESHOLD := 85
+const COMBO_BONUS_PER_STEP := 5
+const MAX_COMBO_BONUS := 10
 const DIRECTIONS := ["up", "right", "down", "left"]
 const DIRECTION_LABELS := {"up": "上", "right": "右", "down": "下", "left": "左"}
 const DISCIPLINES := {
@@ -97,6 +100,28 @@ static func score_challenge(discipline: String, correct: bool, elapsed_ms: int) 
 			if mining_delta <= 650: return 70
 			return 55
 	return score_round(correct, elapsed_ms)
+
+static func evaluate_challenge(discipline: String, correct: bool, elapsed_ms: int, previous_streak: int) -> Dictionary:
+	var base_score := score_challenge(discipline, correct, elapsed_ms)
+	var streak := previous_streak + 1 if base_score >= COMBO_SCORE_THRESHOLD else 0
+	var combo_bonus := mini(MAX_COMBO_BONUS, maxi(0, streak - 1) * COMBO_BONUS_PER_STEP)
+	return {
+		"base_score": base_score,
+		"combo_bonus": combo_bonus,
+		"score": base_score + combo_bonus,
+		"streak": streak,
+		"quality": score_quality(base_score),
+		"feedback": timing_feedback(discipline, elapsed_ms, correct)
+	}
+
+static func score_quality(base_score: int) -> String:
+	if base_score >= 100:
+		return "perfect"
+	if base_score >= COMBO_SCORE_THRESHOLD:
+		return "great"
+	if base_score > 0:
+		return "ok"
+	return "miss"
 
 static func timing_feedback(discipline: String, elapsed_ms: int, correct: bool) -> String:
 	if not correct:

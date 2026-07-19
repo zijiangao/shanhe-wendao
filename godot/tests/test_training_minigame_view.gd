@@ -21,7 +21,8 @@ func _capture() -> void:
 	var timing_result := main_scene.get_viewport().get_texture().get_image().save_png(timing_path)
 	main_scene.training_result = {
 		"discipline": "mining", "grade": "S", "specialty_gain": 3,
-		"xp": 12, "silver": 12, "item": "", "score": 285
+		"xp": 12, "silver": 12, "item": "", "herbs": 0, "ore": 3,
+		"score": 315, "best_streak": 3
 	}
 	main_scene._rebuild()
 	for frame in range(4):

@@ -79,6 +79,8 @@ Capture a live martial-skill impact frame after changing combat presentation:
 & $godot --path $project --script res://tests/test_pause_view.gd
 ```
 
+The training preview covers the ordered sword combo, the mining resonance window, and the final score/reward card. Training streaks begin at 85 points, grant capped +5/+10 combo bonuses, and reset on a miss; the packaged training verifier checks a three-round 315-point streak.
+
 Godot writes `combat_feedback_preview.png` to the project user-data folder after exercising the real skill-impact animation path.
 
 Verify the packaged one-time reward flow from either exported executable:
