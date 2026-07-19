@@ -461,6 +461,9 @@ func _resolve_choice(route: String) -> void:
 				GameState.add_log("你暗中留下名录残页，准备独自追查厉无咎。")
 		GameState.data.quest_stage = "chapter2_complete"
 	elif choice_event == "emei_entry":
+		if route == "aid" and not GameState.spend_week():
+			_toast(_time_action_failure_message())
+			return
 		GameState.data.emei_entry = route
 		GameState.data.quest_stage = "emei_meet_su"
 		match route:
@@ -471,7 +474,6 @@ func _resolve_choice(route: String) -> void:
 				GameState.data.faction_relations.emei += 1
 				GameState.add_log("你凭江湖声望获准进入峨眉。")
 			"aid":
-				GameState.data.week = mini(104, int(GameState.data.week) + 1)
 				GameState.data.renown += 2
 				GameState.data.faction_relations.emei += 1
 				GameState.add_log("你耗费一周帮助山民，峨眉为你打开山门。")

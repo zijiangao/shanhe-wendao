@@ -186,7 +186,10 @@ func add_log(message: String) -> void:
 func place_name(id: String) -> String:
 	return {"qingyun": "青云门", "blackreed": "黑苇渡", "luoyang": "洛阳城", "huashan": "华山", "emei": "峨眉山"}.get(id, id)
 
-func import_data(value: Dictionary) -> void:
+func import_data(value: Dictionary) -> bool:
+	if int(value.get("save_version", 1)) > SAVE_VERSION:
+		push_warning("Save file was created by a newer game version.")
+		return false
 	new_game()
 	for key in value:
 		if data.has(key):
@@ -194,6 +197,7 @@ func import_data(value: Dictionary) -> void:
 	_migrate_and_validate()
 	data.save_version = SAVE_VERSION
 	state_changed.emit()
+	return true
 
 func _migrate_and_validate() -> void:
 	# 新字段由 new_game() 提供默认值；这里修复旧版本类型及已淘汰的战斗结构。
@@ -214,13 +218,53 @@ func _migrate_and_validate() -> void:
 		data.faction_relations = {"qingyun": 1, "huashan": 0, "emei": 0, "shaolin": 0}
 	if typeof(data.companions) != TYPE_ARRAY:
 		data.companions = []
+	if typeof(data.skills) != TYPE_ARRAY:
+		data.skills = ["cloud"]
+	if typeof(data.log) != TYPE_ARRAY:
+		data.log = []
+	else:
+		var normalized_log: Array[String] = []
+		for entry in data.log.slice(0, 6):
+			normalized_log.append(str(entry))
+		data.log = normalized_log
 	if typeof(data.skill_mastery) != TYPE_DICTIONARY:
 		data.skill_mastery = {"cloud": 0, "frost": 0, "frost_guard": 0}
 	for skill in ["cloud", "frost", "frost_guard"]:
 		if not data.skill_mastery.has(skill):
 			data.skill_mastery[skill] = 0
-	if typeof(data.battle) != TYPE_DICTIONARY or (not data.battle.is_empty() and not data.battle.has("width")):
+	if not _valid_battle(data.battle):
 		data.battle = {}
 	data.week = clampi(int(data.week), 1, FINAL_WEEK)
 	data.energy = clampi(int(data.energy), 0, 3)
+	data.max_hp = maxi(1, int(data.max_hp))
 	data.hp = clampi(int(data.hp), 1, int(data.max_hp))
+	data.qi = clampi(int(data.qi), 0, 20)
+	data.silver = maxi(0, int(data.silver))
+	data.renown = maxi(0, int(data.renown))
+	data.xp = maxi(0, int(data.xp))
+	for stat in ["strength", "agility", "insight", "constitution"]:
+		data[stat] = maxi(1, int(data.get(stat, 1)))
+	if str(data.location) not in ["qingyun", "blackreed", "luoyang", "huashan", "emei"]:
+		data.location = "qingyun"
+
+func _valid_battle(value: Variant) -> bool:
+	if typeof(value) != TYPE_DICTIONARY:
+		return false
+	var battle: Dictionary = value
+	if battle.is_empty():
+		return true
+	for key in ["width", "height", "player_x", "player_y", "ap", "turn", "enemies", "blocked"]:
+		if not battle.has(key):
+			return false
+	var width := int(battle.width)
+	var height := int(battle.height)
+	if width < 1 or height < 1 or typeof(battle.enemies) != TYPE_ARRAY or typeof(battle.blocked) != TYPE_ARRAY:
+		return false
+	if int(battle.player_x) < 0 or int(battle.player_x) >= width or int(battle.player_y) < 0 or int(battle.player_y) >= height:
+		return false
+	for enemy in battle.enemies:
+		if typeof(enemy) != TYPE_DICTIONARY or not enemy.has("hp") or not enemy.has("x") or not enemy.has("y"):
+			return false
+		if int(enemy.x) < 0 or int(enemy.x) >= width or int(enemy.y) < 0 or int(enemy.y) >= height:
+			return false
+	return true

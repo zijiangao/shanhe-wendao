@@ -29,7 +29,10 @@ func slot_summary(slot: int) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return {}
-	var parsed = JSON.parse_string(file.get_as_text())
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) != OK:
+		return {}
+	var parsed = json.data
 	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
 func _write(path: String, value: Dictionary) -> bool:
@@ -60,20 +63,24 @@ func _write(path: String, value: Dictionary) -> bool:
 		if directory.file_exists(backup_path):
 			directory.rename(backup_path, relative_path)
 		return false
-	if directory.file_exists(backup_path):
-		directory.remove(backup_path)
 	return true
 
 func _load(path: String) -> bool:
+	var candidates: Array[String] = [path, path + ".bak"]
+	for candidate in candidates:
+		var parsed := _read_dictionary(candidate)
+		if not parsed.is_empty() and GameState.import_data(parsed):
+			if candidate.ends_with(".bak"):
+				push_warning("Recovered save from backup: %s" % candidate)
+			return true
+	push_error("Save file and backup are invalid or unavailable: %s" % path)
+	return false
+
+func _read_dictionary(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
-		return false
+		return {}
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		push_error("Unable to open save file: %s" % path)
-		return false
+		return {}
 	var parsed = JSON.parse_string(file.get_as_text())
-	if typeof(parsed) != TYPE_DICTIONARY:
-		push_error("Save file is invalid: %s" % path)
-		return false
-	GameState.import_data(parsed)
-	return true
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}

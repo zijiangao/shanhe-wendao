@@ -19,5 +19,21 @@ func _initialize() -> void:
 	assert(state.rest(), "Rest should work before the deadline.")
 	assert(state.data.week == 13 and state.data.energy == 3, "Rest should advance one week and restore energy.")
 
+	state.data.week = state.FINAL_WEEK - 1
+	state.data.energy = 1
+	assert(state.spend_week(), "A special story action should be able to spend the final week.")
+	assert(not state.spend_week(), "A special story action must not bypass the deadline.")
+
+	var future_save: Dictionary = state.data.duplicate(true)
+	future_save.save_version = state.SAVE_VERSION + 1
+	assert(not state.import_data(future_save), "Saves from newer versions must be rejected.")
+
+	var damaged_save := {"save_version": 1, "week": -20, "energy": 99, "max_hp": 0, "hp": -5, "location": "nowhere", "log": "invalid", "battle": {"width": 8}}
+	assert(state.import_data(damaged_save), "Older saves should be migrated.")
+	assert(state.data.week == 1 and state.data.energy == 3, "Numeric save values should be clamped.")
+	assert(state.data.max_hp == 1 and state.data.hp == 1, "Health values should be normalized safely.")
+	assert(state.data.location == "qingyun" and state.data.log.is_empty(), "Invalid location and log data should be repaired.")
+	assert(state.data.battle.is_empty(), "Incomplete battle data should be discarded.")
+
 	print("GameState tests passed.")
 	quit()
