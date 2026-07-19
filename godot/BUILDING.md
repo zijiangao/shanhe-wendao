@@ -27,6 +27,7 @@ $tests = @(
     "test_store_capture_spec.gd",
     "test_onboarding_spec.gd",
     "test_growth_rules.gd",
+    "test_training_minigame_rules.gd",
     "test_reward_rules.gd",
     "test_navigation_rules.gd",
     "test_tutorial_rules.gd",
@@ -69,6 +70,8 @@ Capture a live martial-skill impact frame after changing combat presentation:
 
 ```powershell
 & $godot --path $project --script res://tests/test_combat_feedback_view.gd
+
+& $godot --path $project --script res://tests/test_training_minigame_view.gd
 ```
 
 Godot writes `combat_feedback_preview.png` to the project user-data folder after exercising the real skill-impact animation path.
@@ -97,6 +100,8 @@ The onboarding verifier checks the shipping new-game route from Qingyun mission 
 
 ```powershell
 & $godot --headless --path $project -- --verify-onboarding-flow
+
+& $godot --headless --path $project -- --verify-training-flow
 ```
 
 The exported-build Steam data verifier checks that all 11 achievement definitions have stable API names and complete metadata:

@@ -27,6 +27,10 @@ func _initialize() -> void:
 	var future_save: Dictionary = state.data.duplicate(true)
 	future_save.save_version = state.SAVE_VERSION + 1
 	assert(not state.import_data(future_save), "Saves from newer versions must be rejected.")
+	state.new_game()
+	var training: Dictionary = state.complete_training("swordsmanship", 300)
+	assert(training.grade == "S" and int(state.data.swordsmanship) == 3 and int(state.data.xp) == 12, "An S-grade training result should grant the full specialty reward.")
+	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Training should spend exactly one week and one energy.")
 
 	var damaged_save := {"save_version": 1, "week": -20, "energy": 99, "max_hp": 0, "hp": -5, "location": "nowhere", "log": "invalid", "battle": {"width": 8}}
 	assert(state.import_data(damaged_save), "Older saves should be migrated.")

@@ -7,6 +7,7 @@ func _initialize() -> void:
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
 	_test_cultivation_damage_bonus()
+	_test_specialty_damage_bonus()
 	_test_armor_and_exposure_combo()
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
@@ -96,6 +97,31 @@ func _test_cultivation_damage_bonus() -> void:
 	var low: Dictionary = ENGINE.player_action(low_battle, low_player, "skill", Vector2i(1, 4), _seeded_rng())
 	var high: Dictionary = ENGINE.player_action(high_battle, high_player, "skill", Vector2i(1, 4), _seeded_rng())
 	assert(int(high.damage) == int(low.damage) + 3, "Insight and cultivation rank bonuses should deterministically increase Flowing Cloud Sword damage.")
+
+func _test_specialty_damage_bonus() -> void:
+	var sword_battle := _fixture()
+	sword_battle.active_unit = "hero"
+	sword_battle.ap = 2
+	sword_battle.enemies[0].x = 1
+	sword_battle.enemies[0].y = 4
+	sword_battle.ally.x = 0
+	sword_battle.ally.y = 3
+	sword_battle.enemies[0].hp = 100
+	var trained := _player_fixture()
+	trained.swordsmanship = 6
+	var baseline := _player_fixture()
+	var trained_result: Dictionary = ENGINE.player_action(sword_battle, trained, "skill", Vector2i(1, 4), _seeded_rng())
+	var plain_battle: Dictionary = _fixture()
+	plain_battle.active_unit = "hero"
+	plain_battle.ap = 2
+	plain_battle.enemies[0].x = 1
+	plain_battle.enemies[0].y = 4
+	plain_battle.ally.x = 0
+	plain_battle.ally.y = 3
+	plain_battle.enemies[0].hp = 100
+	var plain_result: Dictionary = ENGINE.player_action(plain_battle, baseline, "skill", Vector2i(1, 4), _seeded_rng())
+	assert(bool(trained_result.get("ok", false)) and bool(plain_result.get("ok", false)), "Specialty damage comparison requires two legal sword attacks.")
+	assert(int(trained_result.damage) == int(plain_result.damage) + 3, "Swordsmanship should increase sword skill damage every two levels.")
 
 func _test_armor_and_exposure_combo() -> void:
 	var armored := _fixture()

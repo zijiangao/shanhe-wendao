@@ -25,6 +25,8 @@ const ONBOARDING_SPEC := preload("res://scripts/release/onboarding_spec.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
+const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
@@ -47,6 +49,13 @@ var store_capture_active: bool = false
 var enemy_turn_active: bool = false
 var active_battle_view: TacticalBattleView
 var last_battle_id: String = "blackreed"
+var training_discipline: String = ""
+var training_round: int = 0
+var training_target: String = ""
+var training_started_ms: int = 0
+var training_scores: Array = []
+var training_result: Dictionary = {}
+var active_training_view: TrainingMinigameView
 
 func _ready() -> void:
 	if _handle_release_mode_verification():
@@ -66,6 +75,8 @@ func _ready() -> void:
 		call_deferred("_verify_reward_flow")
 	elif "--verify-combat-feedback" in OS.get_cmdline_user_args():
 		call_deferred("_verify_combat_feedback")
+	elif "--verify-training-flow" in OS.get_cmdline_user_args():
+		call_deferred("_verify_training_flow")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
 		call_deferred("_capture_store_screenshots")
 	elif "--capture-tactical-tutorial" in OS.get_cmdline_user_args():
@@ -89,6 +100,20 @@ func _handle_release_mode_verification() -> bool:
 		push_error("Release mode verification failed.")
 	get_tree().quit(0 if valid else 2)
 	return true
+
+func _verify_training_flow() -> void:
+	GameState.new_game()
+	var start_week := int(GameState.data.week)
+	_start_training("swordsmanship")
+	for index in range(TRAINING_RULES.ROUND_COUNT):
+		training_started_ms = Time.get_ticks_msec() - 400
+		_training_direction_selected(training_target)
+		if index + 1 < TRAINING_RULES.ROUND_COUNT:
+			await get_tree().create_timer(0.25).timeout
+	var valid := screen == "training" and str(training_result.get("grade", "")) == "S"
+	valid = valid and int(GameState.data.swordsmanship) == 3 and int(GameState.data.week) == start_week + 1
+	print("Training flow verification passed." if valid else "Training flow verification failed.")
+	get_tree().quit(0 if valid else 14)
 
 func _verify_steam_data() -> void:
 	var errors := SteamService.release_data_errors()
@@ -494,6 +519,7 @@ func _rebuild() -> void:
 		"quests": _show_quests()
 		"dialogue": _show_dialogue()
 		"choice": _show_choice()
+		"training": _show_training()
 		"palace": _show_palace()
 		"dev": _show_dev_menu()
 		"character": _show_character()
@@ -628,7 +654,7 @@ func _location_action_requested(action_id: String) -> void:
 				return
 			choice_event = "training"
 			choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
-			choice_options = GROWTH_RULES.TRAINING_OPTIONS.duplicate(true)
+			choice_options = TRAINING_RULES.options()
 			screen = "choice"
 			_rebuild()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
@@ -799,10 +825,8 @@ func _show_choice() -> void:
 
 func _resolve_choice(route: String) -> void:
 	if choice_event == "training":
-		if not GameState.train(route):
-			_toast(_time_action_failure_message())
-			return
-		_toast("修炼完成，成长效果已生效。")
+		_start_training(route)
+		return
 	elif choice_event == "baima_route":
 		GameState.data.alignment[route] = int(GameState.data.alignment.get(route, 0)) + 1
 		GameState.data.luoyang_route = route
@@ -853,6 +877,65 @@ func _resolve_choice(route: String) -> void:
 	choice_event = ""
 	screen = "ending" if str(GameState.data.quest_stage) == "game_complete" else ("map" if str(GameState.data.quest_stage) == "chapter2_complete" else "location")
 	SaveManager.save_auto()
+	_rebuild()
+
+func _start_training(discipline: String) -> void:
+	if not TRAINING_RULES.is_valid_discipline(discipline):
+		_toast("无法识别这个修炼专项。")
+		return
+	training_discipline = discipline
+	training_round = 0
+	training_scores = []
+	training_result = {}
+	choice_event = ""
+	_next_training_target()
+	screen = "training"
+	_rebuild()
+
+func _next_training_target() -> void:
+	training_target = str(TRAINING_RULES.DIRECTIONS[randi() % TRAINING_RULES.DIRECTIONS.size()])
+	training_started_ms = Time.get_ticks_msec()
+
+func _show_training() -> void:
+	_clear_content()
+	if not TRAINING_RULES.is_valid_discipline(training_discipline):
+		screen = "location"
+		_rebuild()
+		return
+	active_training_view = TRAINING_VIEW.new()
+	content.add_child(active_training_view)
+	active_training_view.setup(training_discipline, training_round, training_target, training_scores, training_result)
+	active_training_view.direction_selected.connect(_training_direction_selected)
+	active_training_view.continue_requested.connect(_finish_training_screen)
+
+func _training_direction_selected(direction: String) -> void:
+	if screen != "training" or not training_result.is_empty() or active_training_view == null:
+		return
+	active_training_view.set_locked()
+	var elapsed := maxi(0, Time.get_ticks_msec() - training_started_ms)
+	training_scores.append(TRAINING_RULES.score_round(direction == training_target, elapsed))
+	training_round += 1
+	if training_round >= TRAINING_RULES.ROUND_COUNT:
+		var total := 0
+		for value in training_scores:
+			total += int(value)
+		training_result = GameState.complete_training(training_discipline, total)
+		if training_result.is_empty():
+			_toast(_time_action_failure_message())
+			screen = "location"
+		else:
+			training_result.score = total
+			SaveManager.save_auto()
+		_rebuild()
+		return
+	await get_tree().create_timer(0.18).timeout
+	_next_training_target()
+	_rebuild()
+
+func _finish_training_screen() -> void:
+	training_discipline = ""
+	training_result = {}
+	screen = "location"
 	_rebuild()
 
 func _enter_palace() -> void:
@@ -1055,7 +1138,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.11.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.27.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1303,6 +1386,18 @@ func _show_character() -> void:
 		value.add_theme_color_override("font_color", Color("#fff4dc"))
 		card.add_child(value)
 		stat_grid.add_child(card)
+
+	var specialty_title := Label.new()
+	specialty_title.text = "江湖技艺"
+	specialty_title.add_theme_font_size_override("font_size", 20)
+	specialty_title.add_theme_color_override("font_color", Color("#dfbf74"))
+	info.add_child(specialty_title)
+	var specialties := Label.new()
+	specialties.text = "剑法 %d  ·  刀法 %d  ·  采药 %d  ·  挖矿 %d\n前往青云门演武场完成小游戏，成绩决定本周修炼成果。" % [GameState.data.swordsmanship, GameState.data.bladesmanship, GameState.data.herbalism, GameState.data.mining]
+	specialties.add_theme_font_size_override("font_size", 17)
+	specialties.add_theme_color_override("font_color", Color("#f4eee2"))
+	specialties.add_theme_stylebox_override("normal", _box(Color("#223a30")))
+	info.add_child(specialties)
 
 	var skill_title := Label.new()
 	skill_title.text = "武 学"

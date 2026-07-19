@@ -4,12 +4,13 @@ const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const ENCOUNTER_RULES := preload("res://scripts/battle/encounter_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
+const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 
 signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -33,6 +34,10 @@ func new_game() -> void:
 		"agility": 5,
 		"insight": 4,
 		"constitution": 4,
+		"swordsmanship": 0,
+		"bladesmanship": 0,
+		"herbalism": 0,
+		"mining": 0,
 		"skills": ["cloud"],
 		"items": ["金疮药", "青锋剑"],
 		"flags": [],
@@ -57,7 +62,8 @@ func new_game() -> void:
 	state_changed.emit()
 
 func power() -> int:
-	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5)
+	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
+	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2)
 
 func weeks_left() -> int:
 	return maxi(0, FINAL_WEEK - int(data.week))
@@ -101,6 +107,18 @@ func train(focus: String = "strength") -> bool:
 		return false
 	add_log({"strength": "你锻体一周，臂力与修为提升。", "insight": "你参悟一周，悟性与修为提升。", "constitution": "你筑基一周，根骨、气血与修为提升。"}[focus])
 	return true
+
+func complete_training(discipline: String, score: int) -> Dictionary:
+	var outcome := TRAINING_RULES.outcome(discipline, clampi(score, 0, 300))
+	if outcome.is_empty() or not spend_week():
+		return {}
+	data[discipline] = int(data.get(discipline, 0)) + int(outcome.specialty_gain)
+	data.xp += int(outcome.xp)
+	data.silver += int(outcome.silver)
+	if str(outcome.item) != "":
+		data.items.append(str(outcome.item))
+	add_log("专项修炼完成：%s级，%s。" % [str(outcome.grade), TRAINING_RULES.reward_text(outcome)])
+	return outcome
 
 func add_investigation(clue: String, message: String) -> bool:
 	if clue in data.investigations:
@@ -391,6 +409,8 @@ func _migrate_and_validate() -> void:
 	data.xp = maxi(0, int(data.xp))
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
+	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:
+		data[specialty] = maxi(0, int(data.get(specialty, 0)))
 	if str(data.location) not in ["qingyun", "blackreed", "luoyang", "huashan", "emei"]:
 		data.location = "qingyun"
 	if not data.battle.is_empty() and data.battle_retry.is_empty():
