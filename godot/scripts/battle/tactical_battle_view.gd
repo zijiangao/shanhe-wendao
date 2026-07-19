@@ -63,19 +63,21 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		cell.pressed.connect(_emit_cell.bind(int(data.x), int(data.y)))
 		board.add_child(cell)
 
-	if battle.has("effect") and not battle.effect.is_empty():
-		var effect: Dictionary = battle.effect
+	var effects: Array = battle.get("effects", [])
+	if effects.is_empty() and battle.has("effect") and not battle.effect.is_empty():
+		effects = [battle.effect]
+	for effect: Dictionary in effects:
 		var effect_label := Label.new()
-		effect_label.position = Vector2(30 + int(effect.x) * 99, 60 + int(effect.y) * 71)
-		effect_label.size = Vector2(94, 66)
+		effect_label.position = Vector2(34 + int(effect.x) * 99, 48 + int(effect.y) * 71)
+		effect_label.size = Vector2(86, 34)
 		effect_label.z_index = 5
 		effect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		effect_label.text = str(effect.text)
 		effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		effect_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		effect_label.add_theme_font_size_override("font_size", 22)
+		effect_label.add_theme_font_size_override("font_size", 18)
 		effect_label.add_theme_color_override("font_color", Color("#fff0a8"))
-		effect_label.add_theme_stylebox_override("normal", _box(Color("#a33127cc") if effect.type == "damage" else Color("#d4b34aaa")))
+		effect_label.add_theme_stylebox_override("normal", _box(Color("#a33127e8") if effect.type == "damage" else Color("#315f4be8")))
 		add_child(effect_label)
 		_animate_impact(effect_label, str(effect.get("type", "damage")) == "damage")
 	if battle.has("skill_flash") and bool(battle.skill_flash):
@@ -83,7 +85,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		skill_name.position = Vector2(250, 260)
 		skill_name.size = Vector2(360, 64)
 		skill_name.z_index = 6
-		skill_name.text = "流 云 剑 法"
+		skill_name.text = str(battle.get("skill_name", "流 云 剑 法"))
 		skill_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		skill_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		skill_name.add_theme_font_size_override("font_size", 30)

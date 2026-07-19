@@ -58,6 +58,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	battle.ap = int(battle.ap) - 1
 	battle.result = "%s对%s造成%d点伤害。" % [_active_name(battle), battle.enemies[enemy_index].name, damage]
 	battle.skill_flash = false
+	battle.skill_name = ""
 	return _success(battle, damage)
 
 static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
@@ -73,6 +74,7 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	battle.ap = int(battle.ap) - 1
 	battle.result = "流云剑气贯穿战场，对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
 	battle.skill_flash = true
+	battle.skill_name = "流 云 剑 法"
 	return _success(battle, damage)
 
 static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
@@ -89,7 +91,8 @@ static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i
 		battle.ally.y = path[path.size() - 2].y
 	battle.ap = int(battle.ap) - 1
 	battle.result = "林清霜踏雪突进，以霜华刺对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
-	battle.skill_flash = false
+	battle.skill_flash = true
+	battle.skill_name = "霜 华 刺"
 	return _success(battle, damage)
 
 static func _frost_guard(battle: Dictionary, player: Dictionary) -> Dictionary:
@@ -101,6 +104,8 @@ static func _frost_guard(battle: Dictionary, player: Dictionary) -> Dictionary:
 	battle.ap = int(battle.ap) - 1
 	battle.result = "林清霜横剑凝神，获得%d点护卫并恢复3点真气。" % battle.ally.guard
 	_clear_effect(battle)
+	battle.skill_flash = true
+	battle.skill_name = "寒 锋 守 势"
 	return _success(battle, 0)
 
 static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenerator = null) -> Dictionary:
@@ -108,6 +113,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 	var special_notes: PackedStringArray = []
 	var ally_was_active := battle.has("ally") and int(battle.ally.hp) > 0
 	var boss_transition := false
+	var effects: Array = []
 	for enemy in battle.enemies:
 		if int(enemy.hp) <= 0:
 			continue
@@ -122,6 +128,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				hero_hp = maxi(0, hero_hp - sweep_damage)
 				total_hurt += sweep_damage
 				sweep_hits += 1
+				effects.append(_damage_effect(Vector2i(int(battle.player_x), int(battle.player_y)), sweep_damage))
 			if battle.has("ally") and int(battle.ally.hp) > 0 and RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.ally.x), int(battle.ally.y))):
 				var ally_hurt := sweep_damage
 				var blocked := mini(ally_hurt, int(battle.ally.guard))
@@ -130,6 +137,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				battle.ally.hp = maxi(0, int(battle.ally.hp) - ally_hurt)
 				total_hurt += ally_hurt
 				sweep_hits += 1
+				effects.append(_damage_effect(Vector2i(int(battle.ally.x), int(battle.ally.y)), ally_hurt, blocked))
 			special_notes.append("%s施展断岳刀势，命中%d人" % [str(enemy.name), sweep_hits])
 			continue
 		var target_data := select_target(battle, enemy)
@@ -146,8 +154,10 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				hurt -= blocked
 				battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)
 				battle.ally.hp = maxi(0, int(battle.ally.hp) - hurt)
+				effects.append(_damage_effect(target, hurt, blocked))
 			else:
 				hero_hp = maxi(0, hero_hp - hurt)
+				effects.append(_damage_effect(target, hurt))
 			total_hurt += hurt
 		else:
 			var path := RULES.find_path(battle, enemy_position, target, true)
@@ -157,6 +167,8 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 					enemy.x = path[move_index].x
 					enemy.y = path[move_index].y
 
+	battle.effects = effects
+	battle.effect = effects.back() if not effects.is_empty() else {}
 	var hero_defeated := hero_hp <= 0
 	var ally_defeated := ally_was_active and battle.has("ally") and int(battle.ally.hp) <= 0
 	if not hero_defeated:
@@ -164,8 +176,8 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		battle.ap = 2
 		battle.active_unit = "hero"
 		battle.result = _turn_result(total_hurt, ally_defeated, special_notes)
-		battle.effect = {"x": battle.player_x, "y": battle.player_y, "text": "-%d" % total_hurt, "type": "damage"} if total_hurt > 0 else {}
 		battle.skill_flash = boss_transition
+		battle.skill_name = "断 岳 刀 势" if boss_transition else ""
 	return {
 		"battle": battle,
 		"hero_hp": hero_hp,
@@ -193,10 +205,21 @@ static func _active_name(battle: Dictionary) -> String:
 static func _apply_enemy_damage(battle: Dictionary, enemy_index: int, target: Vector2i, damage: int, effect_type: String) -> void:
 	battle.enemies[enemy_index].hp = maxi(0, int(battle.enemies[enemy_index].hp) - damage)
 	battle.effect = {"x": target.x, "y": target.y, "text": "-%d" % damage, "type": effect_type}
+	battle.effects = [battle.effect]
+
+static func _damage_effect(target: Vector2i, damage: int, blocked: int = 0) -> Dictionary:
+	if damage <= 0 and blocked > 0:
+		return {"x": target.x, "y": target.y, "text": "格挡", "type": "guard"}
+	var text := "-%d" % damage
+	if blocked > 0:
+		text += "  挡%d" % blocked
+	return {"x": target.x, "y": target.y, "text": text, "type": "damage"}
 
 static func _clear_effect(battle: Dictionary) -> void:
 	battle.effect = {}
+	battle.effects = []
 	battle.skill_flash = false
+	battle.skill_name = ""
 
 static func _success(battle: Dictionary, damage: int) -> Dictionary:
 	return {"ok": true, "battle": battle, "damage": damage, "error": ""}

@@ -15,6 +15,7 @@ func _initialize() -> void:
 	_test_survival_objective()
 	_test_enemy_movement_and_turn_reset()
 	_test_guard_and_ally_knockout()
+	_test_multi_target_feedback()
 	_test_hero_defeat()
 	print("BattleEngine tests passed.")
 	quit()
@@ -65,12 +66,14 @@ func _test_player_skills_and_resources() -> void:
 	assert(bool(dash.ok) and int(battle.ally.qi) == 9, "Frost Dash should consume six ally qi.")
 	assert(Vector2i(int(battle.ally.x), int(battle.ally.y)) == Vector2i(3, 1), "Frost Dash should stop beside its target.")
 	assert(int(player.skill_mastery.frost) == 1, "Frost Dash should increase its mastery.")
+	assert(bool(battle.skill_flash) and str(battle.skill_name) == "霜 华 刺", "Frost Dash should expose its own presentation title.")
 
 	battle.ap = 1
 	battle.ally.qi = 10
 	var guard: Dictionary = ENGINE.player_action(battle, player, "frost_guard", Vector2i.ZERO, _seeded_rng())
 	assert(bool(guard.ok) and int(battle.ally.guard) == 8 and int(battle.ally.qi) == 13, "Frost Guard should grant guard and restore qi.")
 	assert(int(player.skill_mastery.frost_guard) == 1, "Frost Guard should increase its mastery.")
+	assert(bool(battle.skill_flash) and str(battle.skill_name) == "寒 锋 守 势", "Frost Guard should expose its own presentation title.")
 
 func _test_invalid_action_preserves_resources() -> void:
 	var battle := _fixture()
@@ -183,6 +186,21 @@ func _test_guard_and_ally_knockout() -> void:
 	assert(int(battle.ally.hp) == 0 and int(battle.ally.guard) == 0, "Guard should absorb damage before ally health and both should be clamped.")
 	assert("倒地" in str(battle.result), "The combat log should clearly communicate an ally knockout.")
 	assert(str(battle.active_unit) == "hero", "Control should return to the hero after an ally knockout.")
+
+func _test_multi_target_feedback() -> void:
+	var battle := _fixture()
+	battle.turn = 3
+	battle.player_x = 1
+	battle.player_y = 1
+	battle.ally.x = 2
+	battle.ally.y = 2
+	battle.ally.guard = 99
+	battle.enemies[0] = {"name": "厉无咎", "role": "brute", "boss": true, "phase_two_started": true, "hp": 20, "max_hp": 46, "attack": 8, "range": 1, "x": 2, "y": 1}
+	ENGINE.enemy_turn(battle, 40, _seeded_rng())
+	assert(Array(battle.effects).size() == 2, "A sweeping attack should retain separate feedback for every target hit.")
+	assert(Vector2i(int(battle.effects[0].x), int(battle.effects[0].y)) == Vector2i(1, 1), "Hero damage feedback should appear on the hero cell.")
+	assert(Vector2i(int(battle.effects[1].x), int(battle.effects[1].y)) == Vector2i(2, 2), "Ally feedback should appear on the ally cell instead of being merged onto the hero.")
+	assert(str(battle.effects[1].type) == "guard", "A fully blocked hit should be communicated as a guard result.")
 
 func _test_hero_defeat() -> void:
 	var battle := _fixture()
