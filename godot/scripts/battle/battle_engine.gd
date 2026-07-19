@@ -3,6 +3,7 @@ extends RefCounted
 
 const RULES := preload("res://scripts/battle/battle_rules.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
+const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 
 static func is_victory(battle: Dictionary) -> bool:
 	if str(battle.get("objective", {}).get("type", "eliminate")) == "survive":
@@ -61,7 +62,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
 	var target_survived := int(battle.enemies[enemy_index].hp) > 0
 	if target_survived:
-		battle.enemies[enemy_index].exposure = mini(2, RULES.enemy_exposure(battle.enemies[enemy_index]) + 1)
+		battle.enemies[enemy_index].exposure = mini(2, RULES.enemy_exposure(battle.enemies[enemy_index]) + TRAINING_RULES.attack_exposure_gain(int(player.get("bladesmanship", 0))))
 	battle.ap = int(battle.ap) - 1
 	var armor_note := "（护甲抵消%d）" % armor if armor > 0 else ""
 	var exposure_note := "，并制造1层破绽" if target_survived else ""
@@ -73,13 +74,14 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
 		return _failure("林清霜无法施展流云剑法。")
-	if not RULES.can_attack_cell(battle, target, true, int(player.qi)):
-		return _failure("流云剑法需要8点真气，并只能攻击同一直线三格内的敌人。")
+	var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
+	if not RULES.can_attack_cell(battle, target, true, int(player.qi), qi_cost):
+		return _failure("流云剑法需要%d点真气，并只能攻击同一直线三格内的敌人。" % qi_cost)
 	var enemy_index := RULES.enemy_at(battle, target)
 	var exposure := RULES.enemy_exposure(battle.enemies[enemy_index])
 	var exposure_bonus := exposure * 4
 	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
-	player.qi = int(player.qi) - 8
+	player.qi = int(player.qi) - qi_cost
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
 	battle.enemies[enemy_index].exposure = 0
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
@@ -129,7 +131,8 @@ static func _use_healing_powder(battle: Dictionary, player: Dictionary) -> Dicti
 	var consumables: Dictionary = player.get("consumables", {})
 	if int(consumables.get("healing_powder", 0)) <= 0:
 		return _failure("行囊中没有回春散。")
-	var healing := 12 + int(player.get("herbalism", 0)) / 2
+	var herbalism := int(player.get("herbalism", 0))
+	var healing := 12 + herbalism / 2 + TRAINING_RULES.medicine_mastery_bonus(herbalism)
 	var before := int(player.hp)
 	player.hp = mini(int(player.max_hp), before + healing)
 	player.consumables.healing_powder = int(player.consumables.healing_powder) - 1

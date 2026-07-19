@@ -1,6 +1,8 @@
 class_name CraftingRules
 extends RefCounted
 
+const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+
 const MAX_FORGE_LEVEL := 3
 const RECIPES := {
 	"healing_powder": {
@@ -17,10 +19,19 @@ const RECIPES := {
 
 static func options(state: Dictionary) -> Array:
 	var forge_level := int(state.get("forge_level", 0))
+	var temper_cost := effective_cost(state, "temper_blade")
 	return [
 		[RECIPES.healing_powder.title, "%s 当前携带 %d 份。" % [RECIPES.healing_powder.description, int(state.get("consumables", {}).get("healing_powder", 0))], "healing_powder", not can_craft(state, "healing_powder")],
-		[RECIPES.temper_blade.title, "%s 当前淬炼 %d/%d。" % [RECIPES.temper_blade.description, forge_level, MAX_FORGE_LEVEL], "temper_blade", not can_craft(state, "temper_blade")]
+		[RECIPES.temper_blade.title, "矿石 %d · 银两 %d%s · 永久提高武器伤害。当前淬炼 %d/%d。" % [int(temper_cost.ore), int(temper_cost.silver), "（挖矿大成减免）" if int(temper_cost.silver) < int(RECIPES.temper_blade.cost.silver) else "", forge_level, MAX_FORGE_LEVEL], "temper_blade", not can_craft(state, "temper_blade")]
 	]
+
+static func effective_cost(state: Dictionary, recipe_id: String) -> Dictionary:
+	if not RECIPES.has(recipe_id):
+		return {}
+	var cost: Dictionary = (RECIPES[recipe_id].cost as Dictionary).duplicate(true)
+	if recipe_id == "temper_blade":
+		cost.silver = maxi(0, int(cost.silver) - TRAINING_RULES.tempering_silver_discount(int(state.get("mining", 0))))
+	return cost
 
 static func can_craft(state: Dictionary, recipe_id: String) -> bool:
 	if not RECIPES.has(recipe_id):
@@ -28,13 +39,13 @@ static func can_craft(state: Dictionary, recipe_id: String) -> bool:
 	if recipe_id == "temper_blade" and int(state.get("forge_level", 0)) >= MAX_FORGE_LEVEL:
 		return false
 	var materials: Dictionary = state.get("materials", {})
-	var cost: Dictionary = RECIPES[recipe_id].cost
+	var cost: Dictionary = effective_cost(state, recipe_id)
 	return int(materials.get("herbs", 0)) >= int(cost.herbs) and int(materials.get("ore", 0)) >= int(cost.ore) and int(state.get("silver", 0)) >= int(cost.silver)
 
 static func apply(state: Dictionary, recipe_id: String) -> bool:
 	if not can_craft(state, recipe_id):
 		return false
-	var cost: Dictionary = RECIPES[recipe_id].cost
+	var cost: Dictionary = effective_cost(state, recipe_id)
 	state.materials.herbs = int(state.materials.get("herbs", 0)) - int(cost.herbs)
 	state.materials.ore = int(state.materials.get("ore", 0)) - int(cost.ore)
 	state.silver = int(state.get("silver", 0)) - int(cost.silver)

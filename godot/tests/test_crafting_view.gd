@@ -12,12 +12,14 @@ func _capture() -> void:
 	game_state.new_game()
 	game_state.data.materials = {"herbs": 4, "ore": 5}
 	game_state.data.consumables.healing_powder = 2
+	game_state.data.mining = 10
 	main_scene._location_action_requested("workshop")
 	for frame in range(4):
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var workshop_path := "user://crafting_workshop_preview.png"
 	var workshop_result := main_scene.get_viewport().get_texture().get_image().save_png(workshop_path)
+	var discount_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "挖矿大成减免" in button.text and "银两 5" in button.text)
 	game_state.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": true}
 	game_state.start_blackreed_battle()
 	game_state.data.hp = 24
@@ -29,6 +31,6 @@ func _capture() -> void:
 	var battle_path := "user://crafting_battle_preview.png"
 	var battle_result := main_scene.get_viewport().get_texture().get_image().save_png(battle_path)
 	var powder_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "回春散" in button.text)
-	var valid: bool = workshop_result == OK and battle_result == OK and powder_buttons.size() == 1
+	var valid: bool = workshop_result == OK and battle_result == OK and powder_buttons.size() == 1 and discount_buttons.size() == 1
 	print("Crafting previews saved to: %s and %s" % [ProjectSettings.globalize_path(workshop_path), ProjectSettings.globalize_path(battle_path)])
 	quit(0 if valid else 17)

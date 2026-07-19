@@ -9,6 +9,7 @@ func _initialize() -> void:
 	_test_healing_powder()
 	_test_cultivation_damage_bonus()
 	_test_specialty_damage_bonus()
+	_test_specialty_mastery_perks()
 	_test_armor_and_exposure_combo()
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
@@ -138,6 +139,43 @@ func _test_specialty_damage_bonus() -> void:
 	var plain_result: Dictionary = ENGINE.player_action(plain_battle, baseline, "skill", Vector2i(1, 4), _seeded_rng())
 	assert(bool(trained_result.get("ok", false)) and bool(plain_result.get("ok", false)), "Specialty damage comparison requires two legal sword attacks.")
 	assert(int(trained_result.damage) == int(plain_result.damage) + 3, "Swordsmanship should increase sword skill damage every two levels.")
+
+func _test_specialty_mastery_perks() -> void:
+	var sword_battle := _fixture()
+	sword_battle.active_unit = "hero"
+	sword_battle.ap = 2
+	sword_battle.enemies[0].x = 1
+	sword_battle.enemies[0].y = 4
+	sword_battle.ally.x = 0
+	sword_battle.ally.y = 3
+	var sword_master := _player_fixture()
+	sword_master.swordsmanship = 10
+	sword_master.qi = 6
+	var sword_result: Dictionary = ENGINE.player_action(sword_battle, sword_master, "skill", Vector2i(1, 4), _seeded_rng())
+	assert(bool(sword_result.ok) and int(sword_master.qi) == 0, "Sword mastery should allow Flowing Cloud Sword at its reduced six-qi cost.")
+
+	var blade_battle := _fixture()
+	blade_battle.erase("ally")
+	blade_battle.active_unit = "hero"
+	blade_battle.ap = 2
+	blade_battle.enemies[0].x = 2
+	blade_battle.enemies[0].y = 1
+	blade_battle.enemies[0].hp = 100
+	var blade_master := _player_fixture()
+	blade_master.bladesmanship = 10
+	var blade_result: Dictionary = ENGINE.player_action(blade_battle, blade_master, "attack", Vector2i(2, 1), _seeded_rng())
+	assert(bool(blade_result.ok) and int(blade_battle.enemies[0].exposure) == 2, "Blade mastery should create two exposure layers with a surviving normal attack.")
+
+	var medicine_battle := _fixture()
+	medicine_battle.active_unit = "hero"
+	medicine_battle.ap = 2
+	var herbal_master := _player_fixture()
+	herbal_master.herbalism = 10
+	herbal_master.hp = 10
+	herbal_master.max_hp = 45
+	herbal_master.consumables = {"healing_powder": 1}
+	var medicine_result: Dictionary = ENGINE.player_action(medicine_battle, herbal_master, "heal")
+	assert(bool(medicine_result.ok) and int(medicine_result.healed) == 22, "Herbalism mastery should add five healing on top of its continuous level bonus.")
 
 func _test_armor_and_exposure_combo() -> void:
 	var armored := _fixture()

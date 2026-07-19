@@ -1362,7 +1362,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.39.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.40.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1977,7 +1977,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 			var boss_danger: bool = BATTLE_RULES.is_boss_sweep_cell(battle, cell)
 			var move_valid: bool = battle_mode == "move" and BATTLE_RULES.can_move_to(battle, cell)
 			var attack_valid: bool = battle_mode == "attack" and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
-			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, cell, true, int(GameState.data.qi))
+			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, cell, true, int(GameState.data.qi), TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)))
 			var frost_valid: bool = battle_mode == "frost_dash" and BATTLE_RULES.can_frost_dash(battle, cell)
 			if move_valid:
 				data.color = "#28678aee"
@@ -2063,7 +2063,7 @@ func _show_battle_legacy() -> void:
 			cell.add_theme_color_override("font_color", Color("#fff4dc"))
 			var move_valid: bool = battle_mode == "move" and BATTLE_RULES.can_move_to(battle, position)
 			var attack_valid: bool = battle_mode == "attack" and BATTLE_RULES.can_attack_cell(battle, position, false, int(GameState.data.qi))
-			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, position, true, int(GameState.data.qi))
+			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, position, true, int(GameState.data.qi), TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)))
 			var cell_color := Color("#1d2b25bb") if battle_mode != "inspect" else Color("#294438dd")
 			if move_valid:
 				cell_color = Color("#28678aee")

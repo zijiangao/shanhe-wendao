@@ -61,12 +61,24 @@ static func next_specialty_level(level: int) -> int:
 static func gathering_bonus(level: int) -> int:
 	return maxi(0, specialty_rank_index(maxi(0, level)) - 1)
 
+static func cloud_qi_cost(level: int) -> int:
+	return 6 if maxi(0, level) >= 10 else 8
+
+static func attack_exposure_gain(level: int) -> int:
+	return 2 if maxi(0, level) >= 10 else 1
+
+static func medicine_mastery_bonus(level: int) -> int:
+	return 5 if maxi(0, level) >= 10 else 0
+
+static func tempering_silver_discount(level: int) -> int:
+	return 3 if maxi(0, level) >= 10 else 0
+
 static func perk_text(discipline: String, level: int) -> String:
 	match discipline:
-		"swordsmanship": return "每2级使流云剑法伤害 +1"
-		"bladesmanship": return "每2级使普通攻击伤害 +1"
-		"herbalism": return "每2级使回春散治疗 +1；精通后采药增产 +%d" % gathering_bonus(level)
-		"mining": return "精通后每次挖矿增产 +%d矿石" % gathering_bonus(level)
+		"swordsmanship": return "每2级剑伤 +1；大成后流云剑法只耗6真气"
+		"bladesmanship": return "每2级普攻 +1；大成后普攻制造2层破绽"
+		"herbalism": return "回春散随等级增强；大成再加5治疗，采药增产 +%d" % gathering_bonus(level)
+		"mining": return "采矿增产 +%d；大成后淬炼少花3银两" % gathering_bonus(level)
 	return ""
 
 static func empty_records() -> Dictionary:

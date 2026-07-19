@@ -14,8 +14,17 @@ func _initialize() -> void:
 	assert(RULES.apply(state, "temper_blade") and RULES.apply(state, "temper_blade"), "The weapon should support three total tempering levels.")
 	assert(not RULES.can_craft(state, "temper_blade"), "Tempering must stop at the level cap.")
 	assert(not RULES.apply(state, "invalid"), "Unknown recipes must never mutate state.")
+	var apprentice := _state()
+	apprentice.silver = 5
+	assert(not RULES.can_craft(apprentice, "temper_blade"), "An apprentice miner should still need the full eight silver for tempering.")
+	var master := _state()
+	master.silver = 5
+	master.mining = 10
+	assert(RULES.effective_cost(master, "temper_blade").silver == 5 and RULES.can_craft(master, "temper_blade"), "Mining mastery should reduce the tempering silver cost from eight to five.")
+	assert("挖矿大成减免" in str(RULES.options(master)[1][1]), "The workshop choice should disclose the mastery discount before crafting.")
+	assert(RULES.apply(master, "temper_blade") and int(master.silver) == 0, "The discounted cost should be charged exactly once.")
 	print("Crafting rules tests passed.")
 	quit()
 
 func _state() -> Dictionary:
-	return {"materials": {"herbs": 3, "ore": 3}, "consumables": {"healing_powder": 0}, "silver": 20, "forge_level": 0}
+	return {"materials": {"herbs": 3, "ore": 3}, "consumables": {"healing_powder": 0}, "silver": 20, "forge_level": 0, "mining": 0}

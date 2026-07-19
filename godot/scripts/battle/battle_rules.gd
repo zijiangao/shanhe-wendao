@@ -59,13 +59,13 @@ static func can_move_to(battle: Dictionary, cell: Vector2i) -> bool:
 	var path := find_path(battle, active_position(battle), cell, false)
 	return path.size() >= 2 and path.size() <= 3
 
-static func can_attack_cell(battle: Dictionary, cell: Vector2i, skill: bool, hero_qi: int) -> bool:
+static func can_attack_cell(battle: Dictionary, cell: Vector2i, skill: bool, hero_qi: int, skill_qi_cost: int = 8) -> bool:
 	if enemy_at(battle, cell) < 0:
 		return false
 	var delta := cell - active_position(battle)
 	var distance := absi(delta.x) + absi(delta.y)
 	if skill:
-		return str(battle.get("active_unit", "hero")) != "ally" and distance <= 3 and hero_qi >= 8 and has_clear_line(battle, active_position(battle), cell)
+		return str(battle.get("active_unit", "hero")) != "ally" and distance <= 3 and hero_qi >= maxi(0, skill_qi_cost) and has_clear_line(battle, active_position(battle), cell)
 	return distance == 1
 
 static func can_enemy_attack(battle: Dictionary, enemy: Dictionary, target: Vector2i) -> bool:
