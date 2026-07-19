@@ -79,6 +79,7 @@ func _add_marker(label_text: String, at: Vector2, id: String, current: bool) -> 
 	button.add_theme_color_override("font_color", Color("#fff6df"))
 	button.add_theme_stylebox_override("normal", _box(Color("#9f4032ee") if current else Color("#263f34ee")))
 	button.add_theme_stylebox_override("hover", _box(Color("#b15443")))
+	button.add_theme_stylebox_override("focus", _box(Color("#d07861")))
 	button.pressed.connect(func(): destination_requested.emit(id))
 	add_child(button)
 
@@ -90,6 +91,7 @@ func _action_button(text_value: String, color: Color) -> Button:
 	button.add_theme_color_override("font_color", Color("#f5ecd9"))
 	button.add_theme_stylebox_override("normal", _box(color))
 	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12)))
+	button.add_theme_stylebox_override("focus", _box(color.lightened(0.24)))
 	return button
 
 func _box(color: Color) -> StyleBoxFlat:

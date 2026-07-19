@@ -8,6 +8,7 @@ const UI_SCALES := [0.9, 1.0, 1.15, 1.3]
 var data: Dictionary = {}
 
 func _ready() -> void:
+	ensure_controller_navigation()
 	load_settings()
 	apply_settings()
 
@@ -79,3 +80,21 @@ func _apply_bus_volume(bus_name: String, linear_volume: float) -> void:
 		return
 	AudioServer.set_bus_mute(bus_index, linear_volume <= 0.001)
 	AudioServer.set_bus_volume_db(bus_index, linear_to_db(maxf(0.001, linear_volume)))
+
+func ensure_controller_navigation() -> void:
+	_add_joypad_button("ui_accept", 0)
+	_add_joypad_button("ui_cancel", 1)
+	_add_joypad_button("ui_up", 11)
+	_add_joypad_button("ui_down", 12)
+	_add_joypad_button("ui_left", 13)
+	_add_joypad_button("ui_right", 14)
+
+func _add_joypad_button(action: StringName, button_index: int) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	for existing in InputMap.action_get_events(action):
+		if existing is InputEventJoypadButton and (existing as InputEventJoypadButton).button_index == button_index:
+			return
+	var event := InputEventJoypadButton.new()
+	event.button_index = button_index
+	InputMap.action_add_event(action, event)

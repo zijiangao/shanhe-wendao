@@ -52,6 +52,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		cell.add_theme_font_size_override("font_size", 15)
 		cell.add_theme_color_override("font_color", Color("#fff4dc"))
 		cell.add_theme_stylebox_override("normal", _box(Color(data.color)))
+		cell.add_theme_stylebox_override("focus", _box(Color(data.color).lightened(0.28)))
 		cell.add_theme_stylebox_override("disabled", _box(Color(data.color)))
 		var token_index: int = int(data.token)
 		if token_index >= 0:
@@ -172,6 +173,7 @@ func _action_button(text_value: String, color: Color) -> Button:
 	button.add_theme_color_override("font_color", Color("#f5ecd9"))
 	button.add_theme_stylebox_override("normal", _box(color))
 	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12)))
+	button.add_theme_stylebox_override("focus", _box(color.lightened(0.24)))
 	return button
 
 func _box(color: Color) -> StyleBoxFlat:

@@ -37,6 +37,7 @@ func setup(background: Texture2D, speaker_name: String, line: String, index: int
 	next.add_theme_color_override("font_color", Color("#f5ecd9"))
 	next.add_theme_stylebox_override("normal", _box(Color("#8b493b")))
 	next.add_theme_stylebox_override("hover", _box(Color("#a45a4b")))
+	next.add_theme_stylebox_override("focus", _box(Color("#c77966")))
 	next.pressed.connect(func(): continue_requested.emit())
 	add_child(next)
 
@@ -51,4 +52,3 @@ func _box(color: Color) -> StyleBoxFlat:
 	box.content_margin_top = 8
 	box.content_margin_bottom = 8
 	return box
-

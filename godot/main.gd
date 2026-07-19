@@ -11,8 +11,10 @@ const LOCATION_VIEW := preload("res://scenes/world/location_view.tscn")
 const TACTICAL_BATTLE_VIEW := preload("res://scenes/battle/tactical_battle_view.tscn")
 const BATTLE_RULES := preload("res://scripts/battle/battle_rules.gd")
 const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
+const NAVIGATION_RULES := preload("res://scripts/ui/navigation_rules.gd")
 
 var screen: String = "menu"
+var previous_screen: String = "menu"
 var content: Control
 var status_label: Label
 var toast_label: Label
@@ -31,6 +33,17 @@ func _ready() -> void:
 	GameState.battle_started.connect(func(): screen = "battle"; _rebuild())
 	_build_shell()
 	_show_menu()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("ui_cancel"):
+		return
+	var action: Dictionary = NAVIGATION_RULES.back_action(screen, previous_screen)
+	if bool(action.allowed):
+		screen = str(action.target)
+		_rebuild()
+	elif str(action.message) != "":
+		_toast(str(action.message))
+	get_viewport().set_input_as_handled()
 
 func _build_shell() -> void:
 	var background := ColorRect.new()
@@ -146,10 +159,13 @@ func _show_menu() -> void:
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	_update_status()
+	call_deferred("_focus_first_content_control")
 
 func _switch_screen(next: String) -> void:
 	if next != "menu" and screen == "menu" and GameState.data.is_empty():
 		GameState.new_game()
+	if next in NAVIGATION_RULES.OVERLAY_SCREENS:
+		previous_screen = screen
 	screen = next
 	_rebuild()
 
@@ -169,6 +185,20 @@ func _rebuild() -> void:
 		"battle": _show_battle()
 		"victory": _show_victory()
 	_update_status()
+	call_deferred("_focus_first_content_control")
+
+func _focus_first_content_control() -> void:
+	if content == null:
+		return
+	var controls := content.find_children("*", "Control", true, false)
+	for node in controls:
+		var control := node as Control
+		if control == null or control.is_queued_for_deletion() or not control.is_visible_in_tree() or control.focus_mode == Control.FOCUS_NONE:
+			continue
+		if control is BaseButton and (control as BaseButton).disabled:
+			continue
+		control.grab_focus()
+		return
 
 func _show_map() -> void:
 	_clear_content()
@@ -1380,6 +1410,7 @@ func _action_button(text_value: String, color: Color) -> Button:
 	button.add_theme_color_override("font_color", Color("#f5ecd9"))
 	button.add_theme_stylebox_override("normal", _box(color))
 	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12)))
+	button.add_theme_stylebox_override("focus", _box(color.lightened(0.24)))
 	return button
 
 func _box(color: Color) -> StyleBoxFlat:

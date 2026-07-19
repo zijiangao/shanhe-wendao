@@ -36,6 +36,7 @@ func setup(background: Texture2D, heading_text: String, objective_text: String, 
 		button.add_theme_color_override("font_color", Color("#f5ecd9"))
 		button.add_theme_stylebox_override("normal", _box(Color("#263f34ee")))
 		button.add_theme_stylebox_override("hover", _box(Color("#3e6654")))
+		button.add_theme_stylebox_override("focus", _box(Color("#5b8f76")))
 		button.add_theme_stylebox_override("disabled", _box(Color("#3d423fbb")))
 		button.pressed.connect(_emit_action.bind(str(action.get("id", ""))))
 		add_child(button)
@@ -54,4 +55,3 @@ func _box(color: Color) -> StyleBoxFlat:
 	box.content_margin_top = 8
 	box.content_margin_bottom = 8
 	return box
-

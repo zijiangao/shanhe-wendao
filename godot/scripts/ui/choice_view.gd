@@ -39,6 +39,7 @@ func setup(background: Texture2D, prompt_text: String, options: Array) -> void:
 		button.add_theme_color_override("font_color", Color("#f5ecd9"))
 		button.add_theme_stylebox_override("normal", _box(Color("#294438")))
 		button.add_theme_stylebox_override("hover", _box(Color("#3b604f")))
+		button.add_theme_stylebox_override("focus", _box(Color("#5b8f76")))
 		button.pressed.connect(_emit_option.bind(str(option[2])))
 		panel.add_child(button)
 
