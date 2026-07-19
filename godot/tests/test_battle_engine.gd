@@ -11,6 +11,7 @@ func _initialize() -> void:
 	_test_ranged_enemy_attack_and_cover()
 	_test_brute_heavy_attack()
 	_test_duelist_fast_movement()
+	_test_survival_objective()
 	_test_enemy_movement_and_turn_reset()
 	_test_guard_and_ally_knockout()
 	_test_hero_defeat()
@@ -138,6 +139,17 @@ func _test_duelist_fast_movement() -> void:
 	var outcome: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
 	assert(int(outcome.hero_hp) == 20, "A distant duelist should move instead of attacking.")
 	assert(Vector2i(int(battle.enemies[0].x), int(battle.enemies[0].y)) == Vector2i(2, 1), "Duelists should advance up to two cells per enemy turn.")
+
+func _test_survival_objective() -> void:
+	var battle := _fixture()
+	battle.objective = {"type": "survive", "rounds": 2}
+	assert(not ENGINE.is_victory(battle), "A survival objective should not complete before the required rounds.")
+	assert("0/2" in ENGINE.objective_text(battle), "Objective text should show initial survival progress.")
+	var first: Dictionary = ENGINE.enemy_turn(battle, 100, _seeded_rng())
+	assert(not bool(first.hero_defeated) and not ENGINE.is_victory(battle), "Surviving one round should not complete a two-round objective.")
+	var second: Dictionary = ENGINE.enemy_turn(battle, int(first.hero_hp), _seeded_rng())
+	assert(not bool(second.hero_defeated) and ENGINE.is_victory(battle), "Surviving the required number of rounds should complete the objective with enemies alive.")
+	assert("2/2" in ENGINE.objective_text(battle), "Objective text should show completed survival progress.")
 
 func _test_enemy_movement_and_turn_reset() -> void:
 	var battle := _fixture()

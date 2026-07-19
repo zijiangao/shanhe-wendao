@@ -4,10 +4,22 @@ extends RefCounted
 const RULES := preload("res://scripts/battle/battle_rules.gd")
 
 static func is_victory(battle: Dictionary) -> bool:
+	if str(battle.get("objective", {}).get("type", "eliminate")) == "survive":
+		var required_rounds := maxi(1, int(battle.objective.get("rounds", 1)))
+		if int(battle.get("turn", 1)) > required_rounds:
+			return true
 	for enemy in battle.enemies:
 		if int(enemy.hp) > 0:
 			return false
 	return true
+
+static func objective_text(battle: Dictionary) -> String:
+	var objective: Dictionary = battle.get("objective", {"type": "eliminate"})
+	if str(objective.get("type", "eliminate")) == "survive":
+		var required_rounds := maxi(1, int(objective.get("rounds", 1)))
+		var completed_rounds := mini(required_rounds, maxi(0, int(battle.get("turn", 1)) - 1))
+		return "坚持回合 %d/%d（或提前击败所有对手）" % [completed_rounds, required_rounds]
+	return "击败所有敌人"
 
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
 	if int(battle.ap) <= 0:

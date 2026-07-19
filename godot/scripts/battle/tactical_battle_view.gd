@@ -1,6 +1,8 @@
 class_name TacticalBattleView
 extends Control
 
+const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
+
 signal cell_selected(x: int, y: int)
 signal mode_selected(mode: String)
 signal end_turn_requested
@@ -98,7 +100,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	var active_hp: int = int(battle.ally.hp) if active_name == "林清霜" else int(player.hp)
 	var active_max_hp: int = int(battle.ally.max_hp) if active_name == "林清霜" else int(player.max_hp)
 	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if active_name == "林清霜" else "真气 %d/20" % player.qi
-	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.ap, _mode_name(mode)]
+	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.ap, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
 	status.add_theme_font_size_override("font_size", 18)
 	status.add_theme_color_override("font_color", Color("#f2dfb3"))
 	side_box.add_child(status)

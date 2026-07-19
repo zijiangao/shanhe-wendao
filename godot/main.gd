@@ -1191,6 +1191,10 @@ func _enemy_turn() -> void:
 		screen = "map"
 	else:
 		GameState.data.battle = outcome.battle
+		if _check_tactical_victory(outcome.battle):
+			SaveManager.save_auto()
+			_rebuild()
+			return
 	SaveManager.save_auto()
 	_rebuild()
 

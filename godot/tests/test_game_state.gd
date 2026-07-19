@@ -40,6 +40,7 @@ func _initialize() -> void:
 	assert(state.import_data(legacy_battle_save), "A structurally valid legacy battle should migrate.")
 	assert(int(state.data.battle.enemies[0].range) == 4, "Legacy archer saves should recover their ranged attack distance.")
 	assert(str(state.data.battle.enemies[0].role) == "archer", "Legacy archer saves should recover their tactical role.")
+	assert(str(state.data.battle.objective.type) == "eliminate", "Legacy battles should default to an elimination objective.")
 
 	print("GameState tests passed.")
 	quit()

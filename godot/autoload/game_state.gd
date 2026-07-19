@@ -112,6 +112,7 @@ func start_blackreed_battle() -> bool:
 		"ap": 2,
 		"active_unit": "hero",
 		"turn": 1,
+		"objective": {"type": "eliminate"},
 		"result": "寨主率两名喽啰封住渡口。每回合有两个行动点。",
 		"blocked": [[3, 1], [3, 2], [5, 4]],
 		"enemies": [
@@ -138,6 +139,7 @@ func start_huashan_trial_battle() -> bool:
 		"ap": 2,
 		"active_unit": "hero",
 		"turn": 1,
+		"objective": {"type": "survive", "rounds": 4},
 		"result": "林清霜与你并肩登台。她会在每次行动后自动支援攻击。",
 		"blocked": [[3, 1], [4, 4]],
 		"ally": {"name": "林清霜", "hp": 30, "max_hp": 30, "qi": 15, "max_qi": 15, "attack": 5, "guard": 0, "x": 1, "y": 4},
@@ -262,6 +264,15 @@ func _valid_battle(value: Variant) -> bool:
 		return false
 	if int(battle.player_x) < 0 or int(battle.player_x) >= width or int(battle.player_y) < 0 or int(battle.player_y) >= height:
 		return false
+	if typeof(battle.get("objective", {})) != TYPE_DICTIONARY:
+		battle.objective = {"type": "eliminate"}
+	var objective_type := str(battle.get("objective", {}).get("type", "eliminate"))
+	if objective_type not in ["eliminate", "survive"]:
+		battle.objective = {"type": "eliminate"}
+	elif objective_type == "survive":
+		battle.objective.rounds = maxi(1, int(battle.objective.get("rounds", 1)))
+	else:
+		battle.objective = {"type": "eliminate"}
 	for enemy in battle.enemies:
 		if typeof(enemy) != TYPE_DICTIONARY or not enemy.has("hp") or not enemy.has("x") or not enemy.has("y"):
 			return false
