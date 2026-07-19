@@ -107,8 +107,30 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 	var total_hurt := 0
 	var special_notes: PackedStringArray = []
 	var ally_was_active := battle.has("ally") and int(battle.ally.hp) > 0
+	var boss_transition := false
 	for enemy in battle.enemies:
 		if int(enemy.hp) <= 0:
+			continue
+		if bool(enemy.get("boss", false)) and RULES.boss_phase(enemy) == 2 and not bool(enemy.get("phase_two_started", false)):
+			enemy.phase_two_started = true
+			boss_transition = true
+			special_notes.append("%s震碎刀鞘，进入第二阶段“断岳”" % str(enemy.name))
+		if RULES.is_boss_sweep_turn(battle, enemy):
+			var sweep_damage := int(enemy.attack) + 2 + _roll_bonus(rng)
+			var sweep_hits := 0
+			if RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.player_x), int(battle.player_y))):
+				hero_hp = maxi(0, hero_hp - sweep_damage)
+				total_hurt += sweep_damage
+				sweep_hits += 1
+			if battle.has("ally") and int(battle.ally.hp) > 0 and RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.ally.x), int(battle.ally.y))):
+				var ally_hurt := sweep_damage
+				var blocked := mini(ally_hurt, int(battle.ally.guard))
+				ally_hurt -= blocked
+				battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)
+				battle.ally.hp = maxi(0, int(battle.ally.hp) - ally_hurt)
+				total_hurt += ally_hurt
+				sweep_hits += 1
+			special_notes.append("%s施展断岳刀势，命中%d人" % [str(enemy.name), sweep_hits])
 			continue
 		var target_data := select_target(battle, enemy)
 		var target: Vector2i = target_data.position
@@ -143,13 +165,14 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		battle.active_unit = "hero"
 		battle.result = _turn_result(total_hurt, ally_defeated, special_notes)
 		battle.effect = {"x": battle.player_x, "y": battle.player_y, "text": "-%d" % total_hurt, "type": "damage"} if total_hurt > 0 else {}
-		battle.skill_flash = false
+		battle.skill_flash = boss_transition
 	return {
 		"battle": battle,
 		"hero_hp": hero_hp,
 		"hero_defeated": hero_defeated,
 		"ally_defeated": ally_defeated,
-		"total_hurt": total_hurt
+		"total_hurt": total_hurt,
+		"boss_transition": boss_transition
 	}
 
 static func select_target(battle: Dictionary, enemy: Dictionary) -> Dictionary:

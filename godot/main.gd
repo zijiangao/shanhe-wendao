@@ -1201,6 +1201,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 		for x in range(int(battle.width)):
 			var data := {"x": x, "y": y, "text": "·", "disabled": false, "token": -1, "color": "#1d2b25bb" if battle_mode != "inspect" else "#294438dd"}
 			var cell := Vector2i(x, y)
+			var boss_danger: bool = BATTLE_RULES.is_boss_sweep_cell(battle, cell)
 			var move_valid: bool = battle_mode == "move" and BATTLE_RULES.can_move_to(battle, cell)
 			var attack_valid: bool = battle_mode == "attack" and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, cell, true, int(GameState.data.qi))
@@ -1213,16 +1214,18 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				data.color = "#c18b2fee"
 			elif frost_valid:
 				data.color = "#668fbbee"
+			elif boss_danger:
+				data.color = "#8f2f24ee"
 			if BATTLE_RULES.is_blocked(battle, cell):
 				data.text = "岩石"
 				data.disabled = true
 				data.color = "#4b4b45ee"
 			elif x == int(battle.player_x) and y == int(battle.player_y):
-				data.text = "%s沈羽\nAP %d" % ["▶ " if str(battle.get("active_unit", "hero")) == "hero" else "", battle.ap]
+				data.text = "%s%s沈羽\nAP %d" % ["⚠ " if boss_danger else "", "▶ " if str(battle.get("active_unit", "hero")) == "hero" else "", battle.ap]
 				data.token = 0
 				data.color = "#3d916fee" if str(battle.get("active_unit", "hero")) == "hero" else "#2f7359"
 			elif BATTLE_RULES.is_ally_at(battle, cell):
-				data.text = "%s%s\n护卫 %d" % ["▶ " if str(battle.get("active_unit", "hero")) == "ally" else "", battle.ally.name, battle.ally.guard]
+				data.text = "%s%s%s\n护卫 %d" % ["⚠ " if boss_danger else "", "▶ " if str(battle.get("active_unit", "hero")) == "ally" else "", battle.ally.name, battle.ally.guard]
 				data.token = 4
 				data.color = "#8068a9ee" if str(battle.get("active_unit", "hero")) == "ally" else "#594a78ee"
 			else:
@@ -1445,7 +1448,7 @@ func _enemy_turn() -> void:
 		GameState.finish_battle(false)
 		screen = "defeat"
 	else:
-		AudioFeedback.play("enemy_hit" if int(outcome.total_hurt) > 0 else "turn")
+		AudioFeedback.play("skill" if bool(outcome.get("boss_transition", false)) else ("enemy_hit" if int(outcome.total_hurt) > 0 else "turn"))
 		GameState.data.battle = outcome.battle
 		if _check_tactical_victory(outcome.battle):
 			SaveManager.save_auto()

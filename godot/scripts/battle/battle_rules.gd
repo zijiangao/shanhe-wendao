@@ -130,7 +130,9 @@ static func enemy_preview(battle: Dictionary) -> String:
 		var target_name: String = target_data.name
 		var can_attack := can_enemy_attack(battle, enemy, target)
 		var description := "向%s接近" % target_name
-		if can_attack:
+		if is_boss_sweep_turn(battle, enemy):
+			description = "施展断岳刀势（周身两格，立即撤离）"
+		elif can_attack:
 			if is_heavy_turn(battle, enemy):
 				description = "蓄力重击%s" % target_name
 			elif int(enemy.get("range", 1)) > 1:
@@ -145,5 +147,24 @@ static func enemy_preview(battle: Dictionary) -> String:
 static func is_heavy_turn(battle: Dictionary, enemy: Dictionary) -> bool:
 	return str(enemy.get("role", "melee")) == "brute" and int(battle.get("turn", 1)) % 2 == 0
 
+static func boss_phase(enemy: Dictionary) -> int:
+	if not bool(enemy.get("boss", false)):
+		return 1
+	return 2 if int(enemy.get("hp", 1)) * 2 <= int(enemy.get("max_hp", enemy.get("hp", 1))) else 1
+
+static func is_boss_sweep_turn(battle: Dictionary, enemy: Dictionary) -> bool:
+	return boss_phase(enemy) == 2 and int(battle.get("turn", 1)) % 3 == 0
+
+static func in_boss_sweep_range(enemy: Dictionary, target: Vector2i) -> bool:
+	return absi(int(enemy.x) - target.x) + absi(int(enemy.y) - target.y) <= 2
+
+static func is_boss_sweep_cell(battle: Dictionary, cell: Vector2i) -> bool:
+	for enemy in battle.get("enemies", []):
+		if int(enemy.get("hp", 0)) > 0 and is_boss_sweep_turn(battle, enemy) and in_boss_sweep_range(enemy, cell):
+			return true
+	return false
+
 static func enemy_move_steps(enemy: Dictionary) -> int:
-	return 2 if str(enemy.get("role", "melee")) == "duelist" else 1
+	if str(enemy.get("role", "melee")) == "duelist" or boss_phase(enemy) == 2:
+		return 2
+	return 1

@@ -182,7 +182,7 @@ func start_final_battle() -> bool:
 		"blocked": [[3, 1], [3, 4], [5, 2]],
 		"ally": {"name": "林清霜", "hp": 34, "max_hp": 34, "qi": 15, "max_qi": 15, "attack": 6, "guard": 0, "x": 1, "y": 4},
 		"enemies": [
-			{"name": "厉无咎", "role": "brute", "hp": 46, "max_hp": 46, "attack": 8, "range": 1, "x": 6, "y": 2},
+			{"name": "厉无咎", "role": "brute", "boss": true, "hp": 46, "max_hp": 46, "attack": 8, "range": 1, "x": 6, "y": 2},
 			{"name": "玄甲亲卫", "role": "melee", "hp": 22, "max_hp": 22, "attack": 6, "range": 1, "x": 6, "y": 4},
 			{"name": "武库弩手", "role": "archer", "hp": 12 if trusted_su else 17, "max_hp": 12 if trusted_su else 17, "attack": 5, "range": 4, "x": 5, "y": 0}
 		]

@@ -54,6 +54,14 @@ func _initialize() -> void:
 	var preview: String = RULES.enemy_preview(battle)
 	assert("蓄力重击林清霜" in preview, "Enemy previews should identify a brute's target and heavy attack.")
 	assert(RULES.enemy_move_steps({"role": "duelist"}) == 2, "Duelists should have a two-cell movement allowance.")
+	var boss := {"name": "厉无咎", "role": "brute", "boss": true, "hp": 20, "max_hp": 46, "x": 3, "y": 2}
+	battle.enemies = [boss]
+	battle.turn = 3
+	assert(RULES.boss_phase(boss) == 2 and RULES.enemy_move_steps(boss) == 2, "A half-health boss should enter phase two and move faster.")
+	assert(RULES.is_boss_sweep_turn(battle, boss), "The phase-two boss should telegraph a sweep every third turn.")
+	assert(RULES.in_boss_sweep_range(boss, Vector2i(1, 2)) and not RULES.in_boss_sweep_range(boss, Vector2i(0, 2)), "The boss sweep should have an exact two-cell Manhattan radius.")
+	assert(RULES.is_boss_sweep_cell(battle, Vector2i(1, 2)) and not RULES.is_boss_sweep_cell(battle, Vector2i(0, 2)), "Battle cells should expose the telegraphed sweep danger zone to the UI.")
+	assert("立即撤离" in RULES.enemy_preview(battle), "The boss sweep preview should clearly teach its counterplay.")
 
 	print("BattleRules tests passed.")
 	quit()

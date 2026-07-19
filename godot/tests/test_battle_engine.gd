@@ -10,6 +10,7 @@ func _initialize() -> void:
 	_test_complete_battle_simulation()
 	_test_ranged_enemy_attack_and_cover()
 	_test_brute_heavy_attack()
+	_test_boss_phase_and_sweep()
 	_test_duelist_fast_movement()
 	_test_survival_objective()
 	_test_enemy_movement_and_turn_reset()
@@ -131,6 +132,22 @@ func _test_brute_heavy_attack() -> void:
 	var outcome: Dictionary = ENGINE.enemy_turn(battle, 30, _seeded_rng())
 	assert(int(outcome.total_hurt) >= int(battle.enemies[0].attack) + 4, "Brutes should gain bonus damage on their telegraphed heavy turn.")
 	assert("重击" in str(battle.result), "Heavy attacks should be reported in the battle log.")
+
+func _test_boss_phase_and_sweep() -> void:
+	var battle := _fixture()
+	battle.turn = 3
+	battle.player_x = 1
+	battle.player_y = 1
+	battle.ally.x = 2
+	battle.ally.y = 2
+	battle.enemies[0] = {"name": "厉无咎", "role": "brute", "boss": true, "hp": 20, "max_hp": 46, "attack": 8, "range": 1, "x": 2, "y": 1}
+	var outcome: Dictionary = ENGINE.enemy_turn(battle, 40, _seeded_rng())
+	assert(bool(outcome.boss_transition), "Crossing half health should emit exactly one boss phase transition.")
+	assert(int(outcome.hero_hp) < 40 and int(battle.ally.hp) < 30, "The telegraphed sweep should hit every party member within two cells.")
+	assert("第二阶段" in str(battle.result) and "断岳刀势" in str(battle.result), "The battle log should announce both transition and signature attack.")
+	battle.turn = 4
+	var second: Dictionary = ENGINE.enemy_turn(battle, int(outcome.hero_hp), _seeded_rng())
+	assert(not bool(second.boss_transition), "The boss phase transition must not repeat on later turns.")
 
 func _test_duelist_fast_movement() -> void:
 	var battle := _fixture()
