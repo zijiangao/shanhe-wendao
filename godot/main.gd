@@ -939,7 +939,7 @@ func _show_battle() -> void:
 
 func _battle_mode_selected(next_mode: String) -> void:
 	if next_mode == "frost_guard":
-		_use_frost_guard()
+		_execute_player_action("frost_guard")
 		return
 	battle_mode = next_mode
 	_rebuild()
@@ -1166,63 +1166,14 @@ func _tactical_cell(x: int, y: int) -> void:
 	if int(battle.ap) <= 0:
 		_toast("行动点已用尽，请结束回合。")
 		return
-	var active: Vector2i = BATTLE_RULES.active_position(battle)
-	var active_name: String = "林清霜" if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
-	var distance: int = absi(x - active.x) + absi(y - active.y)
-	var enemy_index: int = BATTLE_RULES.enemy_at(battle, Vector2i(x, y))
-	if battle_mode == "move":
-		if not BATTLE_RULES.can_move_to(battle, Vector2i(x, y)):
-			_toast("只能移动到两格内的空地。")
-			return
-		BATTLE_RULES.set_active_position(battle, Vector2i(x, y))
-		battle.ap -= 1
-		battle.result = "%s施展身法，移动到新的位置。" % active_name
-		battle.effect = {}
-		battle.skill_flash = false
-	elif battle_mode == "attack":
-		if enemy_index < 0 or distance != 1:
-			_toast("普通攻击只能命中相邻敌人。")
-			return
-		var damage: int = (int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(GameState.data.strength) + 3) + randi_range(0, 2)
-		battle.enemies[enemy_index].hp -= damage
-		battle.ap -= 1
-		battle.result = "%s对%s造成%d点伤害。" % [active_name, battle.enemies[enemy_index].name, damage]
-		battle.effect = {"x": x, "y": y, "text": "-%d" % damage, "type": "damage"}
-		battle.skill_flash = false
-	elif battle_mode == "skill":
-		if str(battle.get("active_unit", "hero")) == "ally":
-			_toast("林清霜尚未装备可主动释放的武学。")
-			return
-		if enemy_index < 0 or distance > 3 or not (x == active.x or y == active.y):
-			_toast("流云剑法只能攻击同一直线三格内的敌人。")
-			return
-		if int(GameState.data.qi) < 8:
-			_toast("真气不足。")
-			return
-		var damage: int = int(GameState.data.strength) + 9 + int(GameState.data.skill_mastery.cloud / 3) + randi_range(0, 3)
-		GameState.data.qi -= 8
-		GameState.data.skill_mastery.cloud += 1
-		battle.enemies[enemy_index].hp -= damage
-		battle.ap -= 1
-		battle.result = "流云剑气贯穿战场，对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
-		battle.effect = {"x": x, "y": y, "text": "-%d" % damage, "type": "skill"}
-		battle.skill_flash = true
-	elif battle_mode == "frost_dash":
-		if not BATTLE_RULES.can_frost_dash(battle, Vector2i(x, y)):
-			_toast("霜华刺只能突进攻击两格内的敌人。")
-			return
-		var damage: int = int(battle.ally.attack) + 6 + int(GameState.data.skill_mastery.frost / 3) + randi_range(0, 2)
-		battle.ally.qi -= 6
-		GameState.data.skill_mastery.frost += 1
-		battle.enemies[enemy_index].hp -= damage
-		var path: Array[Vector2i] = BATTLE_RULES.find_path(battle, Vector2i(int(battle.ally.x), int(battle.ally.y)), Vector2i(x, y), true)
-		if path.size() >= 2:
-			battle.ally.x = path[path.size() - 2].x
-			battle.ally.y = path[path.size() - 2].y
-		battle.ap -= 1
-		battle.result = "林清霜踏雪突进，以霜华刺对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
-		battle.effect = {"x": x, "y": y, "text": "-%d" % damage, "type": "skill"}
-		battle.skill_flash = false
+	_execute_player_action(battle_mode, Vector2i(x, y))
+
+func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) -> void:
+	var outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, action, target)
+	if not bool(outcome.ok):
+		_toast(str(outcome.error))
+		return
+	var battle: Dictionary = outcome.battle
 	if _check_tactical_victory(battle):
 		SaveManager.save_auto()
 		_rebuild()
@@ -1240,21 +1191,6 @@ func _enemy_turn() -> void:
 		screen = "map"
 	else:
 		GameState.data.battle = outcome.battle
-	SaveManager.save_auto()
-	_rebuild()
-
-func _use_frost_guard() -> void:
-	var battle: Dictionary = GameState.data.battle
-	if str(battle.get("active_unit", "hero")) != "ally" or int(battle.ap) <= 0:
-		return
-	battle.ally.guard = 8 + int(GameState.data.skill_mastery.frost_guard / 3)
-	battle.ally.qi = mini(int(battle.ally.max_qi), int(battle.ally.qi) + 3)
-	GameState.data.skill_mastery.frost_guard += 1
-	battle.ap -= 1
-	battle.result = "林清霜横剑凝神，获得%d点护卫并恢复3点真气。" % battle.ally.guard
-	battle.effect = {}
-	battle.skill_flash = false
-	GameState.data.battle = battle
 	SaveManager.save_auto()
 	_rebuild()
 

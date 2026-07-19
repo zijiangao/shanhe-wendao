@@ -9,6 +9,88 @@ static func is_victory(battle: Dictionary) -> bool:
 			return false
 	return true
 
+static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
+	if int(battle.ap) <= 0:
+		return _failure("行动点已用尽，请结束回合。")
+	match action:
+		"move":
+			return _move(battle, target)
+		"attack":
+			return _attack(battle, player, target, rng)
+		"skill":
+			return _cloud_skill(battle, player, target, rng)
+		"frost_dash":
+			return _frost_dash(battle, player, target, rng)
+		"frost_guard":
+			return _frost_guard(battle, player)
+		_:
+			return _failure("未知战斗行动：%s" % action)
+
+static func _move(battle: Dictionary, target: Vector2i) -> Dictionary:
+	if not RULES.can_move_to(battle, target):
+		return _failure("只能移动到两格内的空地。")
+	var active_name := _active_name(battle)
+	RULES.set_active_position(battle, target)
+	battle.ap = int(battle.ap) - 1
+	battle.result = "%s施展身法，移动到新的位置。" % active_name
+	_clear_effect(battle)
+	return _success(battle, 0)
+
+static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
+	if not RULES.can_attack_cell(battle, target, false, int(player.qi)):
+		return _failure("普通攻击只能命中相邻敌人。")
+	var enemy_index := RULES.enemy_at(battle, target)
+	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3
+	var damage := base_damage + _roll_bonus(rng)
+	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
+	battle.ap = int(battle.ap) - 1
+	battle.result = "%s对%s造成%d点伤害。" % [_active_name(battle), battle.enemies[enemy_index].name, damage]
+	battle.skill_flash = false
+	return _success(battle, damage)
+
+static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) == "ally":
+		return _failure("林清霜无法施展流云剑法。")
+	if not RULES.can_attack_cell(battle, target, true, int(player.qi)):
+		return _failure("流云剑法需要8点真气，并只能攻击同一直线三格内的敌人。")
+	var enemy_index := RULES.enemy_at(battle, target)
+	var damage := int(player.strength) + 9 + int(player.skill_mastery.cloud / 3) + _roll_range(rng, 0, 3)
+	player.qi = int(player.qi) - 8
+	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
+	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
+	battle.ap = int(battle.ap) - 1
+	battle.result = "流云剑气贯穿战场，对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
+	battle.skill_flash = true
+	return _success(battle, damage)
+
+static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
+	if not RULES.can_frost_dash(battle, target):
+		return _failure("霜华刺需要6点真气，并只能突进攻击两格内的敌人。")
+	var enemy_index := RULES.enemy_at(battle, target)
+	var damage := int(battle.ally.attack) + 6 + int(player.skill_mastery.frost / 3) + _roll_bonus(rng)
+	battle.ally.qi = int(battle.ally.qi) - 6
+	player.skill_mastery.frost = int(player.skill_mastery.frost) + 1
+	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
+	var path := RULES.find_path(battle, Vector2i(int(battle.ally.x), int(battle.ally.y)), target, true)
+	if path.size() >= 2:
+		battle.ally.x = path[path.size() - 2].x
+		battle.ally.y = path[path.size() - 2].y
+	battle.ap = int(battle.ap) - 1
+	battle.result = "林清霜踏雪突进，以霜华刺对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
+	battle.skill_flash = false
+	return _success(battle, damage)
+
+static func _frost_guard(battle: Dictionary, player: Dictionary) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) != "ally" or not battle.has("ally") or int(battle.ally.hp) <= 0:
+		return _failure("需要由林清霜行动才能施展寒锋守势。")
+	battle.ally.guard = 8 + int(player.skill_mastery.frost_guard / 3)
+	battle.ally.qi = mini(int(battle.ally.max_qi), int(battle.ally.qi) + 3)
+	player.skill_mastery.frost_guard = int(player.skill_mastery.frost_guard) + 1
+	battle.ap = int(battle.ap) - 1
+	battle.result = "林清霜横剑凝神，获得%d点护卫并恢复3点真气。" % battle.ally.guard
+	_clear_effect(battle)
+	return _success(battle, 0)
+
 static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var total_hurt := 0
 	var ally_was_active := battle.has("ally") and int(battle.ally.hp) > 0
@@ -71,6 +153,26 @@ static func _distance(from: Vector2i, to: Vector2i) -> int:
 
 static func _roll_bonus(rng: RandomNumberGenerator) -> int:
 	return rng.randi_range(0, 2) if rng != null else randi_range(0, 2)
+
+static func _roll_range(rng: RandomNumberGenerator, minimum: int, maximum: int) -> int:
+	return rng.randi_range(minimum, maximum) if rng != null else randi_range(minimum, maximum)
+
+static func _active_name(battle: Dictionary) -> String:
+	return "林清霜" if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
+
+static func _apply_enemy_damage(battle: Dictionary, enemy_index: int, target: Vector2i, damage: int, effect_type: String) -> void:
+	battle.enemies[enemy_index].hp = maxi(0, int(battle.enemies[enemy_index].hp) - damage)
+	battle.effect = {"x": target.x, "y": target.y, "text": "-%d" % damage, "type": effect_type}
+
+static func _clear_effect(battle: Dictionary) -> void:
+	battle.effect = {}
+	battle.skill_flash = false
+
+static func _success(battle: Dictionary, damage: int) -> Dictionary:
+	return {"ok": true, "battle": battle, "damage": damage, "error": ""}
+
+static func _failure(message: String) -> Dictionary:
+	return {"ok": false, "error": message}
 
 static func _turn_result(total_hurt: int, ally_defeated: bool) -> String:
 	var message := "敌方行动结束。你方受到%d点伤害。" % total_hurt

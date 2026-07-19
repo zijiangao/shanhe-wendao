@@ -4,6 +4,10 @@ const ENGINE := preload("res://scripts/battle/battle_engine.gd")
 
 func _initialize() -> void:
 	_test_victory_detection()
+	_test_player_move_and_attack()
+	_test_player_skills_and_resources()
+	_test_invalid_action_preserves_resources()
+	_test_complete_battle_simulation()
 	_test_enemy_movement_and_turn_reset()
 	_test_guard_and_ally_knockout()
 	_test_hero_defeat()
@@ -15,6 +19,82 @@ func _test_victory_detection() -> void:
 	assert(not ENGINE.is_victory(battle), "A living enemy should prevent victory.")
 	battle.enemies[0].hp = 0
 	assert(ENGINE.is_victory(battle), "Defeating every enemy should produce victory.")
+
+func _test_player_move_and_attack() -> void:
+	var battle := _fixture()
+	battle.active_unit = "hero"
+	battle.ap = 2
+	var player := _player_fixture()
+	var move: Dictionary = ENGINE.player_action(battle, player, "move", Vector2i(2, 1), _seeded_rng())
+	assert(bool(move.ok) and Vector2i(int(battle.player_x), int(battle.player_y)) == Vector2i(2, 1), "A valid move should update the active unit position.")
+	assert(int(battle.ap) == 1, "Moving should consume one action point.")
+	battle.enemies[0].x = 3
+	battle.enemies[0].y = 1
+	battle.enemies[0].hp = 1
+	var attack: Dictionary = ENGINE.player_action(battle, player, "attack", Vector2i(3, 1), _seeded_rng())
+	assert(bool(attack.ok) and int(battle.enemies[0].hp) == 0, "A normal attack should damage and clamp enemy health to zero.")
+	assert(int(battle.ap) == 0, "Attacking should consume one action point.")
+
+func _test_player_skills_and_resources() -> void:
+	var battle := _fixture()
+	battle.active_unit = "hero"
+	battle.ap = 2
+	battle.enemies[0].x = 1
+	battle.enemies[0].y = 4
+	var player := _player_fixture()
+	var cloud: Dictionary = ENGINE.player_action(battle, player, "skill", Vector2i(1, 4), _seeded_rng())
+	assert(bool(cloud.ok) and int(player.qi) == 12, "Flowing Cloud Sword should consume eight qi.")
+	assert(int(player.skill_mastery.cloud) == 1 and bool(battle.skill_flash), "Using a skill should increase mastery and trigger its visual state.")
+
+	battle = _fixture()
+	battle.active_unit = "ally"
+	battle.ap = 2
+	battle.ally.x = 2
+	battle.ally.y = 1
+	battle.enemies[0].x = 4
+	battle.enemies[0].y = 1
+	player = _player_fixture()
+	var dash: Dictionary = ENGINE.player_action(battle, player, "frost_dash", Vector2i(4, 1), _seeded_rng())
+	assert(bool(dash.ok) and int(battle.ally.qi) == 9, "Frost Dash should consume six ally qi.")
+	assert(Vector2i(int(battle.ally.x), int(battle.ally.y)) == Vector2i(3, 1), "Frost Dash should stop beside its target.")
+	assert(int(player.skill_mastery.frost) == 1, "Frost Dash should increase its mastery.")
+
+	battle.ap = 1
+	battle.ally.qi = 10
+	var guard: Dictionary = ENGINE.player_action(battle, player, "frost_guard", Vector2i.ZERO, _seeded_rng())
+	assert(bool(guard.ok) and int(battle.ally.guard) == 8 and int(battle.ally.qi) == 13, "Frost Guard should grant guard and restore qi.")
+	assert(int(player.skill_mastery.frost_guard) == 1, "Frost Guard should increase its mastery.")
+
+func _test_invalid_action_preserves_resources() -> void:
+	var battle := _fixture()
+	battle.active_unit = "hero"
+	battle.ap = 2
+	var player := _player_fixture()
+	player.qi = 7
+	var failed: Dictionary = ENGINE.player_action(battle, player, "skill", Vector2i(4, 1), _seeded_rng())
+	assert(not bool(failed.ok), "An invalid skill target or insufficient qi should fail.")
+	assert(int(battle.ap) == 2 and int(player.qi) == 7 and int(player.skill_mastery.cloud) == 0, "Failed actions must not consume resources or mastery.")
+
+func _test_complete_battle_simulation() -> void:
+	var battle := _fixture()
+	battle.erase("ally")
+	battle.active_unit = "hero"
+	battle.ap = 2
+	battle.enemies[0].x = 2
+	battle.enemies[0].y = 1
+	var player := _player_fixture()
+	var hero_hp := 20
+	var rng := _seeded_rng()
+	var rounds := 0
+	while not ENGINE.is_victory(battle) and hero_hp > 0 and rounds < 5:
+		var action: Dictionary = ENGINE.player_action(battle, player, "attack", Vector2i(2, 1), rng)
+		assert(bool(action.ok), "The simulated player attack should be legal.")
+		if ENGINE.is_victory(battle):
+			break
+		var enemy: Dictionary = ENGINE.enemy_turn(battle, hero_hp, rng)
+		hero_hp = int(enemy.hero_hp)
+		rounds += 1
+	assert(ENGINE.is_victory(battle) and hero_hp > 0, "A complete battle should be simulatable without any UI nodes.")
 
 func _test_enemy_movement_and_turn_reset() -> void:
 	var battle := _fixture()
@@ -57,6 +137,13 @@ func _fixture() -> Dictionary:
 		"turn": 1,
 		"blocked": [],
 		"result": "",
-		"ally": {"name": "林清霜", "hp": 30, "guard": 0, "x": 1, "y": 3},
+		"ally": {"name": "林清霜", "hp": 30, "guard": 0, "qi": 15, "max_qi": 15, "attack": 5, "x": 1, "y": 3},
 		"enemies": [{"name": "剑客", "hp": 10, "attack": 8, "x": 4, "y": 1}]
+	}
+
+func _player_fixture() -> Dictionary:
+	return {
+		"strength": 4,
+		"qi": 20,
+		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0}
 	}
