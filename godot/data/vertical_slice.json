@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "scope": "Godot Steam vertical slice",
+  "places": [
+    {"id": "qingyun", "name": "青云门", "type": "sect"},
+    {"id": "blackreed", "name": "黑苇渡", "type": "wilderness"}
+  ],
+  "skills": [
+    {"id": "cloud", "name": "流云剑法", "qi_cost": 8, "range": 1}
+  ],
+  "enemies": [
+    {"id": "blackreed_chief", "name": "黑苇寨主", "hp": 34, "attack": 7}
+  ]
+}

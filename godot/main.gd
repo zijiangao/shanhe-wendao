@@ -1,0 +1,1499 @@
+extends Control
+
+const MAP_TEXTURE := preload("res://assets/art/jianghu-world-map.png")
+const BATTLE_TEXTURE := preload("res://assets/art/luoyang-battle-rain.png")
+const HERO_TEXTURE := preload("res://assets/art/portrait-shen-yu.png")
+const TOKEN_ATLAS := preload("res://assets/art/battle-tokens.png")
+const DIALOGUE_VIEW := preload("res://scenes/ui/dialogue_view.tscn")
+const CHOICE_VIEW := preload("res://scenes/ui/choice_view.tscn")
+const WORLD_MAP_VIEW := preload("res://scenes/world/world_map_view.tscn")
+const LOCATION_VIEW := preload("res://scenes/world/location_view.tscn")
+const TACTICAL_BATTLE_VIEW := preload("res://scenes/battle/tactical_battle_view.tscn")
+
+var screen: String = "menu"
+var content: Control
+var status_label: Label
+var toast_label: Label
+var battle_mode: String = "move"
+var last_rewards: Dictionary = {}
+var dialogue_event: String = ""
+var dialogue_index: int = 0
+var dialogue_entries: Array = []
+var dialogue_return_screen: String = "location"
+var choice_event: String = ""
+var choice_prompt: String = ""
+var choice_options: Array = []
+
+func _ready() -> void:
+	GameState.state_changed.connect(_on_state_changed)
+	GameState.battle_started.connect(func(): screen = "battle"; _rebuild())
+	_build_shell()
+	_show_menu()
+
+func _build_shell() -> void:
+	var background := ColorRect.new()
+	background.color = Color("#ddd5c3")
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(background)
+
+	var root := VBoxContainer.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_theme_constant_override("separation", 0)
+	add_child(root)
+
+	var header_panel := PanelContainer.new()
+	header_panel.custom_minimum_size.y = 70
+	header_panel.add_theme_stylebox_override("panel", _box(Color("#14271f")))
+	root.add_child(header_panel)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 22)
+	header_panel.add_child(header)
+
+	var brand := Label.new()
+	brand.text = "  山河问道  ·  两年江湖录"
+	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	brand.add_theme_font_size_override("font_size", 22)
+	brand.add_theme_color_override("font_color", Color("#eadfc7"))
+	header.add_child(brand)
+
+	for pair in [["天下舆图", "map"], ["任务", "quests"], ["人物", "character"], ["存档", "save"]]:
+		var button := Button.new()
+		button.text = pair[0]
+		button.flat = true
+		button.add_theme_font_size_override("font_size", 18)
+		button.add_theme_color_override("font_color", Color("#d8d0bd"))
+		button.add_theme_color_override("font_hover_color", Color("#ffffff"))
+		button.add_theme_color_override("font_pressed_color", Color("#dfbf74"))
+		button.pressed.connect(_switch_screen.bind(pair[1]))
+		header.add_child(button)
+	if OS.is_debug_build():
+		var dev_button := Button.new()
+		dev_button.text = "开发"
+		dev_button.flat = true
+		dev_button.add_theme_font_size_override("font_size", 16)
+		dev_button.add_theme_color_override("font_color", Color("#dfbf74"))
+		dev_button.pressed.connect(_switch_screen.bind("dev"))
+		header.add_child(dev_button)
+
+	status_label = Label.new()
+	status_label.custom_minimum_size.x = 210
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	status_label.add_theme_font_size_override("font_size", 17)
+	status_label.add_theme_color_override("font_color", Color("#dfbf74"))
+	header.add_child(status_label)
+
+	content = Control.new()
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(content)
+
+	toast_label = Label.new()
+	toast_label.custom_minimum_size.y = 34
+	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	toast_label.add_theme_color_override("font_color", Color("#eee5d3"))
+	toast_label.add_theme_stylebox_override("normal", _box(Color("#263a31")))
+	root.add_child(toast_label)
+
+func _show_menu() -> void:
+	screen = "menu"
+	_clear_content()
+	var art := TextureRect.new()
+	art.texture = MAP_TEXTURE
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+
+	var shade := ColorRect.new()
+	shade.color = Color("#09130dbb")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(95, 100)
+	panel.size = Vector2(410, 430)
+	panel.add_theme_constant_override("separation", 14)
+	content.add_child(panel)
+
+	var title := Label.new()
+	title.text = "山河问道"
+	title.add_theme_font_size_override("font_size", 48)
+	title.add_theme_color_override("font_color", Color("#f2e5c8"))
+	panel.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "两年之约 · Godot 技术原型\n拜入青云，行走江湖，在厉千秋出关前阻止大劫。"
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.add_theme_font_size_override("font_size", 16)
+	subtitle.add_theme_color_override("font_color", Color("#c9c7bc"))
+	panel.add_child(subtitle)
+
+	var new_button := _action_button("开启新的江湖", Color("#9f4032"))
+	new_button.pressed.connect(func(): GameState.new_game(); SaveManager.save_auto(); _switch_screen("map"))
+	panel.add_child(new_button)
+
+	var continue_button := _action_button("继续自动存档", Color("#315746"))
+	continue_button.disabled = not FileAccess.file_exists(SaveManager.AUTO_PATH)
+	continue_button.pressed.connect(_continue_auto_save)
+	panel.add_child(continue_button)
+
+	var hint := Label.new()
+	hint.text = "原型流程：青云门 → 黑苇渡 → 格子战斗 → 存档"
+	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
+	panel.add_child(hint)
+	_update_status()
+
+func _switch_screen(next: String) -> void:
+	if next != "menu" and screen == "menu" and GameState.data.is_empty():
+		GameState.new_game()
+	screen = next
+	_rebuild()
+
+func _rebuild() -> void:
+	match screen:
+		"menu": _show_menu()
+		"map": _show_map()
+		"location": _show_location()
+		"quests": _show_quests()
+		"dialogue": _show_dialogue()
+		"choice": _show_choice()
+		"palace": _show_palace()
+		"dev": _show_dev_menu()
+		"character": _show_character()
+		"save": _show_saves()
+		"battle": _show_battle()
+		"victory": _show_victory()
+	_update_status()
+
+func _show_map() -> void:
+	_clear_content()
+	var places: Array[String] = ["qingyun", "blackreed"]
+	if _luoyang_unlocked():
+		places.append("luoyang")
+	if _huashan_unlocked():
+		places.append("huashan")
+	if _emei_unlocked():
+		places.append("emei")
+	var view: WorldMapView = WORLD_MAP_VIEW.instantiate()
+	content.add_child(view)
+	view.setup(MAP_TEXTURE, GameState.data, _quest_objective(), places)
+	view.destination_requested.connect(_map_destination_requested)
+	view.enter_requested.connect(func(): screen = "location"; _rebuild())
+	view.rest_requested.connect(_rest_requested)
+
+func _continue_auto_save() -> void:
+	if SaveManager.load_auto():
+		_switch_screen("battle" if not GameState.data.battle.is_empty() else "map")
+	else:
+		_toast("自动存档读取失败，请检查存档文件。")
+
+func _rest_requested() -> void:
+	if not GameState.rest():
+		_toast(_time_action_failure_message())
+		return
+	if not SaveManager.save_auto():
+		_toast("调息完成，但自动存档失败。")
+	_rebuild()
+
+func _map_destination_requested(destination: String) -> void:
+	if destination == GameState.data.location:
+		screen = "location"
+		_rebuild()
+	elif GameState.travel(destination):
+		SaveManager.save_auto()
+		screen = "location"
+		_rebuild()
+	else:
+		_toast(_time_action_failure_message())
+
+func _show_location() -> void:
+	_clear_content()
+	var location_id: String = str(GameState.data.location)
+	var headings := {"qingyun": "青云门 · 山门内", "blackreed": "黑苇渡 · 芦荡深处", "luoyang": "洛阳城 · 神都烟火", "huashan": "华山 · 云台剑会", "emei": "峨眉山 · 云深清音"}
+	var view: LocationView = LOCATION_VIEW.instantiate()
+	content.add_child(view)
+	view.setup(BATTLE_TEXTURE if location_id == "blackreed" else MAP_TEXTURE, headings.get(location_id, "江湖"), _quest_objective(), _location_actions(location_id))
+	view.action_requested.connect(_location_action_requested)
+
+func _location_actions(location_id: String) -> Array:
+	if location_id == "qingyun":
+		return [
+			{"id": "master", "text": "正殿 · 拜见师父", "x": 90, "y": 155},
+			{"id": "train", "text": "演武场 · 修炼", "x": 420, "y": 205},
+			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
+			{"id": "map", "text": "山门 · 返回舆图", "x": 910, "y": 420}
+		]
+	if location_id == "blackreed":
+		var ready: bool = GameState.data.investigations.size() >= 2
+		return [
+			{"id": "fisher", "text": "渡口 · 已询问" if "secret_route" in GameState.data.investigations else "渡口 · 询问渔民", "x": 70, "y": 170, "disabled": "secret_route" in GameState.data.investigations},
+			{"id": "tracks", "text": "芦荡 · 已调查" if "archer" in GameState.data.investigations else "芦荡 · 搜寻脚印", "x": 365, "y": 245, "disabled": "archer" in GameState.data.investigations},
+			{"id": "herbs", "text": "破船 · 已搜寻" if "herbs" in GameState.data.investigations else "破船 · 搜寻物资", "x": 685, "y": 330, "disabled": "herbs" in GameState.data.investigations},
+			{"id": "fight", "text": "寨门 · 发起战斗" if ready else "寨门 · 尚需两条线索", "x": 930, "y": 150, "disabled": not ready},
+			{"id": "map", "text": "渡口 · 返回舆图", "x": 930, "y": 430}
+		]
+	if location_id == "huashan":
+		var trial_ready: bool = "lin_qingshuang" in GameState.data.companions
+		return [
+			{"id": "huashan_gate", "text": "山门 · 递上名帖", "x": 80, "y": 175, "disabled": str(GameState.data.quest_stage) != "chapter2_complete"},
+			{"id": "meet_lin", "text": "迎客峰 · 林清霜", "x": 370, "y": 260, "disabled": str(GameState.data.quest_stage) == "chapter2_complete" or trial_ready},
+			{"id": "huashan_trial", "text": "论剑台 · 双人试炼" if trial_ready else "论剑台 · 需要同伴", "x": 690, "y": 335, "disabled": not trial_ready or str(GameState.data.quest_stage) == "huashan_trial_complete"},
+			{"id": "huashan_cliff", "text": "思过崖 · 残图剑痕", "x": 930, "y": 160, "disabled": str(GameState.data.quest_stage) != "huashan_trial_complete"},
+			{"id": "map", "text": "山道 · 返回舆图", "x": 930, "y": 440}
+		]
+	if location_id == "emei":
+		var entered: bool = str(GameState.data.emei_entry) != ""
+		return [
+			{"id": "emei_gate", "text": "清音桥 · 选择入山方式" if not entered else "清音桥 · 已获准入山", "x": 75, "y": 175, "disabled": entered},
+			{"id": "meet_su", "text": "清音阁 · 苏晚晴", "x": 370, "y": 255, "disabled": not entered or str(GameState.data.quest_stage) != "emei_meet_su"},
+			{"id": "elephant_pool", "text": "洗象池 · 门派试问", "x": 680, "y": 345, "disabled": str(GameState.data.quest_stage) != "emei_investigate"},
+			{"id": "emei_peak", "text": "金顶 · 尚未开放", "x": 930, "y": 155, "disabled": true},
+			{"id": "map", "text": "山道 · 返回舆图", "x": 930, "y": 440}
+		]
+	return [
+		{"id": "gate", "text": "城门 · 打听消息", "x": 75, "y": 175},
+		{"id": "inn", "text": "悦来客栈 · 江湖传闻", "x": 360, "y": 285},
+		{"id": "market", "text": "西市 · 商旅云集", "x": 675, "y": 350},
+		{"id": "temple", "text": "白马寺 · 玄铁令之约" if str(GameState.data.quest_stage) == "chapter_complete" else "白马寺 · 夜探古刹", "x": 925, "y": 155},
+		{"id": "palace", "text": "太守府 · 夜宴", "x": 925, "y": 300, "disabled": str(GameState.data.quest_stage) != "luoyang_investigate"},
+		{"id": "map", "text": "城门 · 返回舆图", "x": 930, "y": 445}
+	]
+
+func _location_action_requested(action_id: String) -> void:
+	match action_id:
+		"map": screen = "map"; _rebuild()
+		"master": _qingyun_master_event()
+		"train":
+			if GameState.train():
+				_toast("苦修一周，臂力与修为提升。")
+				if not SaveManager.save_auto():
+					_toast("修炼完成，但自动存档失败。")
+			else:
+				_toast(_time_action_failure_message())
+			_rebuild()
+		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
+		"fisher": _start_dialogue("clue_fisher", [["老渔翁", "夜里总有船避开灯火，往北面的芦荡去。"], ["沈羽", "暗道入口应当就在水边。"]])
+		"tracks": _start_dialogue("clue_tracks", [["沈羽", "脚印一深一浅，还有箭羽留下的刮痕。"], ["沈羽", "寨中藏有弓手，交战时需先行提防。"]])
+		"herbs": _start_dialogue("clue_herbs", [["沈羽", "船舱里还有未受潮的金疮药，可以先处理伤势。"]])
+		"fight": _begin_blackreed_battle()
+		"gate": _start_dialogue("luoyang_gate", [["守城军士", "近日太守府戒备森严，夜里还有禁军出入。"], ["沈羽", "玄铁令的消息恐怕已经传进官府。"]])
+		"inn": _start_dialogue("luoyang_inn", [["说书人", "厉千秋尚未出关，他的义子却已在洛阳搜寻前朝武库。"], ["沈羽", "看来必须赶在他们之前找到下一枚钥匙。"]])
+		"market": _start_dialogue("luoyang_market", [["药铺掌柜", "少侠初到洛阳，这包金疮药便宜卖你。真正值钱的消息，要去白马寺问。"]])
+		"temple": _baima_event()
+		"palace": _enter_palace()
+		"huashan_gate": _start_dialogue("huashan_arrival", [["华山执事", "青云门沈羽，持武库名录而来？剑会只认剑，也认胆识。"], ["沈羽", "晚辈愿依华山规矩，查清残图下落。"]])
+		"meet_lin": _start_dialogue("meet_lin", [["林清霜", "论剑台今年改为双人试炼。你若不嫌我剑路太快，我可以与你同上。"], ["沈羽", "求之不得。厉无咎既盯上残图，我们更该彼此照应。"]])
+		"huashan_trial": _begin_huashan_trial()
+		"huashan_cliff": _start_dialogue("huashan_cliff", [["林清霜", "石壁剑痕并非华山剑法，倒像有人故意留下的引路符号。"], ["沈羽", "符号指向峨眉。厉无咎已经先行一步。"]])
+		"emei_gate": _start_story_dialogue("emei_gate")
+		"meet_su": _start_story_dialogue("meet_su")
+		"elephant_pool": _start_dialogue("elephant_pool", [["苏晚晴", "洗象池旁有两条路：一边是受伤同门，一边是厉无咎留下的脚印。你先救谁？"], ["沈羽", "线索可以再追，人命不能重来。先救人。"], ["苏晚晴", "这个回答，至少不像厉无咎。"]])
+
+func _add_scene_action(text_value: String, at: Vector2, callback: Callable) -> Button:
+	var button := _action_button(text_value, Color("#263f34ee"))
+	button.position = at
+	button.size = Vector2(260, 58)
+	button.pressed.connect(callback)
+	content.add_child(button)
+	return button
+
+func _qingyun_master_event() -> void:
+	match str(GameState.data.quest_stage):
+		"meet_master": _start_dialogue("accept_mission", [["顾长风", "黑苇渡商旅失踪，官府却闭口不谈。你入门虽短，心性尚可，便下山查一查。"], ["沈羽", "弟子领命。若此事牵涉江湖势力，定会留下线索。"], ["顾长风", "记住，先察后动。剑快不如眼明。"]])
+		"return_master": _start_dialogue("finish_chapter", [["沈羽", "弟子在寨主身上取得玄铁令，背后似与厉千秋有关。"], ["顾长风", "此令牵涉洛阳旧案。你先养伤，随后持令前往洛阳白马寺。"], ["沈羽", "弟子明白。"]])
+		_: _start_dialogue("master_chat", [["顾长风", "江湖路远，莫忘入门时的本心。"]])
+
+func _start_dialogue(event_id: String, entries: Array, return_to: String = "location") -> void:
+	dialogue_event = event_id
+	dialogue_entries = entries
+	dialogue_index = 0
+	dialogue_return_screen = return_to
+	screen = "dialogue"
+	_rebuild()
+
+func _start_story_dialogue(event_id: String, return_to: String = "location") -> void:
+	var entries: Array = ContentDB.dialogue(event_id)
+	if entries.is_empty():
+		_toast("剧情数据缺失：%s" % event_id)
+		return
+	_start_dialogue(event_id, entries, return_to)
+
+func _baima_event() -> void:
+	if str(GameState.data.quest_stage) == "chapter_complete":
+		_start_story_dialogue("baima_intro")
+	else:
+		_start_dialogue("baima_repeat", [["无尘僧", "你选择的道路已经落子。太守府夜宴，切记随机应变。"]])
+
+func _show_dialogue() -> void:
+	_clear_content()
+	var entry: Array = dialogue_entries[dialogue_index]
+	var view: DialogueView = DIALOGUE_VIEW.instantiate()
+	content.add_child(view)
+	view.setup(BATTLE_TEXTURE if GameState.data.location == "blackreed" else MAP_TEXTURE, str(entry[0]), str(entry[1]), dialogue_index, dialogue_entries.size())
+	view.continue_requested.connect(_advance_dialogue)
+
+func _advance_dialogue() -> void:
+	dialogue_index += 1
+	if dialogue_index < dialogue_entries.size():
+		_rebuild()
+		return
+	_finish_dialogue_event(dialogue_event)
+	if screen == "dialogue":
+		screen = dialogue_return_screen
+	SaveManager.save_auto()
+	_rebuild()
+
+func _finish_dialogue_event(event_id: String) -> void:
+	match event_id:
+		"accept_mission":
+			GameState.data.quest_stage = "investigate"
+			GameState.add_log("师父命你调查黑苇渡商旅失踪一案。")
+		"clue_fisher": GameState.add_investigation("secret_route", "渔民指出了寨众夜间行船的暗道。")
+		"clue_tracks": GameState.add_investigation("archer", "你从脚印与箭痕判断寨中藏有弓手。")
+		"clue_herbs":
+			if GameState.add_investigation("herbs", "你在破船中找到药材，恢复了气血。"):
+				GameState.data.hp = GameState.data.max_hp
+		"finish_chapter":
+			GameState.data.quest_stage = "chapter_complete"
+			GameState.data.master_relation += 1
+			GameState.add_log("顾长风命你携玄铁令前往洛阳白马寺。")
+		"baima_intro":
+			choice_event = "baima_route"
+			choice_prompt = "太守府夜宴，你准备如何取得武库名录？"
+			choice_options = [
+				["侠义 · 公开赴宴", "以青云门弟子身份登门，保护席间无辜之人。", "heroism"],
+				["谋略 · 易容潜入", "伪装成账房，避开正面冲突寻找密库。", "strategy"],
+				["威势 · 持令问罪", "以玄铁令震慑守卫，迫使太守当面对质。", "authority"]
+			]
+			screen = "choice"
+		"luoyang_market":
+			if "洛阳金疮药" not in GameState.data.items:
+				GameState.data.items.append("洛阳金疮药")
+		"palace_witness": _add_palace_evidence("witness", "heroism")
+		"palace_ledger": _add_palace_evidence("ledger", "strategy")
+		"palace_seal": _add_palace_evidence("seal", "authority")
+		"li_wujiu":
+			choice_event = "chapter2_end"
+			choice_prompt = "武库名录已经到手，你准备如何处置这份足以震动江湖的证据？"
+			choice_options = [
+				["公之于众", "揭露太守罪行，迅速提升江湖声望。", "public"],
+				["交还师门", "让青云门处置名录，增加顾长风的信任。", "master"],
+				["暗留残页", "独自追查厉无咎，获得特殊物品与悟性。", "keep"]
+			]
+			screen = "choice"
+		"huashan_arrival":
+			GameState.data.quest_stage = "huashan_meet_companion"
+			GameState.data.faction_relations.huashan += 1
+			GameState.add_log("你持名帖进入华山剑会，华山关系提升。")
+		"meet_lin":
+			if "lin_qingshuang" not in GameState.data.companions:
+				GameState.data.companions.append("lin_qingshuang")
+			GameState.data.quest_stage = "huashan_trial"
+			GameState.add_log("华山弟子林清霜暂时加入队伍。")
+		"huashan_cliff":
+			GameState.data.quest_stage = "chapter3_complete"
+			GameState.data.faction_relations.huashan += 2
+			GameState.add_log("你在思过崖发现指向峨眉的残图剑痕。")
+		"emei_gate":
+			choice_event = "emei_entry"
+			choice_prompt = "峨眉已经封山，你准备用什么方式取得入山许可？"
+			choice_options = []
+			if int(GameState.data.faction_relations.huashan) >= 2:
+				choice_options.append(["华山引荐", "出示华山剑会名帖，获得较高的峨眉初始信任。", "recommend"])
+			if int(GameState.data.renown) >= 8:
+				choice_options.append(["凭声望拜山", "报上江湖名号，以过往事迹证明来意。", "renown"])
+			choice_options.append(["帮助山民", "先协助山下受灾村民，耗费一周换取入山机会。", "aid"])
+			screen = "choice"
+		"meet_su":
+			GameState.data.quest_stage = "emei_investigate"
+			GameState.add_log("峨眉弟子苏晚晴带你前往洗象池接受试问。")
+		"elephant_pool":
+			GameState.data.quest_stage = "emei_trial"
+			GameState.data.faction_relations.emei += 1
+			if "su_trust" not in GameState.data.flags:
+				GameState.data.flags.append("su_trust")
+			GameState.add_log("你选择先救峨眉弟子，获得苏晚晴的初步信任。")
+
+func _add_palace_evidence(kind: String, favored_route: String) -> void:
+	if kind in GameState.data.palace_evidence:
+		return
+	GameState.data.palace_evidence.append(kind)
+	if str(GameState.data.luoyang_route) != favored_route:
+		GameState.data.palace_alert = mini(5, int(GameState.data.palace_alert) + 1)
+	GameState.add_log("你在太守府取得证据：%s。" % {"witness": "账房船契", "ledger": "私兵账册", "seal": "伪造官印"}.get(kind, kind))
+
+func _show_choice() -> void:
+	_clear_content()
+	var view: ChoiceView = CHOICE_VIEW.instantiate()
+	content.add_child(view)
+	view.setup(MAP_TEXTURE, choice_prompt, choice_options)
+	view.option_selected.connect(_resolve_choice)
+
+func _resolve_choice(route: String) -> void:
+	if choice_event == "baima_route":
+		GameState.data.alignment[route] = int(GameState.data.alignment.get(route, 0)) + 1
+		GameState.data.luoyang_route = route
+		GameState.data.quest_stage = "luoyang_investigate"
+		match route:
+			"heroism":
+				GameState.data.renown += 2
+				GameState.add_log("你决定以青云弟子身份公开赴宴，保护无辜。")
+			"strategy":
+				GameState.data.insight += 1
+				GameState.add_log("你决定易容潜入太守府，悟性提升。")
+			"authority":
+				GameState.data.strength += 1
+				GameState.add_log("你决定持玄铁令登门问罪，臂力提升。")
+	elif choice_event == "chapter2_end":
+		match route:
+			"public":
+				GameState.data.renown += 5
+				GameState.add_log("你在洛阳公开武库名录，太守罪行大白于天下。")
+			"master":
+				GameState.data.master_relation += 2
+				GameState.add_log("你将武库名录交回青云门，获得师门信任。")
+			"keep":
+				GameState.data.insight += 1
+				if "武库名录残页" not in GameState.data.items:
+					GameState.data.items.append("武库名录残页")
+				GameState.add_log("你暗中留下名录残页，准备独自追查厉无咎。")
+		GameState.data.quest_stage = "chapter2_complete"
+	elif choice_event == "emei_entry":
+		GameState.data.emei_entry = route
+		GameState.data.quest_stage = "emei_meet_su"
+		match route:
+			"recommend":
+				GameState.data.faction_relations.emei += 2
+				GameState.add_log("你凭华山引荐进入峨眉，获得峨眉弟子的信任。")
+			"renown":
+				GameState.data.faction_relations.emei += 1
+				GameState.add_log("你凭江湖声望获准进入峨眉。")
+			"aid":
+				GameState.data.week = mini(104, int(GameState.data.week) + 1)
+				GameState.data.renown += 2
+				GameState.data.faction_relations.emei += 1
+				GameState.add_log("你耗费一周帮助山民，峨眉为你打开山门。")
+	choice_event = ""
+	screen = "map" if str(GameState.data.quest_stage) == "chapter2_complete" else "location"
+	SaveManager.save_auto()
+	_rebuild()
+
+func _enter_palace() -> void:
+	if str(GameState.data.quest_stage) != "luoyang_investigate":
+		_toast("先前往白马寺，决定进入夜宴的方法。")
+		return
+	screen = "palace"
+	_rebuild()
+
+func _show_palace() -> void:
+	_clear_content()
+	var art := TextureRect.new()
+	art.texture = BATTLE_TEXTURE
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#120b08a8")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+	var heading := Label.new()
+	heading.position = Vector2(42, 22)
+	heading.text = "太守府 · 夜宴"
+	heading.add_theme_font_size_override("font_size", 32)
+	heading.add_theme_color_override("font_color", Color("#f3d7a2"))
+	content.add_child(heading)
+	var route_label := Label.new()
+	route_label.position = Vector2(45, 70)
+	route_label.text = "入府方式：%s     证据：%d/3     警戒：%d/5" % [_route_name(str(GameState.data.luoyang_route)), GameState.data.palace_evidence.size(), GameState.data.palace_alert]
+	route_label.add_theme_font_size_override("font_size", 18)
+	route_label.add_theme_color_override("font_color", Color("#f7eee0"))
+	content.add_child(route_label)
+	var route_hint := Label.new()
+	route_hint.position = Vector2(850, 22)
+	route_hint.size = Vector2(370, 80)
+	route_hint.text = _route_hint(str(GameState.data.luoyang_route))
+	route_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	route_hint.add_theme_color_override("font_color", Color("#dfbf74"))
+	content.add_child(route_hint)
+
+	var witness := _add_scene_action("宴席 · 保护证人", Vector2(95, 175), func(): _palace_event("witness"))
+	witness.disabled = "witness" in GameState.data.palace_evidence
+	var ledger := _add_scene_action("书房 · 搜查账册", Vector2(420, 265), func(): _palace_event("ledger"))
+	ledger.disabled = "ledger" in GameState.data.palace_evidence
+	var seal := _add_scene_action("密库 · 夺取官印", Vector2(740, 350), func(): _palace_event("seal"))
+	seal.disabled = "seal" in GameState.data.palace_evidence
+	var confront := _add_scene_action("正厅 · 与厉无咎对质", Vector2(940, 170), func(): _confront_li_wujiu())
+	confront.disabled = GameState.data.palace_evidence.size() < 2
+	_add_scene_action("侧门 · 暂离太守府", Vector2(940, 445), func(): screen = "location"; _rebuild())
+	var evidence := Label.new()
+	evidence.position = Vector2(45, 445)
+	evidence.size = Vector2(760, 105)
+	evidence.text = "已取得证据\n%s" % _evidence_list()
+	evidence.add_theme_font_size_override("font_size", 17)
+	evidence.add_theme_color_override("font_color", Color("#f5ecda"))
+	evidence.add_theme_stylebox_override("normal", _box(Color("#172820e8")))
+	content.add_child(evidence)
+
+func _palace_event(kind: String) -> void:
+	match kind:
+		"witness": _start_story_dialogue("palace_witness", "palace")
+		"ledger": _start_story_dialogue("palace_ledger", "palace")
+		"seal": _start_story_dialogue("palace_seal", "palace")
+
+func _confront_li_wujiu() -> void:
+	if int(GameState.data.palace_alert) >= 3:
+		GameState.data.hp = maxi(1, int(GameState.data.hp) - 6)
+		GameState.add_log("太守府警戒过高，你突破守卫时损失了6点气血。")
+	_start_story_dialogue("li_wujiu", "palace")
+
+func _route_name(route: String) -> String:
+	return {"heroism": "侠义 · 公开赴宴", "strategy": "谋略 · 易容潜入", "authority": "威势 · 持令问罪"}.get(route, "尚未决定")
+
+func _route_hint(route: String) -> String:
+	return {"heroism": "保护证人不会提高警戒。", "strategy": "搜查书房不会提高警戒。", "authority": "夺取官印不会提高警戒。"}.get(route, "选择路线后获得专属优势。")
+
+func _evidence_list() -> String:
+	var names: PackedStringArray = []
+	for item in GameState.data.palace_evidence:
+		names.append({"witness": "账房船契与证词", "ledger": "私兵转运账册", "seal": "伪造调令的官印"}.get(item, item))
+	return "尚未取得证据" if names.is_empty() else " · ".join(names)
+
+func _begin_blackreed_battle() -> void:
+	if GameState.data.investigations.size() < 2:
+		_toast("至少调查两处地点，摸清寨中情况。")
+		return
+	if GameState.start_blackreed_battle():
+		if "archer" in GameState.data.investigations:
+			GameState.data.battle.result = "你提前发现了弓手位置。先处理远程威胁！"
+		if "secret_route" in GameState.data.investigations:
+			GameState.data.battle.player_x = 2
+		battle_mode = "move"
+		SaveManager.save_auto()
+
+func _begin_huashan_trial() -> void:
+	if "lin_qingshuang" not in GameState.data.companions:
+		_toast("需要先在迎客峰邀请林清霜。")
+		return
+	if not GameState.start_huashan_trial_battle():
+		_toast("行动点不足，请先调息。")
+		return
+	battle_mode = "move"
+	SaveManager.save_auto()
+
+func _show_quests() -> void:
+	_clear_content()
+	var panel := PanelContainer.new()
+	panel.position = Vector2(105, 45)
+	panel.size = Vector2(1070, 500)
+	panel.add_theme_stylebox_override("panel", _box(Color("#172820")))
+	content.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	var title := Label.new()
+	title.text = "行走江湖 · 任务日志"
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#f2dfb3"))
+	box.add_child(title)
+	var main_task := Label.new()
+	if _emei_unlocked():
+		main_task.text = "主线 · 峨眉迷踪\n%s\n\n峨眉关系：%d\n入山方式：%s" % [_quest_objective(), GameState.data.faction_relations.emei, _emei_entry_name(str(GameState.data.emei_entry))]
+	elif _huashan_unlocked():
+		main_task.text = "主线 · 华山剑会\n%s\n\n队伍：%s\n华山关系：%d" % [_quest_objective(), "沈羽、林清霜" if "lin_qingshuang" in GameState.data.companions else "沈羽", GameState.data.faction_relations.huashan]
+	elif _luoyang_unlocked():
+		main_task.text = "主线 · 洛阳风云\n%s\n\n行事倾向\n侠义 %d    谋略 %d    威势 %d" % [_quest_objective(), GameState.data.alignment.heroism, GameState.data.alignment.strategy, GameState.data.alignment.authority]
+	else:
+		main_task.text = "主线 · 黑苇疑云\n%s\n\n调查线索  %d/3\n%s" % [_quest_objective(), GameState.data.investigations.size(), _clue_list()]
+	main_task.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	main_task.add_theme_font_size_override("font_size", 19)
+	main_task.add_theme_color_override("font_color", Color("#f4eee2"))
+	main_task.add_theme_stylebox_override("normal", _box(Color("#294438")))
+	box.add_child(main_task)
+	var hint := Label.new()
+	hint.text = "提示：在天下舆图点击当前地点即可进入场景。场景中的人物与地点会推进任务。"
+	hint.add_theme_font_size_override("font_size", 16)
+	hint.add_theme_color_override("font_color", Color("#cfc8b8"))
+	box.add_child(hint)
+
+func _quest_objective() -> String:
+	return {
+		"meet_master": "前往青云门正殿，拜见师父顾长风。",
+		"investigate": "前往黑苇渡调查，取得两条线索后攻入山寨。",
+		"return_master": "携玄铁令返回青云门，向顾长风复命。",
+		"chapter_complete": "前往洛阳白马寺，将玄铁令交给无尘僧。",
+		"luoyang_investigate": "潜入太守府夜宴，取得至少两件证据并与厉无咎对质。",
+		"chapter2_complete": "第二章完成：厉无咎逃离洛阳，武库名录指向华山。",
+		"huashan_meet_companion": "前往迎客峰寻找搭档，准备双人论剑试炼。",
+		"huashan_trial": "与林清霜登上论剑台，通过华山双人试炼。",
+		"huashan_trial_complete": "前往思过崖查看武库残图留下的剑痕。",
+		"chapter3_complete": "第三章完成：残图线索指向峨眉。",
+		"emei_meet_su": "在清音阁拜访苏晚晴，查明后山闯阵者。",
+		"emei_investigate": "前往洗象池接受峨眉试问，争取继续追查厉无咎。",
+		"emei_trial": "峨眉试问已通过：下一步前往金顶追查后山密道。"
+	}.get(str(GameState.data.get("quest_stage", "meet_master")), "继续调查江湖异动。")
+
+func _luoyang_unlocked() -> bool:
+	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter_complete", "luoyang_investigate", "chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial"]
+
+func _huashan_unlocked() -> bool:
+	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial"]
+
+func _emei_unlocked() -> bool:
+	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial"]
+
+func _emei_entry_name(route: String) -> String:
+	return {"recommend": "华山引荐", "renown": "江湖声望", "aid": "帮助山民"}.get(route, "尚未入山")
+
+func _clue_list() -> String:
+	var lines: PackedStringArray = []
+	for clue in GameState.data.investigations:
+		lines.append("· " + {"secret_route": "芦荡暗道", "archer": "寨中弓手", "herbs": "破船药材"}.get(clue, clue))
+	return "尚未取得线索" if lines.is_empty() else "\n".join(lines)
+
+func _show_dev_menu() -> void:
+	_clear_content()
+	var panel := PanelContainer.new()
+	panel.position = Vector2(150, 42)
+	panel.size = Vector2(980, 510)
+	panel.add_theme_stylebox_override("panel", _box(Color("#172820")))
+	content.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	panel.add_child(box)
+	var title := Label.new()
+	title.text = "开发测试菜单"
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#dfbf74"))
+	box.add_child(title)
+	var warning := Label.new()
+	warning.text = "仅在 DEBUG 构建中出现。章节跳转会重置当前进度，请先手动存档。"
+	warning.add_theme_color_override("font_color", Color("#efc0b2"))
+	box.add_child(warning)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	box.add_child(grid)
+	for entry in [["新游戏 · 青云门", "new"], ["第一章 · 黑苇调查", "blackreed"], ["战棋 · 黑苇遭遇战", "battle"], ["第二章 · 初到洛阳", "luoyang"], ["太守府 · 谋略路线", "palace"], ["第二章 · 已完成", "chapter2"], ["第三章 · 华山试炼", "huashan"], ["第四章 · 初到峨眉", "emei"]]:
+		var button := _action_button(entry[0], Color("#315f4b"))
+		button.custom_minimum_size.x = 440
+		button.pressed.connect(_dev_jump.bind(str(entry[1])))
+		grid.add_child(button)
+	var reload_button := _action_button("重新读取剧情 JSON", Color("#806c4f"))
+	reload_button.pressed.connect(func(): _toast("剧情数据已重新读取。" if ContentDB.reload_content() else "剧情数据读取失败。"))
+	box.add_child(reload_button)
+
+func _dev_jump(target: String) -> void:
+	GameState.new_game()
+	match target:
+		"new":
+			GameState.data.location = "qingyun"
+			screen = "map"
+		"blackreed":
+			GameState.data.quest_stage = "investigate"
+			GameState.data.location = "blackreed"
+			GameState.data.investigations = ["secret_route"]
+			screen = "location"
+		"battle":
+			GameState.data.quest_stage = "investigate"
+			GameState.data.location = "blackreed"
+			GameState.data.investigations = ["secret_route", "archer"]
+			GameState.data.energy = 3
+			GameState.start_blackreed_battle()
+			return
+		"luoyang":
+			GameState.data.quest_stage = "chapter_complete"
+			GameState.data.location = "luoyang"
+			GameState.data.items.append("玄铁令")
+			screen = "location"
+		"palace":
+			GameState.data.quest_stage = "luoyang_investigate"
+			GameState.data.location = "luoyang"
+			GameState.data.luoyang_route = "strategy"
+			GameState.data.alignment.strategy = 1
+			screen = "palace"
+		"chapter2":
+			GameState.data.quest_stage = "chapter2_complete"
+			GameState.data.location = "luoyang"
+			screen = "map"
+		"huashan":
+			GameState.data.quest_stage = "huashan_trial"
+			GameState.data.location = "huashan"
+			GameState.data.companions.append("lin_qingshuang")
+			GameState.data.faction_relations.huashan = 2
+			screen = "location"
+		"emei":
+			GameState.data.quest_stage = "chapter3_complete"
+			GameState.data.location = "emei"
+			GameState.data.companions.append("lin_qingshuang")
+			GameState.data.faction_relations.huashan = 3
+			screen = "location"
+	SaveManager.save_auto()
+	_rebuild()
+
+func _show_character() -> void:
+	_clear_content()
+	var page := HBoxContainer.new()
+	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	page.offset_left = 48
+	page.offset_top = 28
+	page.offset_right = -48
+	page.offset_bottom = -28
+	page.add_theme_constant_override("separation", 22)
+	content.add_child(page)
+
+	# 左侧只负责人物形象与身份，裁切由父容器控制，绝不侵入信息区。
+	var portrait_frame := PanelContainer.new()
+	portrait_frame.custom_minimum_size.x = 355
+	portrait_frame.clip_contents = true
+	portrait_frame.add_theme_stylebox_override("panel", _box(Color("#25382f")))
+	page.add_child(portrait_frame)
+	var portrait_stack := Control.new()
+	portrait_stack.clip_contents = true
+	portrait_frame.add_child(portrait_stack)
+	var portrait := TextureRect.new()
+	portrait.texture = HERO_TEXTURE
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait_stack.add_child(portrait)
+	var identity_shade := ColorRect.new()
+	identity_shade.color = Color("#0d1812dd")
+	identity_shade.anchor_top = 1.0
+	identity_shade.anchor_right = 1.0
+	identity_shade.anchor_bottom = 1.0
+	identity_shade.offset_top = -112
+	portrait_stack.add_child(identity_shade)
+	var identity := Label.new()
+	identity.text = "沈 羽\n青云门 · 入门弟子"
+	identity.position = Vector2(22, 18)
+	identity.add_theme_font_size_override("font_size", 22)
+	identity.add_theme_color_override("font_color", Color("#f2dfb3"))
+	identity_shade.add_child(identity)
+
+	# 右侧采用可扫描的信息卡布局。
+	var info_panel := PanelContainer.new()
+	info_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_panel.add_theme_stylebox_override("panel", _box(Color("#172820")))
+	page.add_child(info_panel)
+	var info := VBoxContainer.new()
+	info.add_theme_constant_override("separation", 12)
+	info_panel.add_child(info)
+	var heading := Label.new()
+	heading.text = "人物总览"
+	heading.add_theme_font_size_override("font_size", 27)
+	heading.add_theme_color_override("font_color", Color("#f2dfb3"))
+	info.add_child(heading)
+
+	var summary := Label.new()
+	summary.text = "综合战力  %d     气血  %d/%d     真气  %d     声望  %d" % [GameState.power(), GameState.data.hp, GameState.data.max_hp, GameState.data.qi, GameState.data.renown]
+	summary.add_theme_font_size_override("font_size", 18)
+	summary.add_theme_color_override("font_color", Color("#e9e1cf"))
+	info.add_child(summary)
+
+	var stat_grid := GridContainer.new()
+	stat_grid.columns = 4
+	stat_grid.add_theme_constant_override("h_separation", 10)
+	info.add_child(stat_grid)
+	for entry in [["臂力", GameState.data.strength], ["身法", GameState.data.agility], ["悟性", GameState.data.insight], ["根骨", GameState.data.constitution]]:
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.add_theme_stylebox_override("panel", _box(Color("#294438")))
+		var value := Label.new()
+		value.text = "%s\n%d" % [entry[0], entry[1]]
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		value.add_theme_font_size_override("font_size", 20)
+		value.add_theme_color_override("font_color", Color("#fff4dc"))
+		card.add_child(value)
+		stat_grid.add_child(card)
+
+	var skill_title := Label.new()
+	skill_title.text = "武 学"
+	skill_title.add_theme_font_size_override("font_size", 20)
+	skill_title.add_theme_color_override("font_color", Color("#dfbf74"))
+	info.add_child(skill_title)
+	var skill_card := Label.new()
+	skill_card.text = "流云剑法   ·   近身剑招   ·   消耗 8 真气\n当前效果：相邻目标造成较高伤害；修炼属性会直接提高招式威力。"
+	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	skill_card.add_theme_font_size_override("font_size", 17)
+	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))
+	skill_card.add_theme_stylebox_override("normal", _box(Color("#223a30")))
+	info.add_child(skill_card)
+
+	var item_title := Label.new()
+	item_title.text = "行 囊"
+	item_title.add_theme_font_size_override("font_size", 20)
+	item_title.add_theme_color_override("font_color", Color("#dfbf74"))
+	info.add_child(item_title)
+	var items := Label.new()
+	items.text = "已装备：青锋剑\n携带物品：%s" % "、".join(PackedStringArray(GameState.data.items))
+	items.add_theme_font_size_override("font_size", 17)
+	items.add_theme_color_override("font_color", Color("#f4eee2"))
+	info.add_child(items)
+	var party := Label.new()
+	party.text = "同行侠客：%s\n门派关系：青云 %d · 华山 %d" % ["林清霜" if "lin_qingshuang" in GameState.data.companions else "暂无", GameState.data.faction_relations.qingyun, GameState.data.faction_relations.huashan]
+	party.add_theme_font_size_override("font_size", 17)
+	party.add_theme_color_override("font_color", Color("#dfbf74"))
+	info.add_child(party)
+	var mastery := Label.new()
+	mastery.text = "武学熟练度：流云剑法 %d · 霜华刺 %d · 寒锋守势 %d\n每使用3次，对应武学伤害或护卫值 +1。" % [GameState.data.skill_mastery.cloud, GameState.data.skill_mastery.frost, GameState.data.skill_mastery.frost_guard]
+	mastery.add_theme_font_size_override("font_size", 15)
+	mastery.add_theme_color_override("font_color", Color("#cfc8b8"))
+	info.add_child(mastery)
+
+func _show_saves() -> void:
+	_clear_content()
+	var backdrop := ColorRect.new()
+	backdrop.color = Color("#d8cfbd")
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(backdrop)
+	var panel := VBoxContainer.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.offset_left = 75
+	panel.offset_top = 30
+	panel.offset_right = -75
+	panel.offset_bottom = -30
+	panel.add_theme_constant_override("separation", 12)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "江湖行卷"
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#193128"))
+	panel.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "保存当前旅程，或从过去的节点继续。游戏也会在关键行动后自动存档。"
+	subtitle.add_theme_font_size_override("font_size", 16)
+	subtitle.add_theme_color_override("font_color", Color("#526159"))
+	panel.add_child(subtitle)
+	for slot in range(1, 4):
+		var saved: Dictionary = SaveManager.slot_summary(slot)
+		var card := PanelContainer.new()
+		card.custom_minimum_size.y = 118
+		card.add_theme_stylebox_override("panel", _box(Color("#172820" if not saved.is_empty() else "#35463e")))
+		panel.add_child(card)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 16)
+		card.add_child(row)
+		var slot_badge := Label.new()
+		slot_badge.text = "%02d" % slot
+		slot_badge.custom_minimum_size.x = 72
+		slot_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		slot_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		slot_badge.add_theme_font_size_override("font_size", 28)
+		slot_badge.add_theme_color_override("font_color", Color("#dfbf74"))
+		row.add_child(slot_badge)
+		var details := Label.new()
+		details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		details.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		details.add_theme_font_size_override("font_size", 17)
+		details.add_theme_color_override("font_color", Color("#f4eee2"))
+		if saved.is_empty():
+			details.text = "空白行卷\n尚未写下任何江湖经历"
+		else:
+			details.text = "%s  ·  第 %d 周\n战力 %d    气血 %d/%d    声望 %d" % [GameState.place_name(str(saved.get("location", "qingyun"))), int(saved.get("week", 1)), int(saved.get("strength", 4)) + int(saved.get("agility", 5)) + int(saved.get("insight", 4)) + int(saved.get("constitution", 4)) + Array(saved.get("skills", [])).size() * 5, int(saved.get("hp", 45)), int(saved.get("max_hp", 45)), int(saved.get("renown", 0))]
+		row.add_child(details)
+		var save_button := _action_button("覆盖存档" if not saved.is_empty() else "写入存档", Color("#315f4b"))
+		save_button.custom_minimum_size.x = 120
+		save_button.pressed.connect(_save_slot_requested.bind(slot))
+		row.add_child(save_button)
+		var load_button := _action_button("继续游历", Color("#8b493b"))
+		load_button.custom_minimum_size.x = 120
+		load_button.disabled = saved.is_empty()
+		load_button.pressed.connect(_load_slot_requested.bind(slot))
+		row.add_child(load_button)
+
+func _save_slot_requested(slot: int) -> void:
+	if SaveManager.save_slot(slot):
+		_rebuild()
+		_toast("已保存到存档 %d。" % slot)
+	else:
+		_toast("存档 %d 写入失败，请检查磁盘权限。" % slot)
+
+func _load_slot_requested(slot: int) -> void:
+	if not SaveManager.load_slot(slot):
+		_toast("存档 %d 读取失败或内容损坏。" % slot)
+		return
+	screen = "battle" if not GameState.data.battle.is_empty() else "map"
+	_rebuild()
+
+func _show_battle() -> void:
+	_clear_content()
+	if GameState.data.battle.is_empty():
+		screen = "map"
+		_show_map()
+		return
+	var battle: Dictionary = GameState.data.battle
+	var view: TacticalBattleView = TACTICAL_BATTLE_VIEW.instantiate()
+	content.add_child(view)
+	view.setup(BATTLE_TEXTURE, battle, GameState.data, battle_mode, _battle_cell_data(battle), _enemy_preview(battle))
+	view.cell_selected.connect(_tactical_cell)
+	view.mode_selected.connect(_battle_mode_selected)
+	view.end_turn_requested.connect(_enemy_turn)
+
+func _battle_mode_selected(next_mode: String) -> void:
+	if next_mode == "frost_guard":
+		_use_frost_guard()
+		return
+	battle_mode = next_mode
+	_rebuild()
+
+func _battle_cell_data(battle: Dictionary) -> Array:
+	var cells: Array = []
+	for y in range(int(battle.height)):
+		for x in range(int(battle.width)):
+			var data := {"x": x, "y": y, "text": "·", "disabled": false, "token": -1, "color": "#1d2b25bb" if battle_mode != "inspect" else "#294438dd"}
+			var move_valid: bool = battle_mode == "move" and _can_move_to(battle, x, y)
+			var attack_valid: bool = battle_mode == "attack" and _can_attack_cell(battle, x, y, false)
+			var skill_valid: bool = battle_mode == "skill" and _can_attack_cell(battle, x, y, true)
+			var frost_valid: bool = battle_mode == "frost_dash" and _can_frost_dash(battle, x, y)
+			if move_valid:
+				data.color = "#28678aee"
+			elif attack_valid:
+				data.color = "#c94b3fee"
+			elif skill_valid:
+				data.color = "#c18b2fee"
+			elif frost_valid:
+				data.color = "#668fbbee"
+			if _is_blocked(battle, x, y):
+				data.text = "岩石"
+				data.disabled = true
+				data.color = "#4b4b45ee"
+			elif x == int(battle.player_x) and y == int(battle.player_y):
+				data.text = "%s沈羽\nAP %d" % ["▶ " if str(battle.get("active_unit", "hero")) == "hero" else "", battle.ap]
+				data.token = 0
+				data.color = "#3d916fee" if str(battle.get("active_unit", "hero")) == "hero" else "#2f7359"
+			elif _is_ally_at(battle, x, y):
+				data.text = "%s%s\n护卫 %d" % ["▶ " if str(battle.get("active_unit", "hero")) == "ally" else "", battle.ally.name, battle.ally.guard]
+				data.token = 4
+				data.color = "#8068a9ee" if str(battle.get("active_unit", "hero")) == "ally" else "#594a78ee"
+			else:
+				var enemy_index: int = _enemy_at(battle, x, y)
+				if enemy_index >= 0:
+					var enemy: Dictionary = battle.enemies[enemy_index]
+					data.text = "%s\n%d/%d" % [enemy.name, enemy.hp, enemy.max_hp]
+					data.token = 1 if enemy.name == "黑苇寨主" else (3 if "弓手" in enemy.name else 2)
+					if not attack_valid and not skill_valid and not frost_valid:
+						data.color = "#71322dee"
+			cells.append(data)
+	return cells
+
+func _show_battle_legacy() -> void:
+	_clear_content()
+	if GameState.data.battle.is_empty():
+		screen = "map"
+		_show_map()
+		return
+	var art := TextureRect.new()
+	art.texture = BATTLE_TEXTURE
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#07110d55")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+
+	var battle: Dictionary = GameState.data.battle
+	var title := Label.new()
+	title.position = Vector2(30, 14)
+	title.text = "%s  ·  第 %d 回合" % [battle.name, battle.turn]
+	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_color_override("font_color", Color("#f1e3c6"))
+	content.add_child(title)
+	var turn_banner := Label.new()
+	turn_banner.position = Vector2(660, 14)
+	turn_banner.size = Vector2(160, 36)
+	turn_banner.text = "我 方 回 合"
+	turn_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	turn_banner.add_theme_font_size_override("font_size", 18)
+	turn_banner.add_theme_color_override("font_color", Color("#d9f2e5"))
+	turn_banner.add_theme_stylebox_override("normal", _box(Color("#27604b")))
+	content.add_child(turn_banner)
+
+	var board := GridContainer.new()
+	board.columns = 8
+	board.position = Vector2(30, 60)
+	board.size = Vector2(790, 450)
+	board.add_theme_constant_override("h_separation", 5)
+	board.add_theme_constant_override("v_separation", 5)
+	content.add_child(board)
+	for y in range(6):
+		for x in range(8):
+			var cell := Button.new()
+			cell.custom_minimum_size = Vector2(94, 66)
+			cell.add_theme_font_size_override("font_size", 15)
+			cell.add_theme_color_override("font_color", Color("#fff4dc"))
+			var move_valid: bool = battle_mode == "move" and _can_move_to(battle, x, y)
+			var attack_valid: bool = battle_mode == "attack" and _can_attack_cell(battle, x, y, false)
+			var skill_valid: bool = battle_mode == "skill" and _can_attack_cell(battle, x, y, true)
+			var cell_color := Color("#1d2b25bb") if battle_mode != "inspect" else Color("#294438dd")
+			if move_valid:
+				cell_color = Color("#28678aee")
+			elif attack_valid:
+				cell_color = Color("#a33b32ee")
+			elif skill_valid:
+				cell_color = Color("#9a732bee")
+			cell.add_theme_stylebox_override("normal", _box(cell_color))
+			if _is_blocked(battle, x, y):
+				cell.text = "岩石"
+				cell.disabled = true
+				cell.add_theme_stylebox_override("disabled", _box(Color("#4b4b45ee")))
+			elif x == int(battle.player_x) and y == int(battle.player_y):
+				cell.text = "沈羽\nAP %d" % battle.ap
+				cell.icon = _battle_token(0)
+				cell.expand_icon = true
+				cell.add_theme_stylebox_override("normal", _box(Color("#2f7359")))
+			else:
+				var enemy_index: int = _enemy_at(battle, x, y)
+				if enemy_index >= 0:
+					var enemy: Dictionary = battle.enemies[enemy_index]
+					cell.text = "%s\n%d/%d" % [enemy.name, enemy.hp, enemy.max_hp]
+					cell.icon = _battle_token(1 if enemy.name == "黑苇寨主" else (3 if "弓手" in enemy.name else 2))
+					cell.expand_icon = true
+					if attack_valid:
+						cell.add_theme_stylebox_override("normal", _box(Color("#c94b3fee")))
+					elif skill_valid:
+						cell.add_theme_stylebox_override("normal", _box(Color("#c18b2fee")))
+					else:
+						cell.add_theme_stylebox_override("normal", _box(Color("#71322dee")))
+				else:
+					cell.text = "·"
+			cell.pressed.connect(_tactical_cell.bind(x, y))
+			board.add_child(cell)
+	if battle.has("effect") and not battle.effect.is_empty():
+		var effect: Dictionary = battle.effect
+		var effect_label := Label.new()
+		effect_label.position = Vector2(30 + int(effect.x) * 99, 60 + int(effect.y) * 71)
+		effect_label.size = Vector2(94, 66)
+		effect_label.z_index = 5
+		effect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		effect_label.text = str(effect.text)
+		effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		effect_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		effect_label.add_theme_font_size_override("font_size", 22)
+		effect_label.add_theme_color_override("font_color", Color("#fff0a8"))
+		effect_label.add_theme_stylebox_override("normal", _box(Color("#a33127cc") if effect.type == "damage" else Color("#d4b34aaa")))
+		content.add_child(effect_label)
+	if battle.has("skill_flash") and bool(battle.skill_flash):
+		var skill_name := Label.new()
+		skill_name.position = Vector2(250, 260)
+		skill_name.size = Vector2(360, 64)
+		skill_name.z_index = 6
+		skill_name.text = "流 云 剑 法"
+		skill_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		skill_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		skill_name.add_theme_font_size_override("font_size", 30)
+		skill_name.add_theme_color_override("font_color", Color("#fff2bd"))
+		skill_name.add_theme_stylebox_override("normal", _box(Color("#315f4be8")))
+		content.add_child(skill_name)
+
+	var side := PanelContainer.new()
+	side.position = Vector2(840, 60)
+	side.size = Vector2(400, 478)
+	side.add_theme_stylebox_override("panel", _box(Color("#14271ff2")))
+	content.add_child(side)
+	var side_box := VBoxContainer.new()
+	side_box.add_theme_constant_override("separation", 10)
+	side.add_child(side_box)
+	var status := Label.new()
+	status.text = "沈羽    气血 %d/%d    真气 %d/20\n行动点 %d/2    当前：%s" % [GameState.data.hp, GameState.data.max_hp, GameState.data.qi, battle.ap, _mode_name(battle_mode)]
+	status.add_theme_font_size_override("font_size", 18)
+	status.add_theme_color_override("font_color", Color("#f2dfb3"))
+	side_box.add_child(status)
+	var result := Label.new()
+	result.text = "战况\n%s" % battle.result
+	result.custom_minimum_size.y = 95
+	result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	result.add_theme_font_size_override("font_size", 16)
+	result.add_theme_color_override("font_color", Color("#f4eee2"))
+	result.add_theme_stylebox_override("normal", _box(Color("#21382f")))
+	side_box.add_child(result)
+	var preview := Label.new()
+	preview.text = "敌方预判\n" + _enemy_preview(battle)
+	preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	preview.add_theme_font_size_override("font_size", 14)
+	preview.add_theme_color_override("font_color", Color("#e5c8b6"))
+	side_box.add_child(preview)
+	var action_grid := GridContainer.new()
+	action_grid.columns = 2
+	action_grid.add_theme_constant_override("h_separation", 8)
+	action_grid.add_theme_constant_override("v_separation", 8)
+	side_box.add_child(action_grid)
+	for action in [["移动", "move"], ["普通攻击", "attack"], ["流云剑法 · 8真气", "skill"]]:
+		var action_button := _action_button(action[0], Color("#8b493b") if battle_mode == action[1] else Color("#315f4b"))
+		action_button.custom_minimum_size.x = 174
+		action_button.disabled = int(battle.ap) <= 0 or (action[1] == "skill" and int(GameState.data.qi) < 8)
+		action_button.pressed.connect(func(): battle_mode = action[1]; _rebuild())
+		action_grid.add_child(action_button)
+	var cancel_button := _action_button("取消选择 / 查看战场", Color("#4d5550"))
+	cancel_button.custom_minimum_size.x = 174
+	cancel_button.pressed.connect(func(): battle_mode = "inspect"; _rebuild())
+	action_grid.add_child(cancel_button)
+	var end_button := _action_button("结束回合", Color("#806c4f"))
+	end_button.custom_minimum_size.x = 174
+	end_button.pressed.connect(_enemy_turn)
+	action_grid.add_child(end_button)
+	var help := Label.new()
+	help.text = "移动：两格内，消耗1行动点\n普攻：相邻敌人，消耗1行动点\n流云剑法：同一直线三格，消耗1行动点"
+	help.add_theme_font_size_override("font_size", 14)
+	help.add_theme_color_override("font_color", Color("#cfc8b8"))
+	side_box.add_child(help)
+
+func _tactical_cell(x: int, y: int) -> void:
+	var battle: Dictionary = GameState.data.battle
+	if x == int(battle.player_x) and y == int(battle.player_y):
+		battle.active_unit = "hero"
+		battle.result = "当前由沈羽行动。"
+		GameState.data.battle = battle
+		_rebuild()
+		return
+	if _is_ally_at(battle, x, y):
+		battle.active_unit = "ally"
+		battle.result = "当前由林清霜行动。"
+		GameState.data.battle = battle
+		_rebuild()
+		return
+	if int(battle.ap) <= 0:
+		_toast("行动点已用尽，请结束回合。")
+		return
+	var active: Vector2i = _active_position(battle)
+	var active_name: String = "林清霜" if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
+	var distance: int = absi(x - active.x) + absi(y - active.y)
+	var enemy_index: int = _enemy_at(battle, x, y)
+	if battle_mode == "move":
+		if not _can_move_to(battle, x, y):
+			_toast("只能移动到两格内的空地。")
+			return
+		_set_active_position(battle, x, y)
+		battle.ap -= 1
+		battle.result = "%s施展身法，移动到新的位置。" % active_name
+		battle.effect = {}
+		battle.skill_flash = false
+	elif battle_mode == "attack":
+		if enemy_index < 0 or distance != 1:
+			_toast("普通攻击只能命中相邻敌人。")
+			return
+		var damage: int = (int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(GameState.data.strength) + 3) + randi_range(0, 2)
+		battle.enemies[enemy_index].hp -= damage
+		battle.ap -= 1
+		battle.result = "%s对%s造成%d点伤害。" % [active_name, battle.enemies[enemy_index].name, damage]
+		battle.effect = {"x": x, "y": y, "text": "-%d" % damage, "type": "damage"}
+		battle.skill_flash = false
+	elif battle_mode == "skill":
+		if str(battle.get("active_unit", "hero")) == "ally":
+			_toast("林清霜尚未装备可主动释放的武学。")
+			return
+		if enemy_index < 0 or distance > 3 or not (x == active.x or y == active.y):
+			_toast("流云剑法只能攻击同一直线三格内的敌人。")
+			return
+		if int(GameState.data.qi) < 8:
+			_toast("真气不足。")
+			return
+		var damage: int = int(GameState.data.strength) + 9 + int(GameState.data.skill_mastery.cloud / 3) + randi_range(0, 3)
+		GameState.data.qi -= 8
+		GameState.data.skill_mastery.cloud += 1
+		battle.enemies[enemy_index].hp -= damage
+		battle.ap -= 1
+		battle.result = "流云剑气贯穿战场，对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
+		battle.effect = {"x": x, "y": y, "text": "-%d" % damage, "type": "skill"}
+		battle.skill_flash = true
+	elif battle_mode == "frost_dash":
+		if not _can_frost_dash(battle, x, y):
+			_toast("霜华刺只能突进攻击两格内的敌人。")
+			return
+		var damage: int = int(battle.ally.attack) + 6 + int(GameState.data.skill_mastery.frost / 3) + randi_range(0, 2)
+		battle.ally.qi -= 6
+		GameState.data.skill_mastery.frost += 1
+		battle.enemies[enemy_index].hp -= damage
+		var path: Array[Vector2i] = _find_path(battle, Vector2i(int(battle.ally.x), int(battle.ally.y)), Vector2i(x, y), true)
+		if path.size() >= 2:
+			battle.ally.x = path[path.size() - 2].x
+			battle.ally.y = path[path.size() - 2].y
+		battle.ap -= 1
+		battle.result = "林清霜踏雪突进，以霜华刺对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
+		battle.effect = {"x": x, "y": y, "text": "-%d" % damage, "type": "skill"}
+		battle.skill_flash = false
+	if _check_tactical_victory(battle):
+		SaveManager.save_auto()
+		_rebuild()
+		return
+	GameState.data.battle = battle
+	SaveManager.save_auto()
+	_rebuild()
+
+func _enemy_turn() -> void:
+	var battle: Dictionary = GameState.data.battle
+	var total_hurt: int = 0
+	for enemy in battle.enemies:
+		if int(enemy.hp) <= 0:
+			continue
+		var target_is_ally: bool = false
+		var target := Vector2i(int(battle.player_x), int(battle.player_y))
+		var distance: int = absi(int(enemy.x) - target.x) + absi(int(enemy.y) - target.y)
+		if battle.has("ally") and int(battle.ally.hp) > 0:
+			var ally_target := Vector2i(int(battle.ally.x), int(battle.ally.y))
+			var ally_distance: int = absi(int(enemy.x) - ally_target.x) + absi(int(enemy.y) - ally_target.y)
+			if ally_distance < distance:
+				target = ally_target
+				distance = ally_distance
+				target_is_ally = true
+		if distance == 1:
+			var hurt: int = int(enemy.attack) + randi_range(0, 2)
+			if target_is_ally:
+				var blocked: int = mini(hurt, int(battle.ally.guard))
+				hurt -= blocked
+				battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)
+				battle.ally.hp -= hurt
+			else:
+				GameState.data.hp -= hurt
+			total_hurt += hurt
+		else:
+			var path: Array[Vector2i] = _find_path(battle, Vector2i(int(enemy.x), int(enemy.y)), target, true)
+			if path.size() > 1:
+				enemy.x = path[1].x
+				enemy.y = path[1].y
+	if GameState.data.hp <= 0:
+		GameState.finish_battle(false)
+		screen = "map"
+	else:
+		battle.turn += 1
+		battle.ap = 2
+		battle.active_unit = "hero"
+		battle.result = "敌方行动结束。你受到%d点伤害。" % total_hurt
+		battle.effect = {"x": battle.player_x, "y": battle.player_y, "text": "-%d" % total_hurt, "type": "damage"} if total_hurt > 0 else {}
+		battle.skill_flash = false
+		GameState.data.battle = battle
+	SaveManager.save_auto()
+	_rebuild()
+
+func _enemy_at(battle: Dictionary, x: int, y: int) -> int:
+	for index in range(battle.enemies.size()):
+		var enemy: Dictionary = battle.enemies[index]
+		if int(enemy.hp) > 0 and int(enemy.x) == x and int(enemy.y) == y:
+			return index
+	return -1
+
+func _is_ally_at(battle: Dictionary, x: int, y: int) -> bool:
+	return battle.has("ally") and not battle.ally.is_empty() and int(battle.ally.hp) > 0 and int(battle.ally.x) == x and int(battle.ally.y) == y
+
+func _active_position(battle: Dictionary) -> Vector2i:
+	if str(battle.get("active_unit", "hero")) == "ally" and battle.has("ally") and int(battle.ally.hp) > 0:
+		return Vector2i(int(battle.ally.x), int(battle.ally.y))
+	return Vector2i(int(battle.player_x), int(battle.player_y))
+
+func _set_active_position(battle: Dictionary, x: int, y: int) -> void:
+	if str(battle.get("active_unit", "hero")) == "ally" and battle.has("ally"):
+		battle.ally.x = x
+		battle.ally.y = y
+	else:
+		battle.player_x = x
+		battle.player_y = y
+
+func _is_blocked(battle: Dictionary, x: int, y: int) -> bool:
+	if x < 0 or y < 0 or x >= int(battle.width) or y >= int(battle.height):
+		return true
+	for point in battle.blocked:
+		if int(point[0]) == x and int(point[1]) == y:
+			return true
+	return false
+
+func _can_move_to(battle: Dictionary, x: int, y: int) -> bool:
+	if _is_blocked(battle, x, y) or _enemy_at(battle, x, y) >= 0 or _is_ally_at(battle, x, y) or (x == int(battle.player_x) and y == int(battle.player_y)):
+		return false
+	var path: Array[Vector2i] = _find_path(battle, _active_position(battle), Vector2i(x, y), false)
+	return path.size() >= 2 and path.size() <= 3
+
+func _can_attack_cell(battle: Dictionary, x: int, y: int, skill: bool) -> bool:
+	if _enemy_at(battle, x, y) < 0:
+		return false
+	var active: Vector2i = _active_position(battle)
+	var dx: int = absi(x - active.x)
+	var dy: int = absi(y - active.y)
+	if skill:
+		return str(battle.get("active_unit", "hero")) != "ally" and dx + dy <= 3 and (dx == 0 or dy == 0) and int(GameState.data.qi) >= 8
+	return dx + dy == 1
+
+func _can_frost_dash(battle: Dictionary, x: int, y: int) -> bool:
+	if str(battle.get("active_unit", "hero")) != "ally" or _enemy_at(battle, x, y) < 0 or int(battle.ally.qi) < 6:
+		return false
+	var distance: int = absi(x - int(battle.ally.x)) + absi(y - int(battle.ally.y))
+	if distance > 2:
+		return false
+	var path: Array[Vector2i] = _find_path(battle, Vector2i(int(battle.ally.x), int(battle.ally.y)), Vector2i(x, y), true)
+	return path.size() >= 2 and path.size() <= 3
+
+func _use_frost_guard() -> void:
+	var battle: Dictionary = GameState.data.battle
+	if str(battle.get("active_unit", "hero")) != "ally" or int(battle.ap) <= 0:
+		return
+	battle.ally.guard = 8 + int(GameState.data.skill_mastery.frost_guard / 3)
+	battle.ally.qi = mini(int(battle.ally.max_qi), int(battle.ally.qi) + 3)
+	GameState.data.skill_mastery.frost_guard += 1
+	battle.ap -= 1
+	battle.result = "林清霜横剑凝神，获得%d点护卫并恢复3点真气。" % battle.ally.guard
+	battle.effect = {}
+	battle.skill_flash = false
+	GameState.data.battle = battle
+	SaveManager.save_auto()
+	_rebuild()
+
+func _find_path(battle: Dictionary, start: Vector2i, goal: Vector2i, allow_goal_occupied: bool) -> Array[Vector2i]:
+	var frontier: Array[Vector2i] = [start]
+	var came_from: Dictionary = {start: start}
+	while not frontier.is_empty():
+		var current: Vector2i = frontier.pop_front()
+		if current == goal:
+			break
+		for direction in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]:
+			var next: Vector2i = current + direction
+			if came_from.has(next) or _is_blocked(battle, next.x, next.y):
+				continue
+			var occupied: bool = _enemy_at(battle, next.x, next.y) >= 0 or _is_ally_at(battle, next.x, next.y) or (next.x == int(battle.player_x) and next.y == int(battle.player_y))
+			if occupied and not (allow_goal_occupied and next == goal):
+				continue
+			came_from[next] = current
+			frontier.append(next)
+	if not came_from.has(goal):
+		return []
+	var path: Array[Vector2i] = [goal]
+	var cursor: Vector2i = goal
+	while cursor != start:
+		cursor = came_from[cursor]
+		path.push_front(cursor)
+	return path
+
+func _enemy_preview(battle: Dictionary) -> String:
+	var lines: PackedStringArray = []
+	for enemy in battle.enemies:
+		if int(enemy.hp) <= 0:
+			continue
+		var target_name := "沈羽"
+		var target := Vector2i(int(battle.player_x), int(battle.player_y))
+		var distance: int = absi(int(enemy.x) - target.x) + absi(int(enemy.y) - target.y)
+		if battle.has("ally") and int(battle.ally.hp) > 0:
+			var ally_target := Vector2i(int(battle.ally.x), int(battle.ally.y))
+			var ally_distance: int = absi(int(enemy.x) - ally_target.x) + absi(int(enemy.y) - ally_target.y)
+			if ally_distance < distance:
+				target = ally_target
+				distance = ally_distance
+				target_name = str(battle.ally.name)
+		lines.append("· %s：%s%s" % [enemy.name, "准备攻击" if distance == 1 else "向", target_name if distance == 1 else target_name + "接近"])
+	return "\n".join(lines)
+
+func _check_tactical_victory(battle: Dictionary) -> bool:
+	for enemy in battle.enemies:
+		if int(enemy.hp) > 0:
+			return false
+	var battle_id: String = str(battle.get("battle_id", "blackreed"))
+	if battle_id == "huashan_trial":
+		last_rewards = {"title": "剑 会 胜 出", "story": "你与林清霜剑路相合，通过华山双人试炼。守台长老准许你们前往思过崖查看残图。", "xp": 30, "silver": 10, "renown": 3, "item": "思过崖通行令", "turns": battle.turn}
+	else:
+		last_rewards = {"title": "大 捷", "story": "黑苇寨众溃散，渡口重归平静。你从寨主身上搜出一枚玄铁令，厉千秋的阴谋终于露出端倪。", "xp": 22, "silver": 15, "renown": 4, "item": "玄铁令", "turns": battle.turn}
+	GameState.finish_battle(true)
+	GameState.data.quest_stage = "huashan_trial_complete" if battle_id == "huashan_trial" else "return_master"
+	screen = "victory"
+	return true
+
+func _mode_name(mode: String) -> String:
+	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "inspect": "查看战场"}.get(mode, mode)
+
+func _battle_token(index: int) -> AtlasTexture:
+	var token := AtlasTexture.new()
+	token.atlas = TOKEN_ATLAS
+	var half: int = int(TOKEN_ATLAS.get_width() / 2.0)
+	token.region = Rect2((index % 2) * half, int(index / 2.0) * half, half, half)
+	return token
+
+func _show_victory() -> void:
+	_clear_content()
+	var art := TextureRect.new()
+	art.texture = BATTLE_TEXTURE
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#08130ddd")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(390, 65)
+	panel.size = Vector2(500, 465)
+	panel.add_theme_constant_override("separation", 16)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = str(last_rewards.get("title", "大 捷"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 48)
+	title.add_theme_color_override("font_color", Color("#f2dfb3"))
+	panel.add_child(title)
+	var story := Label.new()
+	story.text = str(last_rewards.get("story", "战斗已经结束。"))
+	story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	story.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	story.add_theme_font_size_override("font_size", 18)
+	story.add_theme_color_override("font_color", Color("#eee5d3"))
+	panel.add_child(story)
+	var rewards := Label.new()
+	rewards.text = "战斗回合    %d\n修为获得    +%d\n银两获得    +%d\n声望提升    +%d\n重要物品    %s" % [last_rewards.get("turns", 0), last_rewards.get("xp", 22), last_rewards.get("silver", 15), last_rewards.get("renown", 4), last_rewards.get("item", "玄铁令")]
+	rewards.add_theme_font_size_override("font_size", 20)
+	rewards.add_theme_color_override("font_color", Color("#fff0d2"))
+	rewards.add_theme_stylebox_override("normal", _box(Color("#17382eee")))
+	panel.add_child(rewards)
+	var continue_button := _action_button("收剑归鞘 · 返回天下舆图", Color("#8b493b"))
+	continue_button.pressed.connect(func(): screen = "map"; _rebuild())
+	panel.add_child(continue_button)
+
+func _intent_name(intent: String) -> String:
+	return {"strike": "迅猛攻势", "heavy": "两格重击", "guard": "护住要害"}.get(intent, intent)
+
+func _intent_description(intent: String) -> String:
+	return {
+		"strike": "攻击相邻一格，后撤即可避开",
+		"heavy": "攻击两格范围，红色区域均会受击",
+		"guard": "稳守反击，适合趁机调息或积累破绽"
+	}.get(intent, "观察敌人的下一步动作")
+
+func _on_state_changed() -> void:
+	_update_status()
+
+func _update_status() -> void:
+	if status_label == null:
+		return
+	status_label.text = "第 %d 周 · %s\n战力 %d" % [GameState.data.week, "期限已至" if GameState.deadline_reached() else "剩余 %d 周" % GameState.weeks_left(), GameState.power()]
+
+func _time_action_failure_message() -> String:
+	return "两年之期已至，无法再进行耗时行动。" if GameState.deadline_reached() else "行动点不足，请先调息。"
+
+func _clear_content() -> void:
+	for child in content.get_children():
+		child.queue_free()
+
+func _action_button(text_value: String, color: Color) -> Button:
+	var button := Button.new()
+	button.text = text_value
+	button.custom_minimum_size.y = 48
+	button.add_theme_font_size_override("font_size", 16)
+	button.add_theme_color_override("font_color", Color("#f5ecd9"))
+	button.add_theme_stylebox_override("normal", _box(color))
+	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12)))
+	return button
+
+func _box(color: Color) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = color
+	box.border_color = color.lightened(0.18)
+	box.set_border_width_all(1)
+	box.set_corner_radius_all(2)
+	box.content_margin_left = 12
+	box.content_margin_right = 12
+	box.content_margin_top = 8
+	box.content_margin_bottom = 8
+	return box
+
+func _toast(message: String) -> void:
+	toast_label.text = message
