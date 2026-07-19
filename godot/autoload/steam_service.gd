@@ -3,6 +3,7 @@ extends Node
 signal achievement_unlocked(api_name: String, title: String)
 
 const LOCAL_BACKEND := preload("res://scripts/steam/local_steam_backend.gd")
+const LIVE_BACKEND := preload("res://scripts/steam/godot_steam_backend.gd")
 const ACHIEVEMENTS_PATH := "res://data/steam_achievements.json"
 
 var backend
@@ -11,7 +12,8 @@ var definitions_by_id: Dictionary = {}
 
 func _ready() -> void:
 	_load_definitions()
-	use_backend(LOCAL_BACKEND.new())
+	if not use_backend(LIVE_BACKEND.new()):
+		use_backend(LOCAL_BACKEND.new())
 	GameState.state_changed.connect(_on_game_state_changed)
 	evaluate_state(GameState.data)
 
@@ -45,6 +47,26 @@ func unlocked_count() -> int:
 		if is_unlocked(str(definition.api_name)):
 			count += 1
 	return count
+
+func release_data_errors() -> PackedStringArray:
+	var errors: PackedStringArray = []
+	if definitions.is_empty():
+		errors.append("No Steam achievement definitions were loaded.")
+	var ids: Dictionary = {}
+	for definition in definitions:
+		var api_name := str(definition.get("api_name", ""))
+		if not api_name.begins_with("ACH_"):
+			errors.append("Invalid achievement API name: %s" % api_name)
+		if ids.has(api_name):
+			errors.append("Duplicate achievement API name: %s" % api_name)
+		ids[api_name] = true
+		if str(definition.get("title", "")).strip_edges().is_empty():
+			errors.append("Achievement %s has no title." % api_name)
+		if str(definition.get("description", "")).strip_edges().is_empty():
+			errors.append("Achievement %s has no description." % api_name)
+		if typeof(definition.get("hidden", null)) != TYPE_BOOL:
+			errors.append("Achievement %s has no boolean hidden flag." % api_name)
+	return errors
 
 func evaluate_state(state: Dictionary) -> void:
 	if state.is_empty() or backend == null:

@@ -1,6 +1,8 @@
 # Steam release preparation
 
-The project currently uses a local Steam-service simulation. It does not claim a live Steam connection and does not ship a Steamworks redistributable. A real adapter can replace the local backend after the game has an App ID and an approved Godot Steamworks integration.
+The project includes both a persistent local simulation and a dynamic GodotSteam adapter. At startup it attempts the live adapter only when the `Steam` engine singleton exists and its required API is compatible; initialization failure safely falls back to the local simulation. The repository still does not ship GodotSteam, a Steamworks redistributable, or an App ID, so current exported builds must not claim a live Steam connection.
+
+The live adapter waits for `current_stats_received` before writing account data. Achievement and integer-stat changes requested during startup are queued, merged, and flushed once after Steam reports a successful stats load. When selecting a GodotSteam build, pin a version compatible with the shipping Godot version, add its license and Steamworks redistributable notices, and rerun the adapter contract tests against the actual extension.
 
 ## Achievements
 
@@ -46,3 +48,5 @@ Do not report Steam integration as complete until all of the following are prove
 - Depot install contains the EXE, PCK, required Steam redistributables, and licenses.
 - A clean Steam install passes the full first-run and battle flow.
 - The build has been tested on a private Steam branch before default-branch promotion.
+
+The exported executable also supports `--verify-steam-data`. Run it from both full and demo depot candidates to prove that the packaged achievement metadata is present before upload. This verifier does not substitute for a live account test.

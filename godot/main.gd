@@ -56,6 +56,8 @@ func _ready() -> void:
 	_show_menu()
 	if "--verify-onboarding-flow" in OS.get_cmdline_user_args():
 		call_deferred("_verify_onboarding_flow")
+	elif "--verify-steam-data" in OS.get_cmdline_user_args():
+		call_deferred("_verify_steam_data")
 	elif "--verify-battle-presentation" in OS.get_cmdline_user_args():
 		call_deferred("_verify_battle_presentation")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
@@ -81,6 +83,17 @@ func _handle_release_mode_verification() -> bool:
 		push_error("Release mode verification failed.")
 	get_tree().quit(0 if valid else 2)
 	return true
+
+func _verify_steam_data() -> void:
+	var errors := SteamService.release_data_errors()
+	var valid := errors.is_empty() and SteamService.definitions.size() == 11
+	if not valid:
+		for error in errors:
+			push_error(error)
+		if SteamService.definitions.size() != 11:
+			push_error("Expected 11 Steam achievement definitions, found %d." % SteamService.definitions.size())
+	print("Steam release data verification passed." if valid else "Steam release data verification failed.")
+	get_tree().quit(0 if valid else 7)
 
 func _capture_store_screenshots() -> void:
 	store_capture_active = true

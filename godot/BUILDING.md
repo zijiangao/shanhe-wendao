@@ -52,6 +52,12 @@ The onboarding verifier checks the shipping new-game route from Qingyun mission 
 & $godot --headless --path $project -- --verify-onboarding-flow
 ```
 
+The exported-build Steam data verifier checks that all 11 achievement definitions have stable API names and complete metadata:
+
+```powershell
+& "..\build\windows\ShanheWendao.exe" -- --verify-steam-data
+```
+
 ## Export Windows Release
 
 ```powershell
