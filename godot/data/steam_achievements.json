@@ -42,6 +42,30 @@
     "hidden": false
   },
   {
+    "api_name": "ACH_TRAINING_EXCELLENCE",
+    "title": "炉火纯青",
+    "description": "在任一专项修炼中取得S级评价。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_FORTUNATE_ENCOUNTER",
+    "title": "机缘自来",
+    "description": "在修炼结束后触发一次专项奇遇。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_FIELD_APOTHECARY",
+    "title": "药香初成",
+    "description": "在青云工坊首次制作回春散。",
+    "hidden": false
+  },
+  {
+    "api_name": "ACH_FIRST_TEMPER",
+    "title": "百炼成锋",
+    "description": "在青云工坊首次淬炼兵刃。",
+    "hidden": false
+  },
+  {
     "api_name": "ACH_WUKU_VICTORY",
     "title": "天门决胜",
     "description": "在武库天门击败厉无咎。",

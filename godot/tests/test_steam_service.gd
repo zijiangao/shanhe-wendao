@@ -52,7 +52,7 @@ func _initialize() -> void:
 	var backend = LOCAL_BACKEND.new(TEST_PATH)
 	assert(service.use_backend(backend), "The local Steam backend should initialize without the SDK.")
 	assert(not service.is_live(), "The local backend must never claim a live Steam connection.")
-	assert(service.definitions.size() == 11, "The commercial achievement set should include finale and ending awards.")
+	assert(service.definitions.size() == 15, "The commercial achievement set should cover progression, training, crafting, finale, and endings.")
 	assert(service.release_data_errors().is_empty(), "Shipping achievement metadata should satisfy the Steam release contract.")
 	var ids: Dictionary = {}
 	for definition in service.definitions:
@@ -63,20 +63,22 @@ func _initialize() -> void:
 
 	var state := {
 		"quest_stage": "game_complete",
-		"flags": ["villain_revealed", "game_complete"],
+		"flags": ["villain_revealed", "game_complete", "training_s_grade", "training_event_seen", "crafted_healing_powder", "tempered_blade"],
 		"companions": ["lin_qingshuang"],
 		"items": ["思过崖通行令"],
 		"skill_mastery": {"cloud": 3, "frost": 0, "frost_guard": 0},
-		"ending": {"id": "destroy"}
+		"ending": {"id": "destroy"},
+		"swordsmanship": 5, "bladesmanship": 1, "herbalism": 3, "mining": 2
 	}
 	service.evaluate_state(state)
-	assert(service.unlocked_count() == 9, "One completed route should unlock progression plus exactly one of three endings.")
+	assert(service.unlocked_count() == 13, "One completed route should unlock progression, training, crafting, and exactly one ending.")
 	state.ending.id = "seal"
 	service.evaluate_state(state)
 	state.ending.id = "preserve"
 	service.evaluate_state(state)
 	assert(service.unlocked_count() == service.definitions.size(), "Completing all ending routes should unlock the full achievement set.")
 	assert(backend.get_stat("STAT_HIGHEST_MASTERY") == 3, "Steam stat progress should mirror the highest mastery.")
+	assert(backend.get_stat("STAT_HIGHEST_SPECIALTY") == 5, "Steam stat progress should mirror the highest training specialty.")
 	assert(not service.unlock("ACH_FIRST_STEPS"), "Unlocking an existing achievement must be idempotent.")
 
 	var fake_api := FakeSteamApi.new()

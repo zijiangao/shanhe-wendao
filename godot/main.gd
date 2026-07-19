@@ -163,12 +163,12 @@ func _verify_pause_flow() -> void:
 
 func _verify_steam_data() -> void:
 	var errors := SteamService.release_data_errors()
-	var valid := errors.is_empty() and SteamService.definitions.size() == 11
+	var valid := errors.is_empty() and SteamService.definitions.size() == 15
 	if not valid:
 		for error in errors:
 			push_error(error)
-		if SteamService.definitions.size() != 11:
-			push_error("Expected 11 Steam achievement definitions, found %d." % SteamService.definitions.size())
+		if SteamService.definitions.size() != 15:
+			push_error("Expected 15 Steam achievement definitions, found %d." % SteamService.definitions.size())
 	print("Steam release data verification passed." if valid else "Steam release data verification failed.")
 	get_tree().quit(0 if valid else 7)
 
@@ -1330,7 +1330,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.33.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.34.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

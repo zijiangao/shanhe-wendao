@@ -124,9 +124,13 @@ func complete_training(discipline: String, score: int, event_roll: int = -1) -> 
 	data.materials.ore = int(data.materials.ore) + int(outcome.get("ore", 0))
 	if str(outcome.item) != "":
 		data.items.append(str(outcome.item))
+	if str(outcome.grade) == "S" and "training_s_grade" not in data.flags:
+		data.flags.append("training_s_grade")
 	var event := TRAINING_EVENT_RULES.select(discipline, str(outcome.grade), event_roll)
 	if not event.is_empty() and TRAINING_EVENT_RULES.apply(data, event):
 		outcome.event = event
+		if "training_event_seen" not in data.flags:
+			data.flags.append("training_event_seen")
 		add_log("修炼奇遇：%s，%s。" % [str(event.title), str(event.reward)])
 	add_log("专项修炼完成：%s级，%s。" % [str(outcome.grade), TRAINING_RULES.reward_text(outcome)])
 	return outcome
@@ -134,6 +138,9 @@ func complete_training(discipline: String, score: int, event_roll: int = -1) -> 
 func craft(recipe_id: String) -> bool:
 	if not CRAFTING_RULES.apply(data, recipe_id):
 		return false
+	var milestone := "crafted_healing_powder" if recipe_id == "healing_powder" else "tempered_blade"
+	if milestone not in data.flags:
+		data.flags.append(milestone)
 	add_log("青云工坊完成：%s。" % str(CRAFTING_RULES.RECIPES[recipe_id].title))
 	state_changed.emit()
 	return true

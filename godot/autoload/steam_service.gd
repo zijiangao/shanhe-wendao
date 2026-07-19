@@ -104,6 +104,13 @@ func evaluate_state(state: Dictionary) -> void:
 	var highest_mastery := maxi(int(mastery.get("cloud", 0)), maxi(int(mastery.get("frost", 0)), int(mastery.get("frost_guard", 0))))
 	backend.set_stat("STAT_HIGHEST_MASTERY", highest_mastery)
 	if highest_mastery >= 3: unlock("ACH_PRACTICED_HAND")
+	var flags: Array = state.get("flags", [])
+	if "training_s_grade" in flags: unlock("ACH_TRAINING_EXCELLENCE")
+	if "training_event_seen" in flags: unlock("ACH_FORTUNATE_ENCOUNTER")
+	if "crafted_healing_powder" in flags: unlock("ACH_FIELD_APOTHECARY")
+	if "tempered_blade" in flags: unlock("ACH_FIRST_TEMPER")
+	var highest_specialty := maxi(int(state.get("swordsmanship", 0)), maxi(int(state.get("bladesmanship", 0)), maxi(int(state.get("herbalism", 0)), int(state.get("mining", 0)))))
+	backend.set_stat("STAT_HIGHEST_SPECIALTY", highest_specialty)
 
 func _on_game_state_changed() -> void:
 	evaluate_state(GameState.data)

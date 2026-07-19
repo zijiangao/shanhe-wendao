@@ -34,9 +34,14 @@ func _initialize() -> void:
 	var event_training: Dictionary = state.complete_training("herbalism", 300, 0)
 	assert(str(event_training.get("event", {}).get("id", "")) == "rare_herb", "A deterministic high-grade roll should attach its training encounter to the result.")
 	assert(int(state.data.materials.herbs) == 5, "The normal three-herb reward and two bonus herbs must be committed together.")
+	assert("training_s_grade" in state.data.flags and "training_event_seen" in state.data.flags, "Training milestones must persist for Steam achievement restoration.")
 	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Training should spend exactly one week and one energy.")
 	state.data.materials.herbs = 2
 	assert(state.craft("healing_powder") and int(state.data.consumables.healing_powder) == 1, "GameState should expose medicine crafting through the saved inventory.")
+	assert("crafted_healing_powder" in state.data.flags, "Medicine crafting must persist its Steam milestone.")
+	state.data.materials.ore = 3
+	state.data.silver = 8
+	assert(state.craft("temper_blade") and "tempered_blade" in state.data.flags, "Weapon tempering must persist its Steam milestone.")
 	var legacy_material_save: Dictionary = state.data.duplicate(true)
 	legacy_material_save.save_version = 5
 	legacy_material_save.erase("materials")
