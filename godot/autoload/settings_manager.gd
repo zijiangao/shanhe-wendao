@@ -19,6 +19,8 @@ func defaults() -> Dictionary:
 		"music_volume": 0.7,
 		"sfx_volume": 0.8,
 		"fullscreen": false,
+		"screen_shake": true,
+		"combat_flashes": true,
 		"ui_scale": 1.0,
 		"difficulty": "standard"
 	}
@@ -60,6 +62,8 @@ func normalize(values: Dictionary) -> Dictionary:
 	result.music_volume = clampf(float(result.music_volume), 0.0, 1.0)
 	result.sfx_volume = clampf(float(result.sfx_volume), 0.0, 1.0)
 	result.fullscreen = bool(result.fullscreen)
+	result.screen_shake = bool(result.screen_shake)
+	result.combat_flashes = bool(result.combat_flashes)
 	var requested_scale := clampf(float(result.ui_scale), 0.9, 1.3)
 	var closest_scale: float = UI_SCALES[0]
 	for scale in UI_SCALES:

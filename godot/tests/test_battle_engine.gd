@@ -195,6 +195,7 @@ func _test_archer_aimed_shot() -> void:
 	var aimed_outcome: Dictionary = ENGINE.enemy_turn(aimed, 30, _seeded_rng())
 	assert(bool(aimed_outcome.suppressed) and int(aimed.ap) == 1, "A clear aimed shot should reduce the next shared player turn to one action point.")
 	assert(Array(aimed_outcome.events).size() == 3 and str(aimed_outcome.events[0].type) == "technique", "Aimed shots should present their technique before attack and hit events.")
+	assert(str(aimed_outcome.events[2].impact) == "normal", "Aimed shots should carry medium-strength impact feedback.")
 
 	var regular := _fixture()
 	regular.erase("ally")
@@ -226,6 +227,7 @@ func _test_brute_heavy_attack() -> void:
 	battle.enemies[0].y = 1
 	var outcome: Dictionary = ENGINE.enemy_turn(battle, 30, _seeded_rng())
 	assert(int(outcome.total_hurt) >= int(battle.enemies[0].attack) + 4, "Brutes should gain bonus damage on their telegraphed heavy turn.")
+	assert(str(outcome.events.back().impact) == "heavy", "Brute heavy attacks should request high-strength impact feedback.")
 	assert("重击" in str(battle.result), "Heavy attacks should be reported in the battle log.")
 
 func _test_boss_phase_and_sweep() -> void:
@@ -240,6 +242,7 @@ func _test_boss_phase_and_sweep() -> void:
 	assert(bool(outcome.boss_transition), "Crossing half health should emit exactly one boss phase transition.")
 	assert(int(outcome.hero_hp) < 40 and int(battle.ally.hp) < 30, "The telegraphed sweep should hit every party member within two cells.")
 	assert("第二阶段" in str(battle.result) and "断岳刀势" in str(battle.result), "The battle log should announce both transition and signature attack.")
+	assert(Array(outcome.events).any(func(event: Dictionary): return str(event.get("type", "")) == "hit" and str(event.get("impact", "")) == "heavy"), "Boss sweeps should mark every damage event as a heavy impact.")
 	battle.turn = 4
 	var second: Dictionary = ENGINE.enemy_turn(battle, int(outcome.hero_hp), _seeded_rng())
 	assert(not bool(second.boss_transition), "The boss phase transition must not repeat on later turns.")
@@ -309,6 +312,7 @@ func _test_enemy_event_sequence() -> void:
 	assert(Array(attack.events).size() == 2, "A direct enemy strike should emit an attack cue followed by its hit result.")
 	assert(str(attack.events[0].type) == "attack" and str(attack.events[1].type) == "hit", "Enemy presentation events must preserve attack-before-impact ordering.")
 	assert(Vector2i(attack.events[1].target) == Vector2i(1, 1), "The hit event should identify the actual target cell.")
+	assert(str(attack.events[1].impact) == "light", "Regular enemy strikes should use light impact feedback.")
 
 func _test_hero_defeat() -> void:
 	var battle := _fixture()

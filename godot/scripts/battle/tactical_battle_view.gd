@@ -3,6 +3,7 @@ extends Control
 
 const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
+const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
 
 signal cell_selected(x: int, y: int)
 signal mode_selected(mode: String)
@@ -85,7 +86,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		effect_label.add_theme_stylebox_override("normal", _box(Color("#a33127e8") if effect.type == "damage" else Color("#315f4be8")))
 		add_child(effect_label)
 		if not static_capture:
-			_animate_impact(effect_label, str(effect.get("type", "damage")) == "damage")
+			_play_impact_feedback(effect_label, COMBAT_FEEDBACK.for_player_effect(effect))
 	if battle.has("skill_flash") and bool(battle.skill_flash):
 		var skill_name := Label.new()
 		skill_name.position = Vector2(250, 260)
@@ -226,9 +227,10 @@ func _play_enemy_event(event: Dictionary, instant: bool = false) -> void:
 			var hit_label := _presentation_label(hit_text, _cell_overlay_position(target) + Vector2(4, -8), Vector2(86, 38), Color("#315f4bee") if damage <= 0 else Color("#a33127ee"), 19)
 			hit_label.z_index = 23
 			add_child(hit_label)
-			AudioFeedback.play("enemy_hit" if damage > 0 else "turn")
+			var feedback := COMBAT_FEEDBACK.for_enemy_hit(event)
+			AudioFeedback.play(str(feedback.cue), float(feedback.pitch))
 			if not instant:
-				_animate_impact(hit_label, damage > 0)
+				_play_impact_feedback(hit_label, feedback)
 				await get_tree().create_timer(0.28).timeout
 			hit_label.queue_free()
 		"technique":
@@ -264,20 +266,39 @@ func _animate_turn_banner(banner: Control) -> void:
 	tween.tween_property(banner, "modulate:a", 1.0, 0.16)
 	tween.tween_property(banner, "position:y", banner.position.y + 8.0, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
-func _animate_impact(label: Control, shake: bool) -> void:
+func _play_impact_feedback(label: Control, feedback: Dictionary) -> void:
 	label.pivot_offset = label.size * 0.5
 	label.scale = Vector2(0.45, 0.45)
 	var impact := create_tween()
 	impact.tween_interval(0.035)
 	impact.tween_property(label, "scale", Vector2(1.18, 1.18), 0.07).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	impact.tween_property(label, "scale", Vector2.ONE, 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	if shake:
+	if _combat_flashes_enabled() and float(feedback.get("flash_alpha", 0.0)) > 0.0:
+		var flash := ColorRect.new()
+		flash.color = Color(str(feedback.get("flash", "#ffffff")), float(feedback.flash_alpha))
+		flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		flash.z_index = 22
+		add_child(flash)
+		var flash_tween := create_tween()
+		flash_tween.tween_property(flash, "modulate:a", 0.0, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		flash_tween.tween_callback(flash.queue_free)
+	var shake_amount := float(feedback.get("shake", 0.0))
+	if _screen_shake_enabled() and shake_amount > 0.0:
 		var origin := position
 		var camera_shake := create_tween()
-		camera_shake.tween_property(self, "position", origin + Vector2(7, -3), 0.035)
-		camera_shake.tween_property(self, "position", origin + Vector2(-5, 3), 0.045)
-		camera_shake.tween_property(self, "position", origin + Vector2(3, -1), 0.04)
+		camera_shake.tween_property(self, "position", origin + Vector2(shake_amount, -shake_amount * 0.42), 0.035)
+		camera_shake.tween_property(self, "position", origin + Vector2(-shake_amount * 0.72, shake_amount * 0.38), 0.045)
+		camera_shake.tween_property(self, "position", origin + Vector2(shake_amount * 0.38, -shake_amount * 0.16), 0.04)
 		camera_shake.tween_property(self, "position", origin, 0.05)
+
+func _screen_shake_enabled() -> bool:
+	var settings := get_tree().root.get_node_or_null("SettingsManager")
+	return settings == null or bool(settings.data.get("screen_shake", true))
+
+func _combat_flashes_enabled() -> bool:
+	var settings := get_tree().root.get_node_or_null("SettingsManager")
+	return settings == null or bool(settings.data.get("combat_flashes", true))
 
 func _animate_skill_name(label: Control) -> void:
 	label.pivot_offset = label.size * 0.5

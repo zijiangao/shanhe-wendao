@@ -27,7 +27,7 @@ Train your martial arts, investigate the Black-Iron Token, and shape the fate of
 
 ### 观察敌意，再出剑
 
-战斗采用网格回合制。近战、弓手、重装头目与疾步剑客拥有不同行动模式；战前调查会改变敌方阵容与初始破绽。利用走位、视线、敌方预判和同伴技能，用有限的行动点扭转战局。
+战斗采用网格回合制。近战、弓手、重装头目与疾步剑客拥有不同行动模式；战前调查会改变敌方阵容与初始破绽。利用走位、视线、敌方预判和同伴技能，用有限的行动点扭转战局。普通命中、武学与重击具有分级音画反馈。
 
 ### 每场胜利都留下选择
 
@@ -45,6 +45,7 @@ Train your martial arts, investigate the Black-Iron Token, and shape the fate of
 - 影响构筑与长期路线的互斥战后奖励
 - 侠义、谋略、威势三种叙事倾向
 - 自动存档、多存档位、键鼠与手柄导航
+- 可独立关闭战斗震屏与命中闪光的反馈设置
 - 水墨武侠美术风格
 
 ## Recommended tags
@@ -105,4 +106,4 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 
 Only upload screenshots captured from the actual build. Do not substitute concept art or generated promotional scenes for gameplay screenshots.
 
-The reviewed 0.25.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.
+The reviewed 0.26.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.

@@ -24,6 +24,7 @@ const STORE_CAPTURE_SPEC := preload("res://scripts/release/store_capture_spec.gd
 const ONBOARDING_SPEC := preload("res://scripts/release/onboarding_spec.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
+const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
@@ -63,6 +64,8 @@ func _ready() -> void:
 		call_deferred("_verify_battle_presentation")
 	elif "--verify-reward-flow" in OS.get_cmdline_user_args():
 		call_deferred("_verify_reward_flow")
+	elif "--verify-combat-feedback" in OS.get_cmdline_user_args():
+		call_deferred("_verify_combat_feedback")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
 		call_deferred("_capture_store_screenshots")
 	elif "--capture-tactical-tutorial" in OS.get_cmdline_user_args():
@@ -275,6 +278,23 @@ func _verify_reward_flow() -> void:
 	var valid: bool = pending_valid and claim_valid
 	print("Reward flow verification passed." if valid else "Reward flow verification failed.")
 	get_tree().quit(0 if valid else 9)
+
+func _verify_combat_feedback() -> void:
+	var light := COMBAT_FEEDBACK.profile("light")
+	var heavy := COMBAT_FEEDBACK.profile("heavy")
+	var settings_valid: bool = SettingsManager.defaults().has("screen_shake") and SettingsManager.defaults().has("combat_flashes")
+	GameState.new_game()
+	GameState.data.energy = 3
+	GameState.data.investigations = ["secret_route", "archer"]
+	GameState.start_blackreed_battle()
+	GameState.data.battle.turn = 2
+	GameState.data.battle.enemies[0].x = 3
+	GameState.data.battle.enemies[0].y = 3
+	var outcome := BATTLE_ENGINE.enemy_turn(GameState.data.battle, int(GameState.data.hp))
+	var heavy_event: bool = Array(outcome.events).any(func(event: Dictionary): return str(event.get("type", "")) == "hit" and str(event.get("impact", "")) == "heavy")
+	var valid: bool = float(heavy.shake) > float(light.shake) and str(heavy.cue) == "heavy_hit" and settings_valid and heavy_event
+	print("Combat feedback verification passed." if valid else "Combat feedback verification failed.")
+	get_tree().quit(0 if valid else 12)
 
 func _verify_onboarding_flow() -> void:
 	GameState.new_game()
@@ -1394,8 +1414,32 @@ func _show_settings() -> void:
 	scale_options.item_selected.connect(func(index: int): SettingsManager.update_setting("ui_scale", SettingsManager.UI_SCALES[index]))
 	display_row.add_child(scale_options)
 
+	var feedback_row := HBoxContainer.new()
+	feedback_row.add_theme_constant_override("separation", 18)
+	panel.add_child(feedback_row)
+	var feedback_label := Label.new()
+	feedback_label.text = "战斗反馈"
+	feedback_label.custom_minimum_size.x = 120
+	feedback_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	feedback_label.add_theme_font_size_override("font_size", 18)
+	feedback_row.add_child(feedback_label)
+	var shake := CheckButton.new()
+	shake.text = "战斗震屏"
+	shake.button_pressed = bool(SettingsManager.data.screen_shake)
+	shake.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shake.add_theme_font_size_override("font_size", 18)
+	shake.toggled.connect(func(enabled: bool): SettingsManager.update_setting("screen_shake", enabled))
+	feedback_row.add_child(shake)
+	var flashes := CheckButton.new()
+	flashes.text = "命中闪光"
+	flashes.button_pressed = bool(SettingsManager.data.combat_flashes)
+	flashes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flashes.add_theme_font_size_override("font_size", 18)
+	flashes.toggled.connect(func(enabled: bool): SettingsManager.update_setting("combat_flashes", enabled))
+	feedback_row.add_child(flashes)
+
 	var hint := Label.new()
-	hint.text = "推荐 Steam Deck 使用 115% 或 130% 界面缩放。难度会从下一场新开始的战斗生效，当前战斗与重试保持原数值。"
+	hint.text = "推荐 Steam Deck 使用 115% 或 130% 界面缩放。若对强动态效果敏感，可分别关闭战斗震屏与命中闪光。难度会从下一场新开始的战斗生效。"
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_color_override("font_color", Color("#526159"))
 	hint.add_theme_stylebox_override("normal", _box(Color("#ede5d5")))

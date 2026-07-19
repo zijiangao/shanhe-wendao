@@ -10,6 +10,7 @@ const CUES := {
 	"hit": {"frequency": 105.0, "duration": 0.18, "volume": 0.32, "wave": "noise"},
 	"skill": {"frequency": 880.0, "duration": 0.32, "volume": 0.24, "wave": "sine", "sweep": 0.65},
 	"enemy_hit": {"frequency": 82.0, "duration": 0.24, "volume": 0.34, "wave": "square"},
+	"heavy_hit": {"frequency": 64.0, "duration": 0.31, "volume": 0.38, "wave": "noise", "sweep": -0.28},
 	"turn": {"frequency": 440.0, "duration": 0.12, "volume": 0.16, "wave": "triangle"},
 	"victory": {"frequency": 523.25, "duration": 0.55, "volume": 0.23, "wave": "sine", "sweep": 0.5},
 	"defeat": {"frequency": 196.0, "duration": 0.55, "volume": 0.22, "wave": "triangle", "sweep": -0.55}

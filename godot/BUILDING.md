@@ -17,6 +17,7 @@ $tests = @(
     "test_save_manager.gd",
     "test_battle_rules.gd",
     "test_battle_engine.gd",
+    "test_combat_feedback.gd",
     "test_encounter_rules.gd",
     "test_battle_scene_spec.gd",
     "test_settings_manager.gd",
@@ -56,10 +57,32 @@ Capture the save-backed three-way reward screen at 1280×720 for visual QA:
 
 Godot writes `reward_choice_preview.png` to the project user-data folder and exits non-zero if the pending reward state is missing.
 
+Render the complete settings panel after UI changes:
+
+```powershell
+& $godot --path $project --script res://tests/test_settings_view.gd
+```
+
+Godot writes `settings_preview.png` to the project user-data folder and verifies that fullscreen, screen-shake, and combat-flash controls are present.
+
+Capture a live martial-skill impact frame after changing combat presentation:
+
+```powershell
+& $godot --path $project --script res://tests/test_combat_feedback_view.gd
+```
+
+Godot writes `combat_feedback_preview.png` to the project user-data folder after exercising the real skill-impact animation path.
+
 Verify the packaged one-time reward flow from either exported executable:
 
 ```powershell
 & "..\build\windows\ShanheWendao.exe" -- --verify-reward-flow
+```
+
+Verify packaged feedback tiers, heavy-impact events, and accessibility settings:
+
+```powershell
+& "..\build\windows\ShanheWendao.exe" -- --verify-combat-feedback
 ```
 
 The save-manager test deliberately feeds malformed and future-version save files to verify recovery, so warning/error log lines from those fixtures are expected.

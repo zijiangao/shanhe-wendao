@@ -144,7 +144,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				total_hurt += sweep_damage
 				sweep_hits += 1
 				effects.append(_damage_effect(Vector2i(int(battle.player_x), int(battle.player_y)), sweep_damage))
-				events.append(_hit_event(str(enemy.name), "沈羽", Vector2i(int(battle.player_x), int(battle.player_y)), sweep_damage))
+				events.append(_hit_event(str(enemy.name), "沈羽", Vector2i(int(battle.player_x), int(battle.player_y)), sweep_damage, 0, "heavy"))
 			if battle.has("ally") and int(battle.ally.hp) > 0 and RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.ally.x), int(battle.ally.y))):
 				var ally_hurt := sweep_damage
 				var blocked := mini(ally_hurt, int(battle.ally.guard))
@@ -154,7 +154,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				total_hurt += ally_hurt
 				sweep_hits += 1
 				effects.append(_damage_effect(Vector2i(int(battle.ally.x), int(battle.ally.y)), ally_hurt, blocked))
-				events.append(_hit_event(str(enemy.name), str(battle.ally.name), Vector2i(int(battle.ally.x), int(battle.ally.y)), ally_hurt, blocked))
+				events.append(_hit_event(str(enemy.name), str(battle.ally.name), Vector2i(int(battle.ally.x), int(battle.ally.y)), ally_hurt, blocked, "heavy"))
 			special_notes.append("%s施展断岳刀势，命中%d人" % [str(enemy.name), sweep_hits])
 			continue
 		var target_data := select_target(battle, enemy)
@@ -179,11 +179,11 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)
 				battle.ally.hp = maxi(0, int(battle.ally.hp) - hurt)
 				effects.append(_damage_effect(target, hurt, blocked))
-				events.append(_hit_event(str(enemy.name), str(battle.ally.name), target, hurt, blocked))
+				events.append(_hit_event(str(enemy.name), str(battle.ally.name), target, hurt, blocked, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
 			else:
 				hero_hp = maxi(0, hero_hp - hurt)
 				effects.append(_damage_effect(target, hurt))
-				events.append(_hit_event(str(enemy.name), "沈羽", target, hurt))
+				events.append(_hit_event(str(enemy.name), "沈羽", target, hurt, 0, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
 			total_hurt += hurt
 		else:
 			var path := RULES.find_path(battle, enemy_position, target, true)
@@ -245,14 +245,15 @@ static func _damage_effect(target: Vector2i, damage: int, blocked: int = 0) -> D
 		text += "  挡%d" % blocked
 	return {"x": target.x, "y": target.y, "text": text, "type": "damage"}
 
-static func _hit_event(actor: String, target_name: String, target: Vector2i, damage: int, blocked: int = 0) -> Dictionary:
+static func _hit_event(actor: String, target_name: String, target: Vector2i, damage: int, blocked: int = 0, impact: String = "normal") -> Dictionary:
 	return {
 		"type": "hit",
 		"actor": actor,
 		"target_name": target_name,
 		"target": target,
 		"damage": damage,
-		"blocked": blocked
+		"blocked": blocked,
+		"impact": impact
 	}
 
 static func _clear_effect(battle: Dictionary) -> void:
