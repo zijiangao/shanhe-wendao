@@ -93,6 +93,7 @@ static func _frost_guard(battle: Dictionary, player: Dictionary) -> Dictionary:
 
 static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var total_hurt := 0
+	var special_notes: PackedStringArray = []
 	var ally_was_active := battle.has("ally") and int(battle.ally.hp) > 0
 	for enemy in battle.enemies:
 		if int(enemy.hp) <= 0:
@@ -102,7 +103,10 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		var target_is_ally: bool = target_data.is_ally
 		var enemy_position := Vector2i(int(enemy.x), int(enemy.y))
 		if RULES.can_enemy_attack(battle, enemy, target):
-			var hurt := int(enemy.attack) + _roll_bonus(rng)
+			var heavy_attack := RULES.is_heavy_turn(battle, enemy)
+			var hurt := int(enemy.attack) + _roll_bonus(rng) + (4 if heavy_attack else 0)
+			if heavy_attack:
+				special_notes.append("%s发动重击" % str(enemy.name))
 			if target_is_ally:
 				var blocked := mini(hurt, int(battle.ally.guard))
 				hurt -= blocked
@@ -114,8 +118,10 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		else:
 			var path := RULES.find_path(battle, enemy_position, target, true)
 			if path.size() > 1:
-				enemy.x = path[1].x
-				enemy.y = path[1].y
+				var move_index := mini(RULES.enemy_move_steps(enemy), path.size() - 2)
+				if move_index >= 1:
+					enemy.x = path[move_index].x
+					enemy.y = path[move_index].y
 
 	var hero_defeated := hero_hp <= 0
 	var ally_defeated := ally_was_active and battle.has("ally") and int(battle.ally.hp) <= 0
@@ -123,7 +129,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		battle.turn = int(battle.turn) + 1
 		battle.ap = 2
 		battle.active_unit = "hero"
-		battle.result = _turn_result(total_hurt, ally_defeated)
+		battle.result = _turn_result(total_hurt, ally_defeated, special_notes)
 		battle.effect = {"x": battle.player_x, "y": battle.player_y, "text": "-%d" % total_hurt, "type": "damage"} if total_hurt > 0 else {}
 		battle.skill_flash = false
 	return {
@@ -163,8 +169,10 @@ static func _success(battle: Dictionary, damage: int) -> Dictionary:
 static func _failure(message: String) -> Dictionary:
 	return {"ok": false, "error": message}
 
-static func _turn_result(total_hurt: int, ally_defeated: bool) -> String:
+static func _turn_result(total_hurt: int, ally_defeated: bool, special_notes: PackedStringArray) -> String:
 	var message := "敌方行动结束。你方受到%d点伤害。" % total_hurt
+	if not special_notes.is_empty():
+		message += " %s。" % "；".join(special_notes)
 	if ally_defeated:
 		message += " 林清霜力竭倒地，本场战斗无法继续行动。"
 	return message

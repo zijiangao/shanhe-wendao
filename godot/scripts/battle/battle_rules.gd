@@ -129,5 +129,21 @@ static func enemy_preview(battle: Dictionary) -> String:
 		var target: Vector2i = target_data.position
 		var target_name: String = target_data.name
 		var can_attack := can_enemy_attack(battle, enemy, target)
-		lines.append("· %s：%s%s" % [enemy.name, "准备远程攻击" if can_attack and int(enemy.get("range", 1)) > 1 else ("准备攻击" if can_attack else "向"), target_name if can_attack else target_name + "接近"])
+		var description := "向%s接近" % target_name
+		if can_attack:
+			if is_heavy_turn(battle, enemy):
+				description = "蓄力重击%s" % target_name
+			elif int(enemy.get("range", 1)) > 1:
+				description = "准备远程攻击%s" % target_name
+			else:
+				description = "准备攻击%s" % target_name
+		elif str(enemy.get("role", "melee")) == "duelist":
+			description = "疾步逼近%s" % target_name
+		lines.append("· %s：%s" % [enemy.name, description])
 	return "\n".join(lines)
+
+static func is_heavy_turn(battle: Dictionary, enemy: Dictionary) -> bool:
+	return str(enemy.get("role", "melee")) == "brute" and int(battle.get("turn", 1)) % 2 == 0
+
+static func enemy_move_steps(enemy: Dictionary) -> int:
+	return 2 if str(enemy.get("role", "melee")) == "duelist" else 1

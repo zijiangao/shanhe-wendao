@@ -9,6 +9,8 @@ func _initialize() -> void:
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
 	_test_ranged_enemy_attack_and_cover()
+	_test_brute_heavy_attack()
+	_test_duelist_fast_movement()
 	_test_enemy_movement_and_turn_reset()
 	_test_guard_and_ally_knockout()
 	_test_hero_defeat()
@@ -118,6 +120,25 @@ func _test_ranged_enemy_attack_and_cover() -> void:
 	assert(int(covered.hero_hp) == 20, "Cover should prevent a ranged enemy from dealing damage.")
 	assert(Vector2i(int(battle.enemies[0].x), int(battle.enemies[0].y)) != Vector2i(5, 1), "A ranged enemy without line of sight should reposition.")
 
+func _test_brute_heavy_attack() -> void:
+	var battle := _fixture()
+	battle.erase("ally")
+	battle.turn = 2
+	battle.enemies[0].role = "brute"
+	battle.enemies[0].x = 2
+	battle.enemies[0].y = 1
+	var outcome: Dictionary = ENGINE.enemy_turn(battle, 30, _seeded_rng())
+	assert(int(outcome.total_hurt) >= int(battle.enemies[0].attack) + 4, "Brutes should gain bonus damage on their telegraphed heavy turn.")
+	assert("重击" in str(battle.result), "Heavy attacks should be reported in the battle log.")
+
+func _test_duelist_fast_movement() -> void:
+	var battle := _fixture()
+	battle.erase("ally")
+	battle.enemies[0].role = "duelist"
+	var outcome: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
+	assert(int(outcome.hero_hp) == 20, "A distant duelist should move instead of attacking.")
+	assert(Vector2i(int(battle.enemies[0].x), int(battle.enemies[0].y)) == Vector2i(2, 1), "Duelists should advance up to two cells per enemy turn.")
+
 func _test_enemy_movement_and_turn_reset() -> void:
 	var battle := _fixture()
 	var outcome: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
@@ -160,7 +181,7 @@ func _fixture() -> Dictionary:
 		"blocked": [],
 		"result": "",
 		"ally": {"name": "林清霜", "hp": 30, "guard": 0, "qi": 15, "max_qi": 15, "attack": 5, "x": 1, "y": 3},
-		"enemies": [{"name": "剑客", "hp": 10, "attack": 8, "range": 1, "x": 4, "y": 1}]
+		"enemies": [{"name": "剑客", "role": "melee", "hp": 10, "attack": 8, "range": 1, "x": 4, "y": 1}]
 	}
 
 func _player_fixture() -> Dictionary:

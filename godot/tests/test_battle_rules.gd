@@ -49,8 +49,11 @@ func _initialize() -> void:
 	battle.enemies[0].x = 4
 	battle.enemies[0].y = 2
 	battle.enemies[0].range = 1
+	battle.enemies[0].role = "brute"
+	battle.turn = 2
 	var preview: String = RULES.enemy_preview(battle)
-	assert("准备攻击林清霜" in preview, "Enemy previews should identify the nearest target.")
+	assert("蓄力重击林清霜" in preview, "Enemy previews should identify a brute's target and heavy attack.")
+	assert(RULES.enemy_move_steps({"role": "duelist"}) == 2, "Duelists should have a two-cell movement allowance.")
 
 	print("BattleRules tests passed.")
 	quit()
@@ -65,7 +68,7 @@ func _fixture() -> Dictionary:
 		"blocked": [[2, 1]],
 		"ally": {"name": "林清霜", "hp": 30, "qi": 15, "x": 1, "y": 2},
 		"enemies": [
-			{"name": "剑客", "hp": 10, "range": 1, "x": 4, "y": 1},
+			{"name": "剑客", "role": "melee", "hp": 10, "range": 1, "x": 4, "y": 1},
 			{"name": "败兵", "hp": 0, "range": 1, "x": 4, "y": 3}
 		]
 	}

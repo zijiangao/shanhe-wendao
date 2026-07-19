@@ -267,6 +267,10 @@ func _valid_battle(value: Variant) -> bool:
 			return false
 		var default_range := 4 if "弓手" in str(enemy.get("name", "")) else 1
 		enemy.range = maxi(1, int(enemy.get("range", default_range)))
+		var enemy_name := str(enemy.get("name", ""))
+		var default_role := "archer" if "弓手" in enemy_name else ("brute" if "寨主" in enemy_name else ("duelist" if "剑侍" in enemy_name else "melee"))
+		if str(enemy.get("role", "")) not in ["melee", "archer", "brute", "duelist"]:
+			enemy.role = default_role
 		if int(enemy.x) < 0 or int(enemy.x) >= width or int(enemy.y) < 0 or int(enemy.y) >= height:
 			return false
 	return true
