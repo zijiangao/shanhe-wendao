@@ -2,6 +2,10 @@ extends Control
 
 const MAP_TEXTURE := preload("res://assets/art/jianghu-world-map.png")
 const BATTLE_TEXTURE := preload("res://assets/art/luoyang-battle-rain.png")
+const QINGYUN_TEXTURE := preload("res://assets/art/locations/qingyun-courtyard.png")
+const LUOYANG_TEXTURE := preload("res://assets/art/locations/luoyang-market.png")
+const HUASHAN_TEXTURE := preload("res://assets/art/locations/huashan-terrace.png")
+const EMEI_TEXTURE := preload("res://assets/art/locations/emei-summit.png")
 const HERO_TEXTURE := preload("res://assets/art/portrait-shen-yu.png")
 const TOKEN_ATLAS := preload("res://assets/art/battle-tokens.png")
 const DIALOGUE_VIEW := preload("res://scenes/ui/dialogue_view.tscn")
@@ -279,7 +283,7 @@ func _show_location() -> void:
 	var headings := {"qingyun": "青云门 · 山门内", "blackreed": "黑苇渡 · 芦荡深处", "luoyang": "洛阳城 · 神都烟火", "huashan": "华山 · 云台剑会", "emei": "峨眉山 · 云深清音"}
 	var view: LocationView = LOCATION_VIEW.instantiate()
 	content.add_child(view)
-	view.setup(BATTLE_TEXTURE if location_id == "blackreed" else MAP_TEXTURE, headings.get(location_id, "江湖"), _quest_objective(), _location_actions(location_id))
+	view.setup(_location_texture(location_id), headings.get(location_id, "江湖"), _quest_objective(), _location_actions(location_id))
 	view.action_requested.connect(_location_action_requested)
 
 func _location_actions(location_id: String) -> Array:
@@ -401,7 +405,7 @@ func _show_dialogue() -> void:
 	var entry: Array = dialogue_entries[dialogue_index]
 	var view: DialogueView = DIALOGUE_VIEW.instantiate()
 	content.add_child(view)
-	view.setup(BATTLE_TEXTURE if GameState.data.location == "blackreed" else MAP_TEXTURE, str(entry[0]), str(entry[1]), dialogue_index, dialogue_entries.size())
+	view.setup(_location_texture(str(GameState.data.location)), str(entry[0]), str(entry[1]), dialogue_index, dialogue_entries.size())
 	view.continue_requested.connect(_advance_dialogue)
 
 func _advance_dialogue() -> void:
@@ -501,7 +505,7 @@ func _show_choice() -> void:
 	_clear_content()
 	var view: ChoiceView = CHOICE_VIEW.instantiate()
 	content.add_child(view)
-	view.setup(MAP_TEXTURE, choice_prompt, choice_options)
+	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options)
 	view.option_selected.connect(_resolve_choice)
 
 func _resolve_choice(route: String) -> void:
@@ -769,6 +773,15 @@ func _emei_unlocked() -> bool:
 
 func _emei_entry_name(route: String) -> String:
 	return {"recommend": "华山引荐", "renown": "江湖声望", "aid": "帮助山民"}.get(route, "尚未入山")
+
+func _location_texture(location_id: String) -> Texture2D:
+	return {
+		"qingyun": QINGYUN_TEXTURE,
+		"blackreed": BATTLE_TEXTURE,
+		"luoyang": LUOYANG_TEXTURE,
+		"huashan": HUASHAN_TEXTURE,
+		"emei": EMEI_TEXTURE
+	}.get(location_id, MAP_TEXTURE)
 
 func _clue_list() -> String:
 	var lines: PackedStringArray = []
