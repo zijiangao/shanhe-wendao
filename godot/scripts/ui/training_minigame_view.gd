@@ -178,7 +178,7 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	var grade := Label.new()
 	grade.text = str(result.grade)
 	grade.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	grade.add_theme_font_size_override("font_size", 78)
+	grade.add_theme_font_size_override("font_size", 68)
 	grade.add_theme_color_override("font_color", spec.accent)
 	page.add_child(grade)
 	var verdict := Label.new()
@@ -189,7 +189,11 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	page.add_child(verdict)
 	var score := Label.new()
 	var streak_text := "\n最佳连击 %d" % int(result.get("best_streak", 0)) if int(result.get("best_streak", 0)) >= 2 else ""
-	score.text = "总分 %d / %d%s\n%s" % [int(result.score), RULES.MAX_TOTAL_SCORE, streak_text, RULES.reward_text(result)]
+	var record: Dictionary = result.get("record", {})
+	var record_text := ""
+	if not record.is_empty():
+		record_text = "\n%s" % ("个人新纪录！" if bool(record.get("new_best", false)) else "个人最佳 %d 分" % int(record.best_score))
+	score.text = "总分 %d / %d%s%s\n%s" % [int(result.score), RULES.MAX_TOTAL_SCORE, streak_text, record_text, RULES.reward_text(result)]
 	score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score.add_theme_font_size_override("font_size", 19)
 	score.add_theme_color_override("font_color", Color("#e9e1cf"))

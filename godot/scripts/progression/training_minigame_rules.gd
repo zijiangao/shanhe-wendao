@@ -38,6 +38,47 @@ const DISCIPLINES := {
 static func is_valid_discipline(id: String) -> bool:
 	return DISCIPLINES.has(id)
 
+static func empty_records() -> Dictionary:
+	var records := {}
+	for discipline in DISCIPLINES:
+		records[discipline] = {"best_score": 0, "best_streak": 0, "attempts": 0}
+	return records
+
+static func normalize_records(value: Variant) -> Dictionary:
+	var source: Dictionary = value if typeof(value) == TYPE_DICTIONARY else {}
+	var records := empty_records()
+	for discipline in DISCIPLINES:
+		var raw: Dictionary = source.get(discipline, {}) if typeof(source.get(discipline, {})) == TYPE_DICTIONARY else {}
+		records[discipline] = {
+			"best_score": clampi(int(raw.get("best_score", 0)), 0, MAX_TOTAL_SCORE),
+			"best_streak": clampi(int(raw.get("best_streak", 0)), 0, ROUND_COUNT),
+			"attempts": maxi(0, int(raw.get("attempts", 0)))
+		}
+	return records
+
+static func record_attempt(records: Dictionary, discipline: String, score: int, best_streak: int) -> Dictionary:
+	if not is_valid_discipline(discipline):
+		return {}
+	var normalized := normalize_records(records)
+	records.clear()
+	records.merge(normalized)
+	var current: Dictionary = records.get(discipline, {})
+	var safe_score := clampi(score, 0, MAX_TOTAL_SCORE)
+	var new_best := int(current.attempts) == 0 or safe_score > int(current.best_score)
+	current.best_score = maxi(int(current.best_score), safe_score)
+	current.best_streak = maxi(int(current.best_streak), clampi(best_streak, 0, ROUND_COUNT))
+	current.attempts = int(current.attempts) + 1
+	records[discipline] = current
+	return {"new_best": new_best, "best_score": int(current.best_score), "best_grade": grade(int(current.best_score)), "best_streak": int(current.best_streak), "attempts": int(current.attempts)}
+
+static func records_text(records: Variant) -> String:
+	var normalized := normalize_records(records)
+	var entries: Array[String] = []
+	for entry in [["swordsmanship", "剑"], ["bladesmanship", "刀"], ["herbalism", "药"], ["mining", "矿"]]:
+		var record: Dictionary = normalized[entry[0]]
+		entries.append("%s %s·%d（%d次）" % [entry[1], grade(int(record.best_score)) if int(record.attempts) > 0 else "—", int(record.best_score), int(record.attempts)])
+	return " · ".join(entries)
+
 static func options() -> Array:
 	return [
 		["剑法 · 听风辨势", "提升剑法；影响流云剑法的威力。", "swordsmanship"],

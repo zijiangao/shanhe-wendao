@@ -29,6 +29,7 @@ func _capture() -> void:
 		"discipline": "mining", "grade": "S", "specialty_gain": 3,
 		"xp": 12, "silver": 12, "item": "", "herbs": 0, "ore": 3,
 		"score": 315, "best_streak": 3,
+		"record": {"new_best": true, "best_score": 315, "best_grade": "S", "best_streak": 3, "attempts": 2},
 		"mineral_discovery": {"id": "star_marrow", "name": "星陨髓", "rarity": "奇珍", "description": "陨铁深处凝成的银蓝结晶，落锤时声如清钟。", "first_discovery": true, "count": 1, "silver": 2},
 		"event": {"title": "古炉残火", "body": "你沿着热流掘开石壁，发现一座尚有余温的旧炉。", "reward": "额外矿石 +2"}
 	}
@@ -42,9 +43,12 @@ func _capture() -> void:
 	var buttons := main_scene.find_children("*", "Button", true, false)
 	var labels := main_scene.find_children("*", "Label", true, false)
 	var found_specimen := false
+	var found_record := false
 	for label in labels:
 		if "新收录 矿谱" in str((label as Label).text) and "星陨髓" in str((label as Label).text):
 			found_specimen = true
-	var valid: bool = play_result == OK and timing_result == OK and result_result == OK and buttons.size() >= 1 and found_specimen
+		if "个人新纪录" in str((label as Label).text):
+			found_record = true
+	var valid: bool = play_result == OK and timing_result == OK and result_result == OK and buttons.size() >= 1 and found_specimen and found_record
 	print("Training previews saved to: %s, %s and %s" % [ProjectSettings.globalize_path(play_path), ProjectSettings.globalize_path(timing_path), ProjectSettings.globalize_path(result_path)])
 	quit(0 if valid else 15)

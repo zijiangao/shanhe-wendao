@@ -267,6 +267,12 @@ func _capture_store_screenshots() -> void:
 	GameState.data.companions = ["lin_qingshuang"]
 	GameState.data.herbarium = {"dewgrass": 3, "cloudleaf": 2, "sunroot": 1}
 	GameState.data.mineralogy = {"ironstone": 3, "silver_sand": 2, "fire_copper": 1}
+	GameState.data.training_records = {
+		"swordsmanship": {"best_score": 315, "best_streak": 3, "attempts": 4},
+		"bladesmanship": {"best_score": 246, "best_streak": 2, "attempts": 3},
+		"herbalism": {"best_score": 285, "best_streak": 3, "attempts": 5},
+		"mining": {"best_score": 232, "best_streak": 2, "attempts": 3}
+	}
 	screen = "character"
 	_rebuild()
 	await _save_store_capture("character_growth")
@@ -1131,7 +1137,7 @@ func _training_direction_selected(direction: String) -> void:
 		var total := 0
 		for value in training_scores:
 			total += int(value)
-		training_result = GameState.complete_training(training_discipline, total, randi_range(0, 99))
+		training_result = GameState.complete_training(training_discipline, total, randi_range(0, 99), training_best_streak)
 		if training_result.is_empty():
 			_toast(_time_action_failure_message())
 			screen = "location"
@@ -1352,7 +1358,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.37.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.38.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1569,8 +1575,8 @@ func _show_character() -> void:
 	info_panel.add_theme_stylebox_override("panel", _box(Color("#172820")))
 	page.add_child(info_panel)
 	var info := VBoxContainer.new()
-	# Keep both persistent field guides visible at 1080p without crowding the footer.
-	info.add_theme_constant_override("separation", 8)
+	# Keep long-term training records and both field guides visible at 1080p.
+	info.add_theme_constant_override("separation", 6)
 	info_panel.add_child(info)
 	var heading := Label.new()
 	heading.text = "人物总览"
@@ -1608,8 +1614,8 @@ func _show_character() -> void:
 	specialty_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(specialty_title)
 	var specialties := Label.new()
-	specialties.text = "剑法 %d  ·  刀法 %d  ·  采药 %d  ·  挖矿 %d\n剑法强化流云剑法，刀法强化普通攻击；小游戏成绩决定本周成果。" % [GameState.data.swordsmanship, GameState.data.bladesmanship, GameState.data.herbalism, GameState.data.mining]
-	specialties.add_theme_font_size_override("font_size", 17)
+	specialties.text = "剑法 %d  ·  刀法 %d  ·  采药 %d  ·  挖矿 %d\n修炼战绩：%s\n剑法强化流云剑法，刀法强化普通攻击；小游戏成绩决定本周成果。" % [GameState.data.swordsmanship, GameState.data.bladesmanship, GameState.data.herbalism, GameState.data.mining, TRAINING_RULES.records_text(GameState.data.training_records)]
+	specialties.add_theme_font_size_override("font_size", 15)
 	specialties.add_theme_color_override("font_color", Color("#f4eee2"))
 	specialties.add_theme_stylebox_override("normal", _box(Color("#223a30")))
 	info.add_child(specialties)

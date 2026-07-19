@@ -14,7 +14,7 @@ signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 8
+const SAVE_VERSION := 9
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -42,6 +42,7 @@ func new_game() -> void:
 		"bladesmanship": 0,
 		"herbalism": 0,
 		"mining": 0,
+		"training_records": TRAINING_RULES.empty_records(),
 		"skills": ["cloud"],
 		"items": ["金疮药", "青锋剑"],
 		"materials": {"herbs": 0, "ore": 0},
@@ -117,10 +118,14 @@ func train(focus: String = "strength") -> bool:
 	add_log({"strength": "你锻体一周，臂力与修为提升。", "insight": "你参悟一周，悟性与修为提升。", "constitution": "你筑基一周，根骨、气血与修为提升。"}[focus])
 	return true
 
-func complete_training(discipline: String, score: int, event_roll: int = -1) -> Dictionary:
-	var outcome := TRAINING_RULES.outcome(discipline, clampi(score, 0, 300))
+func complete_training(discipline: String, score: int, event_roll: int = -1, best_streak: int = 0) -> Dictionary:
+	var safe_score := clampi(score, 0, TRAINING_RULES.MAX_TOTAL_SCORE)
+	var outcome := TRAINING_RULES.outcome(discipline, safe_score)
 	if outcome.is_empty() or not spend_week():
 		return {}
+	outcome.score = safe_score
+	outcome.best_streak = clampi(best_streak, 0, TRAINING_RULES.ROUND_COUNT)
+	outcome.record = TRAINING_RULES.record_attempt(data.training_records, discipline, safe_score, best_streak)
 	data[discipline] = int(data.get(discipline, 0)) + int(outcome.specialty_gain)
 	data.xp += int(outcome.xp)
 	data.silver += int(outcome.silver)
@@ -400,6 +405,7 @@ func _migrate_and_validate() -> void:
 		data.herbarium = {}
 	if typeof(data.get("mineralogy", {})) != TYPE_DICTIONARY:
 		data.mineralogy = {}
+	data.training_records = TRAINING_RULES.normalize_records(data.get("training_records", {}))
 	if typeof(data.consumables) != TYPE_DICTIONARY:
 		data.consumables = {"healing_powder": 0}
 	# Convert 0.27/0.28 herb items into the dedicated material inventory.
