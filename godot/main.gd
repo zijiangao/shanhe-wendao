@@ -10,6 +10,7 @@ const WORLD_MAP_VIEW := preload("res://scenes/world/world_map_view.tscn")
 const LOCATION_VIEW := preload("res://scenes/world/location_view.tscn")
 const TACTICAL_BATTLE_VIEW := preload("res://scenes/battle/tactical_battle_view.tscn")
 const BATTLE_RULES := preload("res://scripts/battle/battle_rules.gd")
+const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
 
 var screen: String = "menu"
 var content: Control
@@ -1232,46 +1233,13 @@ func _tactical_cell(x: int, y: int) -> void:
 
 func _enemy_turn() -> void:
 	var battle: Dictionary = GameState.data.battle
-	var total_hurt: int = 0
-	for enemy in battle.enemies:
-		if int(enemy.hp) <= 0:
-			continue
-		var target_is_ally: bool = false
-		var target := Vector2i(int(battle.player_x), int(battle.player_y))
-		var distance: int = absi(int(enemy.x) - target.x) + absi(int(enemy.y) - target.y)
-		if battle.has("ally") and int(battle.ally.hp) > 0:
-			var ally_target := Vector2i(int(battle.ally.x), int(battle.ally.y))
-			var ally_distance: int = absi(int(enemy.x) - ally_target.x) + absi(int(enemy.y) - ally_target.y)
-			if ally_distance < distance:
-				target = ally_target
-				distance = ally_distance
-				target_is_ally = true
-		if distance == 1:
-			var hurt: int = int(enemy.attack) + randi_range(0, 2)
-			if target_is_ally:
-				var blocked: int = mini(hurt, int(battle.ally.guard))
-				hurt -= blocked
-				battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)
-				battle.ally.hp -= hurt
-			else:
-				GameState.data.hp -= hurt
-			total_hurt += hurt
-		else:
-			var path: Array[Vector2i] = BATTLE_RULES.find_path(battle, Vector2i(int(enemy.x), int(enemy.y)), target, true)
-			if path.size() > 1:
-				enemy.x = path[1].x
-				enemy.y = path[1].y
-	if GameState.data.hp <= 0:
+	var outcome: Dictionary = BATTLE_ENGINE.enemy_turn(battle, int(GameState.data.hp))
+	GameState.data.hp = int(outcome.hero_hp)
+	if bool(outcome.hero_defeated):
 		GameState.finish_battle(false)
 		screen = "map"
 	else:
-		battle.turn += 1
-		battle.ap = 2
-		battle.active_unit = "hero"
-		battle.result = "敌方行动结束。你受到%d点伤害。" % total_hurt
-		battle.effect = {"x": battle.player_x, "y": battle.player_y, "text": "-%d" % total_hurt, "type": "damage"} if total_hurt > 0 else {}
-		battle.skill_flash = false
-		GameState.data.battle = battle
+		GameState.data.battle = outcome.battle
 	SaveManager.save_auto()
 	_rebuild()
 
@@ -1291,9 +1259,8 @@ func _use_frost_guard() -> void:
 	_rebuild()
 
 func _check_tactical_victory(battle: Dictionary) -> bool:
-	for enemy in battle.enemies:
-		if int(enemy.hp) > 0:
-			return false
+	if not BATTLE_ENGINE.is_victory(battle):
+		return false
 	var battle_id: String = str(battle.get("battle_id", "blackreed"))
 	if battle_id == "huashan_trial":
 		last_rewards = {"title": "剑 会 胜 出", "story": "你与林清霜剑路相合，通过华山双人试炼。守台长老准许你们前往思过崖查看残图。", "xp": 30, "silver": 10, "renown": 3, "item": "思过崖通行令", "turns": battle.turn}
