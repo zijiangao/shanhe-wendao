@@ -30,6 +30,10 @@ func _initialize() -> void:
 	state.new_game()
 	var training: Dictionary = state.complete_training("swordsmanship", 300)
 	assert(training.grade == "S" and int(state.data.swordsmanship) == 3 and int(state.data.xp) == 12, "An S-grade training result should grant the full specialty reward.")
+	state.new_game()
+	var event_training: Dictionary = state.complete_training("herbalism", 300, 0)
+	assert(str(event_training.get("event", {}).get("id", "")) == "rare_herb", "A deterministic high-grade roll should attach its training encounter to the result.")
+	assert(int(state.data.materials.herbs) == 5, "The normal three-herb reward and two bonus herbs must be committed together.")
 	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Training should spend exactly one week and one energy.")
 	state.data.materials.herbs = 2
 	assert(state.craft("healing_powder") and int(state.data.consumables.healing_powder) == 1, "GameState should expose medicine crafting through the saved inventory.")

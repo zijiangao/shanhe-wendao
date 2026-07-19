@@ -28,7 +28,8 @@ func _capture() -> void:
 	main_scene.training_result = {
 		"discipline": "mining", "grade": "S", "specialty_gain": 3,
 		"xp": 12, "silver": 12, "item": "", "herbs": 0, "ore": 3,
-		"score": 315, "best_streak": 3
+		"score": 315, "best_streak": 3,
+		"event": {"title": "暗藏富脉", "body": "回声之后还有一层空腔，你从中剥出两块可用精矿。", "reward": "额外矿石 +2"}
 	}
 	main_scene._rebuild()
 	for frame in range(4):

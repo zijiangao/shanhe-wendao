@@ -1109,7 +1109,7 @@ func _training_direction_selected(direction: String) -> void:
 		var total := 0
 		for value in training_scores:
 			total += int(value)
-		training_result = GameState.complete_training(training_discipline, total)
+		training_result = GameState.complete_training(training_discipline, total, randi_range(0, 99))
 		if training_result.is_empty():
 			_toast(_time_action_failure_message())
 			screen = "location"
@@ -1330,7 +1330,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.32.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.33.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

@@ -29,6 +29,7 @@ $tests = @(
     "test_growth_rules.gd",
 	"test_crafting_rules.gd",
     "test_training_minigame_rules.gd",
+	"test_training_event_rules.gd",
     "test_reward_rules.gd",
     "test_navigation_rules.gd",
     "test_tutorial_rules.gd",
@@ -79,7 +80,7 @@ Capture a live martial-skill impact frame after changing combat presentation:
 & $godot --path $project --script res://tests/test_pause_view.gd
 ```
 
-The training preview covers the advanced three-technique sword sequence, the short-echo mining window, and the final score/reward card. Each discipline introduces an advanced variant after round one: three-step sword forms, delayed blade counters, paired herb-root deductions, or short mining echoes. Training streaks begin at 85 points, grant capped +5/+10 combo bonuses, and reset on a miss; the packaged training verifier checks a three-round 315-point streak across basic and advanced rounds.
+The training preview covers the advanced three-technique sword sequence, the short-echo mining window, and the final score/reward card with an encounter panel. Each discipline introduces an advanced variant after round one: three-step sword forms, delayed blade counters, paired herb-root deductions, or short mining echoes. Training streaks begin at 85 points, grant capped +5/+10 combo bonuses, and reset on a miss; the packaged training verifier checks a three-round 315-point streak across basic and advanced rounds. High grades also improve the chance of one of eight specialty encounters; their material, currency, cultivation, consumable, or health effects are committed in the same save-backed transaction as the normal reward.
 
 Godot writes `combat_feedback_preview.png` to the project user-data folder after exercising the real skill-impact animation path.
 

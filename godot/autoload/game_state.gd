@@ -5,6 +5,7 @@ const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const ENCOUNTER_RULES := preload("res://scripts/battle/encounter_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const TRAINING_EVENT_RULES := preload("res://scripts/progression/training_event_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 
 signal state_changed
@@ -112,7 +113,7 @@ func train(focus: String = "strength") -> bool:
 	add_log({"strength": "你锻体一周，臂力与修为提升。", "insight": "你参悟一周，悟性与修为提升。", "constitution": "你筑基一周，根骨、气血与修为提升。"}[focus])
 	return true
 
-func complete_training(discipline: String, score: int) -> Dictionary:
+func complete_training(discipline: String, score: int, event_roll: int = -1) -> Dictionary:
 	var outcome := TRAINING_RULES.outcome(discipline, clampi(score, 0, 300))
 	if outcome.is_empty() or not spend_week():
 		return {}
@@ -123,6 +124,10 @@ func complete_training(discipline: String, score: int) -> Dictionary:
 	data.materials.ore = int(data.materials.ore) + int(outcome.get("ore", 0))
 	if str(outcome.item) != "":
 		data.items.append(str(outcome.item))
+	var event := TRAINING_EVENT_RULES.select(discipline, str(outcome.grade), event_roll)
+	if not event.is_empty() and TRAINING_EVENT_RULES.apply(data, event):
+		outcome.event = event
+		add_log("修炼奇遇：%s，%s。" % [str(event.title), str(event.reward)])
 	add_log("专项修炼完成：%s级，%s。" % [str(outcome.grade), TRAINING_RULES.reward_text(outcome)])
 	return outcome
 

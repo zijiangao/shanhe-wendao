@@ -28,8 +28,8 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	add_child(backdrop)
 
 	var frame := PanelContainer.new()
-	frame.position = Vector2(170, 42)
-	frame.size = Vector2(940, 550)
+	frame.position = Vector2(170, 24)
+	frame.size = Vector2(940, 570)
 	frame.add_theme_stylebox_override("panel", _box(Color("#172820")))
 	add_child(frame)
 	var page := VBoxContainer.new()
@@ -201,6 +201,18 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	score.add_theme_font_size_override("font_size", 21)
 	score.add_theme_color_override("font_color", Color("#e9e1cf"))
 	page.add_child(score)
+	var event: Dictionary = result.get("event", {})
+	if not event.is_empty():
+		var event_card := PanelContainer.new()
+		event_card.add_theme_stylebox_override("panel", _box(Color(spec.accent, 0.18)))
+		page.add_child(event_card)
+		var event_text := Label.new()
+		event_text.text = "奇遇 · %s\n%s\n%s" % [str(event.title), str(event.body), str(event.reward)]
+		event_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		event_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		event_text.add_theme_font_size_override("font_size", 17)
+		event_text.add_theme_color_override("font_color", Color("#f2dfb3"))
+		event_card.add_child(event_text)
 	var done := Button.new()
 	done.text = "收功 · 返回青云门"
 	done.custom_minimum_size.y = 54
