@@ -19,7 +19,8 @@ $tests = @(
     "test_battle_engine.gd",
     "test_settings_manager.gd",
     "test_navigation_rules.gd",
-    "test_tutorial_rules.gd"
+    "test_tutorial_rules.gd",
+    "test_cue_synth.gd"
 )
 
 foreach ($test in $tests) {

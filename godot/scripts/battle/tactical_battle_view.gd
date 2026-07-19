@@ -36,6 +36,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	turn_banner.add_theme_color_override("font_color", Color("#d9f2e5"))
 	turn_banner.add_theme_stylebox_override("normal", _box(Color("#27604b")))
 	add_child(turn_banner)
+	_animate_turn_banner(turn_banner)
 
 	var board := GridContainer.new()
 	board.columns = 8
@@ -75,6 +76,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		effect_label.add_theme_color_override("font_color", Color("#fff0a8"))
 		effect_label.add_theme_stylebox_override("normal", _box(Color("#a33127cc") if effect.type == "damage" else Color("#d4b34aaa")))
 		add_child(effect_label)
+		_animate_impact(effect_label, str(effect.get("type", "damage")) == "damage")
 	if battle.has("skill_flash") and bool(battle.skill_flash):
 		var skill_name := Label.new()
 		skill_name.position = Vector2(250, 260)
@@ -87,6 +89,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		skill_name.add_theme_color_override("font_color", Color("#fff2bd"))
 		skill_name.add_theme_stylebox_override("normal", _box(Color("#315f4be8")))
 		add_child(skill_name)
+		_animate_skill_name(skill_name)
 
 	var side := PanelContainer.new()
 	side.position = Vector2(840, 60)
@@ -152,6 +155,36 @@ func _emit_cell(x: int, y: int) -> void:
 
 func _emit_mode(mode: String) -> void:
 	mode_selected.emit(mode)
+
+func _animate_turn_banner(banner: Control) -> void:
+	banner.modulate.a = 0.0
+	banner.position.y -= 8.0
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(banner, "modulate:a", 1.0, 0.16)
+	tween.tween_property(banner, "position:y", banner.position.y + 8.0, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+func _animate_impact(label: Control, shake: bool) -> void:
+	label.pivot_offset = label.size * 0.5
+	label.scale = Vector2(0.45, 0.45)
+	var impact := create_tween()
+	impact.tween_interval(0.035)
+	impact.tween_property(label, "scale", Vector2(1.18, 1.18), 0.07).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	impact.tween_property(label, "scale", Vector2.ONE, 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if shake:
+		var origin := position
+		var camera_shake := create_tween()
+		camera_shake.tween_property(self, "position", origin + Vector2(7, -3), 0.035)
+		camera_shake.tween_property(self, "position", origin + Vector2(-5, 3), 0.045)
+		camera_shake.tween_property(self, "position", origin + Vector2(3, -1), 0.04)
+		camera_shake.tween_property(self, "position", origin, 0.05)
+
+func _animate_skill_name(label: Control) -> void:
+	label.pivot_offset = label.size * 0.5
+	label.scale = Vector2(0.8, 0.8)
+	label.modulate.a = 0.0
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "modulate:a", 1.0, 0.12)
 
 func _mode_name(mode: String) -> String:
 	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "frost_dash": "霜华刺", "frost_guard": "寒锋守势", "inspect": "查看战场"}.get(mode, mode)

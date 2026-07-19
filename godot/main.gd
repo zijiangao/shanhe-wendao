@@ -45,6 +45,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		screen = str(action.target)
 		_rebuild()
 	elif str(action.message) != "":
+		AudioFeedback.play("error")
 		_toast(str(action.message))
 	get_viewport().set_input_as_handled()
 
@@ -1304,8 +1305,10 @@ func _tactical_cell(x: int, y: int) -> void:
 func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) -> void:
 	var outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, action, target)
 	if not bool(outcome.ok):
+		AudioFeedback.play("error")
 		_toast(str(outcome.error))
 		return
+	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "frost_dash": "skill", "frost_guard": "turn"}.get(action, "confirm"))
 	var battle: Dictionary = outcome.battle
 	if _check_tactical_victory(battle):
 		SaveManager.save_auto()
@@ -1320,10 +1323,12 @@ func _enemy_turn() -> void:
 	var outcome: Dictionary = BATTLE_ENGINE.enemy_turn(battle, int(GameState.data.hp))
 	GameState.data.hp = int(outcome.hero_hp)
 	if bool(outcome.hero_defeated):
+		AudioFeedback.play("defeat")
 		last_defeat_battle = str(battle.get("battle_id", "blackreed"))
 		GameState.finish_battle(false)
 		screen = "defeat"
 	else:
+		AudioFeedback.play("enemy_hit" if int(outcome.total_hurt) > 0 else "turn")
 		GameState.data.battle = outcome.battle
 		if _check_tactical_victory(outcome.battle):
 			SaveManager.save_auto()
@@ -1390,6 +1395,7 @@ func _accept_battle_defeat() -> void:
 func _check_tactical_victory(battle: Dictionary) -> bool:
 	if not BATTLE_ENGINE.is_victory(battle):
 		return false
+	AudioFeedback.play("victory")
 	var battle_id: String = str(battle.get("battle_id", "blackreed"))
 	if battle_id == "huashan_trial":
 		last_rewards = {"title": "剑 会 胜 出", "story": "你与林清霜剑路相合，通过华山双人试炼。守台长老准许你们前往思过崖查看残图。", "xp": 30, "silver": 10, "renown": 3, "item": "思过崖通行令", "turns": battle.turn}
