@@ -38,6 +38,12 @@ foreach ($test in $tests) {
 }
 ```
 
+Run the independent SteamPipe preparation regression test after the Godot suite:
+
+```powershell
+& .\steamworks\scripts\test_prepare_steampipe.ps1
+```
+
 The save-manager test deliberately feeds malformed and future-version save files to verify recovery, so warning/error log lines from those fixtures are expected.
 
 The main scene also provides a release presentation verifier. It instantiates the real tactical battle view, plays movement, attack, damage, guard, and boss-technique events, then exits with a non-zero code if the input lock was not released:

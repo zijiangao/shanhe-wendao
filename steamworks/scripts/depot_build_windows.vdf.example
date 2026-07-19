@@ -1,7 +1,7 @@
 "DepotBuildConfig"
 {
     "DepotID" "<WINDOWS_DEPOT_ID>"
-    "ContentRoot" "..\\content\\windows"
+    "ContentRoot" "<FULL_CONTENT_ROOT>"
 
     "FileMapping"
     {

@@ -2,8 +2,8 @@
 {
     "AppID" "<DEMO_APP_ID>"
     "Desc" "Shanhe Wendao Demo Windows build <VERSION>"
-    "ContentRoot" "..\\content"
-    "BuildOutput" "..\\output"
+    "ContentRoot" "<CONTENT_ROOT>"
+    "BuildOutput" "<BUILD_OUTPUT>"
     "SetLive" "<PRIVATE_DEMO_BETA_BRANCH>"
     "Preview" "0"
 

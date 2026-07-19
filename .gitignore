@@ -9,6 +9,10 @@
 /godot/build/
 /godot/export/
 
+# Generated SteamPipe configuration and output
+/steamworks/generated/
+/steamworks/output/
+
 # OS metadata
 .DS_Store
 Thumbs.db

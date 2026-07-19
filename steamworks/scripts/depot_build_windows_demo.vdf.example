@@ -1,7 +1,7 @@
 "DepotBuildConfig"
 {
     "DepotID" "<DEMO_WINDOWS_DEPOT_ID>"
-    "ContentRoot" "..\\content\\windows-demo"
+    "ContentRoot" "<DEMO_CONTENT_ROOT>"
 
     "FileMapping"
     {

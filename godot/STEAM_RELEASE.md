@@ -32,9 +32,18 @@ Release export produces:
 - `ShanheWendao.exe`
 - `ShanheWendao.pck`
 
-Keep both files in the same depot directory. Example VDF files live in `steamworks/scripts`; copy them outside the repository, replace every placeholder, and keep Steam credentials out of source control.
+Keep both files in the same depot directory. Example VDF files and `prepare_steampipe.ps1` live in `steamworks/scripts`. The preparation script validates four distinct numeric App/Depot IDs, semantic version text, private beta branch names, and the required Full/Demo EXE+PCK pairs. It then writes resolved VDF files to the ignored `steamworks/generated` directory using the actual absolute build paths. Steam credentials are never accepted or stored by the script.
 
-Upload new builds to a password-protected beta branch first. Test install, launch, save migration, Cloud synchronization, controller navigation, overlay behavior, achievements, offline launch, uninstall/reinstall, and rollback before promoting a build to the default branch.
+```powershell
+& .\steamworks\scripts\prepare_steampipe.ps1 `
+  -FullAppId <APP_ID> -FullDepotId <WINDOWS_DEPOT_ID> `
+  -DemoAppId <DEMO_APP_ID> -DemoDepotId <DEMO_WINDOWS_DEPOT_ID> `
+  -Version 0.23.0 -BetaBranch internal-qa -DemoBetaBranch demo-qa
+```
+
+Run `test_prepare_steampipe.ps1` after changing any VDF template or preparation rule. It verifies successful generation and rejection of duplicate IDs, public/default release-candidate branches, and incomplete build artifact pairs.
+
+Upload new builds to a password-protected beta branch first. The preparation script intentionally rejects `public` and `default` as candidate targets. Test install, launch, save migration, Cloud synchronization, controller navigation, overlay behavior, achievements, offline launch, uninstall/reinstall, and rollback before promoting a build to the default branch through Steamworks.
 
 ## Live-integration gate
 
