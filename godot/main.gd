@@ -1066,7 +1066,7 @@ func _next_training_target() -> void:
 	var secondary := str(TRAINING_RULES.DIRECTIONS[randi() % TRAINING_RULES.DIRECTIONS.size()])
 	if secondary == primary:
 		secondary = TRAINING_RULES.opposite(primary)
-	training_challenge = TRAINING_RULES.challenge(training_discipline, primary, secondary)
+	training_challenge = TRAINING_RULES.challenge(training_discipline, primary, secondary, training_round >= 1)
 	training_input_index = 0
 	training_target = str(training_challenge.targets[0])
 	training_started_ms = Time.get_ticks_msec()
@@ -1095,7 +1095,7 @@ func _training_direction_selected(direction: String) -> void:
 		_rebuild()
 		return
 	var elapsed := maxi(0, Time.get_ticks_msec() - training_started_ms)
-	var evaluation: Dictionary = TRAINING_RULES.evaluate_challenge(training_discipline, correct, elapsed, training_streak)
+	var evaluation: Dictionary = TRAINING_RULES.evaluate_challenge(training_discipline, correct, elapsed, training_streak, training_challenge)
 	var round_score := int(evaluation.score)
 	training_scores.append(round_score)
 	training_streak = int(evaluation.streak)
@@ -1330,7 +1330,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.31.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.32.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

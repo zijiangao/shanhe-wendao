@@ -14,11 +14,13 @@ var discipline_id: String = ""
 var round_started_ms: int = 0
 var timing_fill: ColorRect
 var timing_window: ColorRect
+var timing_ideal_ms: int = 0
 
 func setup(discipline: String, round_index: int, challenge: Dictionary, input_index: int, scores: Array, started_ms: int, last_feedback: String = "", result: Dictionary = {}, streak: int = 0, best_streak: int = 0, last_quality: String = "") -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	discipline_id = discipline
 	round_started_ms = started_ms
+	timing_ideal_ms = int(challenge.get("ideal_ms", 1000 if discipline == "bladesmanship" else 1200))
 	var spec: Dictionary = RULES.DISCIPLINES[discipline]
 	var backdrop := ColorRect.new()
 	backdrop.color = Color("#d4c8ae")
@@ -71,7 +73,7 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	var mechanic := Label.new()
 	var targets: Array = challenge.get("targets", [])
 	var step_text := "第 %d / %d 式" % [mini(input_index + 1, targets.size()), targets.size()] if targets.size() > 1 else str(challenge.get("timing", ""))
-	mechanic.text = "%s · %s" % [str(spec.mechanic), step_text]
+	mechanic.text = "%s%s · %s" % [str(spec.mechanic), " · 进阶" if bool(challenge.get("advanced", false)) else "", step_text]
 	mechanic.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mechanic.add_theme_font_size_override("font_size", 17)
 	mechanic.add_theme_color_override("font_color", Color("#dfbf74"))
@@ -124,7 +126,7 @@ func _process(_delta: float) -> void:
 	var elapsed := maxi(0, Time.get_ticks_msec() - round_started_ms)
 	var ratio := clampf(float(elapsed) / 2200.0, 0.0, 1.0)
 	timing_fill.position.x = 700.0 * ratio - 3.0
-	var ideal := 1000 if discipline_id == "bladesmanship" else 1200
+	var ideal := timing_ideal_ms
 	var in_window := absi(elapsed - ideal) <= 150
 	timing_fill.color = Color("#f4d878") if in_window else Color("#75877c")
 	if timing_window != null:
@@ -140,7 +142,7 @@ func _add_timing_meter(page: VBoxContainer, spec: Dictionary) -> void:
 	background.position = Vector2.ZERO
 	background.size = Vector2(700, 18)
 	track.add_child(background)
-	var ideal := 1000 if discipline_id == "bladesmanship" else 1200
+	var ideal := timing_ideal_ms
 	timing_window = ColorRect.new()
 	timing_window.color = Color(spec.accent, 0.8)
 	timing_window.position = Vector2(700.0 * float(ideal - 150) / 2200.0, 0)
@@ -194,7 +196,7 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	page.add_child(verdict)
 	var score := Label.new()
 	var streak_text := "\n最佳连击 %d" % int(result.get("best_streak", 0)) if int(result.get("best_streak", 0)) >= 2 else ""
-	score.text = "总分 %d / 330%s\n%s" % [int(result.score), streak_text, RULES.reward_text(result)]
+	score.text = "总分 %d / %d%s\n%s" % [int(result.score), RULES.MAX_TOTAL_SCORE, streak_text, RULES.reward_text(result)]
 	score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score.add_theme_font_size_override("font_size", 21)
 	score.add_theme_color_override("font_color", Color("#e9e1cf"))

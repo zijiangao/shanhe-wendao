@@ -9,13 +9,19 @@ func _capture() -> void:
 	await process_frame
 	main_scene.get_window().size = Vector2i(1280, 720)
 	main_scene._start_training("swordsmanship")
+	main_scene.training_round = 1
+	main_scene._next_training_target()
+	main_scene._rebuild()
 	for frame in range(4):
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var play_path := "user://training_combo_preview.png"
 	var play_result := main_scene.get_viewport().get_texture().get_image().save_png(play_path)
 	main_scene._start_training("mining")
-	await create_timer(1.2).timeout
+	main_scene.training_round = 1
+	main_scene._next_training_target()
+	main_scene._rebuild()
+	await create_timer(0.8).timeout
 	await RenderingServer.frame_post_draw
 	var timing_path := "user://training_timing_preview.png"
 	var timing_result := main_scene.get_viewport().get_texture().get_image().save_png(timing_path)

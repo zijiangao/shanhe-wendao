@@ -40,7 +40,7 @@ Train your martial arts, investigate the Black-Iron Token, and shape the fate of
 ### 主要特色
 
 - 两年倒计时间管理与门派养成
-- 剑法、刀法、采药与挖矿四种修炼小游戏，成绩与连击决定成长和素材收益
+- 剑法、刀法、采药与挖矿四种修炼小游戏、八类基础与进阶挑战，成绩与连击决定成长和素材收益
 - 带有行动点、视线和敌方预判的网格战棋
 - 可操作同伴、武学熟练度与多种战斗目标
 - 影响构筑与长期路线的互斥战后奖励
@@ -107,4 +107,4 @@ Capsules may contain only approved game artwork, the readable game name/logo, an
 
 Only upload screenshots captured from the actual build. Do not substitute concept art or generated promotional scenes for gameplay screenshots.
 
-The reviewed 0.31.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.
+The reviewed 0.32.0 candidate set is stored in `steamworks/store-assets/screenshots-candidates/`. Regenerate it after material gameplay or UI changes and visually review all eight images before uploading them to Steamworks.

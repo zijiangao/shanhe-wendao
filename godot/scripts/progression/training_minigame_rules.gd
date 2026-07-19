@@ -5,6 +5,7 @@ const ROUND_COUNT := 3
 const COMBO_SCORE_THRESHOLD := 85
 const COMBO_BONUS_PER_STEP := 5
 const MAX_COMBO_BONUS := 10
+const MAX_TOTAL_SCORE := 315
 const DIRECTIONS := ["up", "right", "down", "left"]
 const DIRECTION_LABELS := {"up": "上", "right": "右", "down": "下", "left": "左"}
 const DISCIPLINES := {
@@ -59,19 +60,28 @@ static func score_round(correct: bool, elapsed_ms: int) -> int:
 static func opposite(direction: String) -> String:
 	return {"up": "down", "right": "left", "down": "up", "left": "right"}.get(direction, "")
 
-static func challenge(discipline: String, primary: String, secondary: String = "") -> Dictionary:
+static func challenge(discipline: String, primary: String, secondary: String = "", advanced: bool = false) -> Dictionary:
 	if not is_valid_discipline(discipline) or primary not in DIRECTIONS:
 		return {}
 	match discipline:
 		"swordsmanship":
 			var follow := secondary if secondary in DIRECTIONS else opposite(primary)
-			return {"targets": [primary, follow], "prompt": "剑谱：%s → %s" % [DIRECTION_LABELS[primary], DIRECTION_LABELS[follow]], "timing": "迅速依次出招"}
+			var targets := [primary, follow, opposite(follow)] if advanced else [primary, follow]
+			var labels: Array[String] = []
+			for target in targets:
+				labels.append(str(DIRECTION_LABELS[target]))
+			return {"discipline": discipline, "advanced": advanced, "targets": targets, "prompt": "剑谱：%s" % " → ".join(labels), "timing": "进阶三式剑路" if advanced else "迅速依次出招"}
 		"bladesmanship":
-			return {"targets": [primary], "prompt": "蓄势斩向：%s" % DIRECTION_LABELS[primary], "timing": "最佳窗口 0.85–1.15 秒"}
+			var blade_target := opposite(primary) if advanced else primary
+			var blade_ideal := 1400 if advanced else 1000
+			return {"discipline": discipline, "advanced": advanced, "targets": [blade_target], "prompt": "%s：%s" % ["识破虚招，回斩" if advanced else "蓄势斩向", DIRECTION_LABELS[blade_target]], "timing": "最佳窗口 %.2f–%.2f 秒" % [float(blade_ideal - 150) / 1000.0, float(blade_ideal + 150) / 1000.0], "ideal_ms": blade_ideal}
 		"herbalism":
-			return {"targets": [opposite(primary)], "prompt": "叶尖朝%s，药根在……" % DIRECTION_LABELS[primary], "timing": "选择相反方向"}
+			var herb_targets := [opposite(primary), opposite(secondary)] if advanced and secondary in DIRECTIONS else [opposite(primary)]
+			var herb_prompt := "两株叶尖朝%s、%s，依次寻根" % [DIRECTION_LABELS[primary], DIRECTION_LABELS[secondary]] if herb_targets.size() > 1 else "叶尖朝%s，药根在……" % DIRECTION_LABELS[primary]
+			return {"discipline": discipline, "advanced": advanced, "targets": herb_targets, "prompt": herb_prompt, "timing": "依次选择两株的相反方向" if herb_targets.size() > 1 else "选择相反方向"}
 		"mining":
-			return {"targets": [primary], "prompt": "矿脉回声：%s" % DIRECTION_LABELS[primary], "timing": "共鸣点 1.05–1.35 秒"}
+			var mining_ideal := 800 if advanced else 1200
+			return {"discipline": discipline, "advanced": advanced, "targets": [primary], "prompt": "%s：%s" % ["短促回声" if advanced else "矿脉回声", DIRECTION_LABELS[primary]], "timing": "共鸣点 %.2f–%.2f 秒" % [float(mining_ideal - 150) / 1000.0, float(mining_ideal + 150) / 1000.0], "ideal_ms": mining_ideal}
 	return {}
 
 static func score_challenge(discipline: String, correct: bool, elapsed_ms: int) -> int:
@@ -101,8 +111,8 @@ static func score_challenge(discipline: String, correct: bool, elapsed_ms: int) 
 			return 55
 	return score_round(correct, elapsed_ms)
 
-static func evaluate_challenge(discipline: String, correct: bool, elapsed_ms: int, previous_streak: int) -> Dictionary:
-	var base_score := score_challenge(discipline, correct, elapsed_ms)
+static func evaluate_challenge(discipline: String, correct: bool, elapsed_ms: int, previous_streak: int, challenge_data: Dictionary = {}) -> Dictionary:
+	var base_score := score_challenge_variant(discipline, correct, elapsed_ms, challenge_data)
 	var streak := previous_streak + 1 if base_score >= COMBO_SCORE_THRESHOLD else 0
 	var combo_bonus := mini(MAX_COMBO_BONUS, maxi(0, streak - 1) * COMBO_BONUS_PER_STEP)
 	return {
@@ -111,8 +121,42 @@ static func evaluate_challenge(discipline: String, correct: bool, elapsed_ms: in
 		"score": base_score + combo_bonus,
 		"streak": streak,
 		"quality": score_quality(base_score),
-		"feedback": timing_feedback(discipline, elapsed_ms, correct)
+		"feedback": timing_feedback_variant(discipline, elapsed_ms, correct, challenge_data)
 	}
+
+static func score_challenge_variant(discipline: String, correct: bool, elapsed_ms: int, challenge_data: Dictionary) -> int:
+	if not correct:
+		return 0
+	if not bool(challenge_data.get("advanced", false)):
+		return score_challenge(discipline, correct, elapsed_ms)
+	match discipline:
+		"swordsmanship":
+			if elapsed_ms <= 1800: return 100
+			if elapsed_ms <= 2600: return 85
+			if elapsed_ms <= 3600: return 70
+			return 55
+		"herbalism":
+			if elapsed_ms <= 2600: return 100
+			if elapsed_ms <= 4000: return 85
+			return 70
+		"bladesmanship", "mining":
+			var ideal := int(challenge_data.get("ideal_ms", 1000 if discipline == "bladesmanship" else 1200))
+			var delta := absi(elapsed_ms - ideal)
+			if delta <= 150: return 100
+			if delta <= 300: return 85
+			if delta <= 550: return 70
+			return 55
+	return score_challenge(discipline, correct, elapsed_ms)
+
+static func timing_feedback_variant(discipline: String, elapsed_ms: int, correct: bool, challenge_data: Dictionary) -> String:
+	if not correct:
+		return "失误"
+	if discipline in ["bladesmanship", "mining"] and challenge_data.has("ideal_ms"):
+		var ideal := int(challenge_data.ideal_ms)
+		if elapsed_ms < ideal - 300: return "过早"
+		if elapsed_ms > ideal + 300: return "过晚"
+		return "正中时机"
+	return timing_feedback(discipline, elapsed_ms, correct)
 
 static func score_quality(base_score: int) -> String:
 	if base_score >= 100:
