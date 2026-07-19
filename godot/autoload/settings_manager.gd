@@ -4,6 +4,7 @@ signal settings_changed
 
 const SETTINGS_PATH := "user://settings.cfg"
 const UI_SCALES := [0.9, 1.0, 1.15, 1.3]
+const DIFFICULTIES := ["story", "standard", "master"]
 
 var data: Dictionary = {}
 
@@ -18,7 +19,8 @@ func defaults() -> Dictionary:
 		"music_volume": 0.7,
 		"sfx_volume": 0.8,
 		"fullscreen": false,
-		"ui_scale": 1.0
+		"ui_scale": 1.0,
+		"difficulty": "standard"
 	}
 
 func load_settings(path: String = SETTINGS_PATH) -> bool:
@@ -64,6 +66,8 @@ func normalize(values: Dictionary) -> Dictionary:
 		if absf(float(scale) - requested_scale) < absf(closest_scale - requested_scale):
 			closest_scale = float(scale)
 	result.ui_scale = closest_scale
+	var requested_difficulty := str(result.difficulty)
+	result.difficulty = requested_difficulty if requested_difficulty in DIFFICULTIES else "standard"
 	return result
 
 func apply_settings() -> void:

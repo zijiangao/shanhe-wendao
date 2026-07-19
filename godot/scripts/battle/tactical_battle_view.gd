@@ -2,6 +2,7 @@ class_name TacticalBattleView
 extends Control
 
 const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
+const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 
 signal cell_selected(x: int, y: int)
 signal mode_selected(mode: String)
@@ -23,7 +24,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	add_child(shade)
 	var title := Label.new()
 	title.position = Vector2(30, 14)
-	title.text = "%s  ·  第 %d 回合" % [battle.name, battle.turn]
+	title.text = "%s  ·  %s难度  ·  第 %d 回合" % [battle.name, DIFFICULTY_RULES.display_name(str(battle.get("difficulty", "standard"))), battle.turn]
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color("#f1e3c6"))
 	add_child(title)

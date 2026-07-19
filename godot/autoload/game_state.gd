@@ -1,5 +1,7 @@
 extends Node
 
+const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
+
 signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
@@ -124,6 +126,7 @@ func start_blackreed_battle() -> bool:
 			{"name": "弓手喽啰", "role": "archer", "hp": 13, "max_hp": 13, "attack": 4, "range": 4, "x": 5, "y": 0}
 		]
 	}
+	_apply_current_difficulty()
 	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
@@ -152,6 +155,7 @@ func start_huashan_trial_battle() -> bool:
 			{"name": "守擂弟子", "role": "melee", "hp": 25, "max_hp": 25, "attack": 6, "range": 1, "x": 6, "y": 4}
 		]
 	}
+	_apply_current_difficulty()
 	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
@@ -183,6 +187,7 @@ func start_final_battle() -> bool:
 			{"name": "武库弩手", "role": "archer", "hp": 12 if trusted_su else 17, "max_hp": 12 if trusted_su else 17, "attack": 5, "range": 4, "x": 5, "y": 0}
 		]
 	}
+	_apply_current_difficulty()
 	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
@@ -190,6 +195,7 @@ func start_final_battle() -> bool:
 
 func finish_battle(victory: bool) -> void:
 	var battle_id: String = str(data.battle.get("battle_id", "blackreed"))
+	var battle_difficulty: String = str(data.battle.get("difficulty", "standard"))
 	data.battle = {}
 	if victory:
 		data.battle_retry = {}
@@ -217,11 +223,17 @@ func finish_battle(victory: bool) -> void:
 				data.flags.append("villain_revealed")
 			add_log("黑苇寨主败退。你夺得玄铁令，并查明厉千秋的阴谋。")
 	else:
-		data.hp = ceili(float(data.max_hp) / 2.0)
-		data.silver = maxi(0, int(data.silver) - 10)
-		add_log("你战败后被渔民救回，损失十两银子。")
+		var recovery: Dictionary = DIFFICULTY_RULES.defeat_recovery(battle_difficulty, int(data.max_hp), int(data.silver))
+		data.hp = recovery.hp
+		data.silver = recovery.silver
+		add_log("你战败后被江湖同道救回，%s。" % ("没有损失银两" if int(recovery.loss) == 0 else "损失%d两银子" % int(recovery.loss)))
 	battle_finished.emit(victory)
 	state_changed.emit()
+
+func _apply_current_difficulty() -> void:
+	var manager: Node = get_tree().root.get_node_or_null("SettingsManager") if is_inside_tree() else null
+	var level: String = str(manager.data.get("difficulty", "standard")) if manager != null else "standard"
+	data.battle = DIFFICULTY_RULES.apply_to_battle(data.battle, level)
 
 func complete_game(legacy: String) -> void:
 	var titles: Dictionary = {"destroy": "山河同心", "seal": "持令守序", "preserve": "问道藏锋"}

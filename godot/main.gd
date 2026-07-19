@@ -14,6 +14,7 @@ const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
 const NAVIGATION_RULES := preload("res://scripts/ui/navigation_rules.gd")
 const TUTORIAL_RULES := preload("res://scripts/ui/tutorial_rules.gd")
 const DEMO_POLICY := preload("res://scripts/release/demo_policy.gd")
+const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 
 var screen: String = "menu"
 var previous_screen: String = "menu"
@@ -1000,6 +1001,33 @@ func _show_settings() -> void:
 	_add_volume_setting(panel, "音乐音量", "music_volume")
 	_add_volume_setting(panel, "音效音量", "sfx_volume")
 
+	var difficulty_row := HBoxContainer.new()
+	difficulty_row.add_theme_constant_override("separation", 18)
+	panel.add_child(difficulty_row)
+	var difficulty_label := Label.new()
+	difficulty_label.text = "战斗难度"
+	difficulty_label.custom_minimum_size.x = 120
+	difficulty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	difficulty_label.add_theme_font_size_override("font_size", 18)
+	difficulty_row.add_child(difficulty_label)
+	var difficulty_options := OptionButton.new()
+	difficulty_options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for level in SettingsManager.DIFFICULTIES:
+		difficulty_options.add_item(DIFFICULTY_RULES.display_name(level))
+		if str(level) == str(SettingsManager.data.difficulty):
+			difficulty_options.selected = difficulty_options.item_count - 1
+	difficulty_row.add_child(difficulty_options)
+	var difficulty_detail := Label.new()
+	difficulty_detail.text = DIFFICULTY_RULES.description(str(SettingsManager.data.difficulty))
+	difficulty_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	difficulty_detail.add_theme_color_override("font_color", Color("#526159"))
+	panel.add_child(difficulty_detail)
+	difficulty_options.item_selected.connect(func(index: int):
+		var level: String = str(SettingsManager.DIFFICULTIES[index])
+		SettingsManager.update_setting("difficulty", level)
+		difficulty_detail.text = DIFFICULTY_RULES.description(level)
+	)
+
 	var display_row := HBoxContainer.new()
 	display_row.add_theme_constant_override("separation", 18)
 	panel.add_child(display_row)
@@ -1024,7 +1052,7 @@ func _show_settings() -> void:
 	display_row.add_child(scale_options)
 
 	var hint := Label.new()
-	hint.text = "推荐 Steam Deck 使用 115% 或 130% 界面缩放。后续加入的音乐与音效会分别接入当前音量通道。"
+	hint.text = "推荐 Steam Deck 使用 115% 或 130% 界面缩放。难度会从下一场新开始的战斗生效，当前战斗与重试保持原数值。"
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_color_override("font_color", Color("#526159"))
 	hint.add_theme_stylebox_override("normal", _box(Color("#ede5d5")))
