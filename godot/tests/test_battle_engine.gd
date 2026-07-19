@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_test_enemy_movement_and_turn_reset()
 	_test_guard_and_ally_knockout()
 	_test_multi_target_feedback()
+	_test_enemy_event_sequence()
 	_test_hero_defeat()
 	print("BattleEngine tests passed.")
 	quit()
@@ -201,6 +202,22 @@ func _test_multi_target_feedback() -> void:
 	assert(Vector2i(int(battle.effects[0].x), int(battle.effects[0].y)) == Vector2i(1, 1), "Hero damage feedback should appear on the hero cell.")
 	assert(Vector2i(int(battle.effects[1].x), int(battle.effects[1].y)) == Vector2i(2, 2), "Ally feedback should appear on the ally cell instead of being merged onto the hero.")
 	assert(str(battle.effects[1].type) == "guard", "A fully blocked hit should be communicated as a guard result.")
+
+func _test_enemy_event_sequence() -> void:
+	var battle := _fixture()
+	battle.erase("ally")
+	var movement: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
+	assert(Array(movement.events).size() == 1 and str(movement.events[0].type) == "move", "A distant enemy should emit one movement presentation event.")
+	assert(Vector2i(movement.events[0].from) == Vector2i(4, 1) and Vector2i(movement.events[0].to) == Vector2i(3, 1), "Movement events should retain their exact origin and destination.")
+
+	battle = _fixture()
+	battle.erase("ally")
+	battle.enemies[0].x = 2
+	battle.enemies[0].y = 1
+	var attack: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
+	assert(Array(attack.events).size() == 2, "A direct enemy strike should emit an attack cue followed by its hit result.")
+	assert(str(attack.events[0].type) == "attack" and str(attack.events[1].type) == "hit", "Enemy presentation events must preserve attack-before-impact ordering.")
+	assert(Vector2i(attack.events[1].target) == Vector2i(1, 1), "The hit event should identify the actual target cell.")
 
 func _test_hero_defeat() -> void:
 	var battle := _fixture()

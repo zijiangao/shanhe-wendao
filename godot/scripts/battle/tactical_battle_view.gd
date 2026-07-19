@@ -7,9 +7,12 @@ const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 signal cell_selected(x: int, y: int)
 signal mode_selected(mode: String)
 signal end_turn_requested
+signal presentation_finished
 
 const TOKEN_ATLAS := preload("res://assets/art/battle-tokens.png")
 const LIN_TOKEN := preload("res://assets/art/portrait-lin-qingshuang.png")
+
+var presentation_active: bool = false
 
 func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: String, cells: Array, enemy_preview: String) -> void:
 	var art := TextureRect.new()
@@ -158,6 +161,97 @@ func _emit_cell(x: int, y: int) -> void:
 
 func _emit_mode(mode: String) -> void:
 	mode_selected.emit(mode)
+
+func play_enemy_events(events: Array) -> void:
+	if presentation_active:
+		return
+	presentation_active = true
+	var blocker := ColorRect.new()
+	blocker.color = Color("#100b09aa")
+	blocker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blocker.mouse_filter = Control.MOUSE_FILTER_STOP
+	blocker.z_index = 20
+	add_child(blocker)
+	var turn_label := _presentation_label("敌 方 回 合", Vector2(480, 16), Vector2(300, 48), Color("#8b493bee"), 24)
+	turn_label.z_index = 21
+	add_child(turn_label)
+	var instant := DisplayServer.get_name() == "headless"
+	if not instant:
+		await get_tree().create_timer(0.28).timeout
+	for event: Dictionary in events:
+		await _play_enemy_event(event, instant)
+	if not instant:
+		await get_tree().create_timer(0.12).timeout
+	blocker.queue_free()
+	turn_label.queue_free()
+	presentation_active = false
+	presentation_finished.emit()
+
+func _play_enemy_event(event: Dictionary, instant: bool = false) -> void:
+	match str(event.get("type", "")):
+		"move":
+			var from_cell: Vector2i = event.get("from", Vector2i.ZERO)
+			var to_cell: Vector2i = event.get("to", from_cell)
+			var marker := _presentation_label(str(event.get("actor", "敌人")), _cell_overlay_position(from_cell), Vector2(94, 44), Color("#71322dee"), 16)
+			marker.z_index = 22
+			add_child(marker)
+			AudioFeedback.play("move")
+			if instant:
+				marker.position = _cell_overlay_position(to_cell)
+			else:
+				var movement := create_tween()
+				movement.tween_property(marker, "position", _cell_overlay_position(to_cell), 0.26).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+				await movement.finished
+			marker.queue_free()
+		"attack":
+			var position: Vector2i = event.get("position", Vector2i.ZERO)
+			var attack_label := _presentation_label("%s · %s" % [event.get("actor", "敌人"), event.get("text", "发动攻击")], _cell_overlay_position(position) + Vector2(-18, -38), Vector2(130, 36), Color("#8b493bee"), 15)
+			attack_label.z_index = 22
+			add_child(attack_label)
+			AudioFeedback.play("turn")
+			if not instant:
+				await get_tree().create_timer(0.24).timeout
+			attack_label.queue_free()
+		"hit":
+			var target: Vector2i = event.get("target", Vector2i.ZERO)
+			var damage := int(event.get("damage", 0))
+			var blocked := int(event.get("blocked", 0))
+			var hit_text := "格挡" if damage <= 0 and blocked > 0 else "-%d" % damage
+			if damage > 0 and blocked > 0:
+				hit_text += "  挡%d" % blocked
+			var hit_label := _presentation_label(hit_text, _cell_overlay_position(target) + Vector2(4, -8), Vector2(86, 38), Color("#315f4bee") if damage <= 0 else Color("#a33127ee"), 19)
+			hit_label.z_index = 23
+			add_child(hit_label)
+			AudioFeedback.play("enemy_hit" if damage > 0 else "turn")
+			if not instant:
+				_animate_impact(hit_label, damage > 0)
+				await get_tree().create_timer(0.28).timeout
+			hit_label.queue_free()
+		"technique":
+			var technique := _presentation_label(str(event.get("text", "敌方绝技")), Vector2(370, 245), Vector2(520, 68), Color("#7d3029f2"), 28)
+			technique.z_index = 23
+			add_child(technique)
+			AudioFeedback.play("skill")
+			if not instant:
+				_animate_skill_name(technique)
+				await get_tree().create_timer(0.38).timeout
+			technique.queue_free()
+
+func _cell_overlay_position(cell: Vector2i) -> Vector2:
+	return Vector2(30 + cell.x * 99, 71 + cell.y * 71)
+
+func _presentation_label(text_value: String, at: Vector2, dimensions: Vector2, color: Color, font_size: int) -> Label:
+	var label := Label.new()
+	label.text = text_value
+	label.position = at
+	label.size = dimensions
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", Color("#fff0c6"))
+	label.add_theme_stylebox_override("normal", _box(color))
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
 
 func _animate_turn_banner(banner: Control) -> void:
 	banner.modulate.a = 0.0

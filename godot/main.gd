@@ -39,6 +39,8 @@ var choice_options: Array = []
 var active_tutorial_step: String = ""
 var last_defeat_battle: String = ""
 var store_capture_active: bool = false
+var enemy_turn_active: bool = false
+var active_battle_view: TacticalBattleView
 
 func _ready() -> void:
 	if _handle_release_mode_verification():
@@ -48,7 +50,9 @@ func _ready() -> void:
 	SteamService.achievement_unlocked.connect(_on_achievement_unlocked)
 	_build_shell()
 	_show_menu()
-	if "--capture-store-screenshots" in OS.get_cmdline_user_args():
+	if "--verify-battle-presentation" in OS.get_cmdline_user_args():
+		call_deferred("_verify_battle_presentation")
+	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
 		call_deferred("_capture_store_screenshots")
 
 func _handle_release_mode_verification() -> bool:
@@ -137,6 +141,30 @@ func _capture_store_screenshots() -> void:
 	print("Store screenshots saved to: %s" % output_path)
 	get_tree().quit(0)
 
+func _verify_battle_presentation() -> void:
+	GameState.new_game()
+	GameState.data.quest_stage = "investigate"
+	GameState.data.location = "blackreed"
+	GameState.start_blackreed_battle()
+	screen = "battle"
+	_rebuild()
+	await get_tree().process_frame
+	if not is_instance_valid(active_battle_view):
+		push_error("Battle presentation verifier could not instantiate the tactical view.")
+		get_tree().quit(4)
+		return
+	var events: Array = [
+		{"type": "move", "actor": "剑客", "from": Vector2i(4, 1), "to": Vector2i(3, 1)},
+		{"type": "attack", "actor": "剑客", "position": Vector2i(3, 1), "text": "发动攻击"},
+		{"type": "hit", "actor": "剑客", "target_name": "沈羽", "target": Vector2i(1, 1), "damage": 8, "blocked": 0},
+		{"type": "hit", "actor": "剑客", "target_name": "林清霜", "target": Vector2i(1, 3), "damage": 0, "blocked": 8},
+		{"type": "technique", "actor": "厉无咎", "text": "断 岳 刀 势"}
+	]
+	await active_battle_view.play_enemy_events(events)
+	var valid := is_instance_valid(active_battle_view) and not active_battle_view.presentation_active
+	print("Battle presentation verification passed." if valid else "Battle presentation verification failed.")
+	get_tree().quit(0 if valid else 4)
+
 func _save_store_capture(id: String) -> void:
 	toast_label.text = ""
 	await get_tree().process_frame
@@ -151,6 +179,8 @@ func _save_store_capture(id: String) -> void:
 		push_error("Failed to save store screenshot: %s" % filename)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if enemy_turn_active:
+		return
 	if not event.is_action_pressed("ui_cancel"):
 		return
 	var action: Dictionary = NAVIGATION_RULES.back_action(screen, previous_screen)
@@ -1353,6 +1383,7 @@ func _show_battle() -> void:
 		return
 	var battle: Dictionary = GameState.data.battle
 	var view: TacticalBattleView = TACTICAL_BATTLE_VIEW.instantiate()
+	active_battle_view = view
 	content.add_child(view)
 	view.setup(BATTLE_TEXTURE, battle, GameState.data, battle_mode, _battle_cell_data(battle), BATTLE_RULES.enemy_preview(battle))
 	view.cell_selected.connect(_tactical_cell)
@@ -1610,8 +1641,14 @@ func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) ->
 	_rebuild()
 
 func _enemy_turn() -> void:
+	if enemy_turn_active:
+		return
+	enemy_turn_active = true
 	var battle: Dictionary = GameState.data.battle
 	var outcome: Dictionary = BATTLE_ENGINE.enemy_turn(battle, int(GameState.data.hp))
+	if is_instance_valid(active_battle_view):
+		await active_battle_view.play_enemy_events(Array(outcome.get("events", [])))
+	enemy_turn_active = false
 	GameState.data.hp = int(outcome.hero_hp)
 	if bool(outcome.hero_defeated):
 		AudioFeedback.play("defeat")
@@ -1619,7 +1656,8 @@ func _enemy_turn() -> void:
 		GameState.finish_battle(false)
 		screen = "defeat"
 	else:
-		AudioFeedback.play("skill" if bool(outcome.get("boss_transition", false)) else ("enemy_hit" if int(outcome.total_hurt) > 0 else "turn"))
+		if Array(outcome.get("events", [])).is_empty():
+			AudioFeedback.play("skill" if bool(outcome.get("boss_transition", false)) else ("enemy_hit" if int(outcome.total_hurt) > 0 else "turn"))
 		GameState.data.battle = outcome.battle
 		if _check_tactical_victory(outcome.battle):
 			SaveManager.save_auto()

@@ -114,6 +114,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 	var ally_was_active := battle.has("ally") and int(battle.ally.hp) > 0
 	var boss_transition := false
 	var effects: Array = []
+	var events: Array = []
 	for enemy in battle.enemies:
 		if int(enemy.hp) <= 0:
 			continue
@@ -121,7 +122,9 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 			enemy.phase_two_started = true
 			boss_transition = true
 			special_notes.append("%s震碎刀鞘，进入第二阶段“断岳”" % str(enemy.name))
+			events.append({"type": "technique", "actor": str(enemy.name), "text": "断 岳 · 第 二 阶 段"})
 		if RULES.is_boss_sweep_turn(battle, enemy):
+			events.append({"type": "technique", "actor": str(enemy.name), "text": "断 岳 刀 势"})
 			var sweep_damage := int(enemy.attack) + 2 + _roll_bonus(rng)
 			var sweep_hits := 0
 			if RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.player_x), int(battle.player_y))):
@@ -129,6 +132,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				total_hurt += sweep_damage
 				sweep_hits += 1
 				effects.append(_damage_effect(Vector2i(int(battle.player_x), int(battle.player_y)), sweep_damage))
+				events.append(_hit_event(str(enemy.name), "沈羽", Vector2i(int(battle.player_x), int(battle.player_y)), sweep_damage))
 			if battle.has("ally") and int(battle.ally.hp) > 0 and RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.ally.x), int(battle.ally.y))):
 				var ally_hurt := sweep_damage
 				var blocked := mini(ally_hurt, int(battle.ally.guard))
@@ -138,6 +142,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				total_hurt += ally_hurt
 				sweep_hits += 1
 				effects.append(_damage_effect(Vector2i(int(battle.ally.x), int(battle.ally.y)), ally_hurt, blocked))
+				events.append(_hit_event(str(enemy.name), str(battle.ally.name), Vector2i(int(battle.ally.x), int(battle.ally.y)), ally_hurt, blocked))
 			special_notes.append("%s施展断岳刀势，命中%d人" % [str(enemy.name), sweep_hits])
 			continue
 		var target_data := select_target(battle, enemy)
@@ -146,6 +151,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		var enemy_position := Vector2i(int(enemy.x), int(enemy.y))
 		if RULES.can_enemy_attack(battle, enemy, target):
 			var heavy_attack := RULES.is_heavy_turn(battle, enemy)
+			events.append({"type": "attack", "actor": str(enemy.name), "position": enemy_position, "text": "蓄力重击" if heavy_attack else "发动攻击"})
 			var hurt := int(enemy.attack) + _roll_bonus(rng) + (4 if heavy_attack else 0)
 			if heavy_attack:
 				special_notes.append("%s发动重击" % str(enemy.name))
@@ -155,15 +161,19 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)
 				battle.ally.hp = maxi(0, int(battle.ally.hp) - hurt)
 				effects.append(_damage_effect(target, hurt, blocked))
+				events.append(_hit_event(str(enemy.name), str(battle.ally.name), target, hurt, blocked))
 			else:
 				hero_hp = maxi(0, hero_hp - hurt)
 				effects.append(_damage_effect(target, hurt))
+				events.append(_hit_event(str(enemy.name), "沈羽", target, hurt))
 			total_hurt += hurt
 		else:
 			var path := RULES.find_path(battle, enemy_position, target, true)
 			if path.size() > 1:
 				var move_index := mini(RULES.enemy_move_steps(enemy), path.size() - 2)
 				if move_index >= 1:
+					var destination: Vector2i = path[move_index]
+					events.append({"type": "move", "actor": str(enemy.name), "from": enemy_position, "to": destination})
 					enemy.x = path[move_index].x
 					enemy.y = path[move_index].y
 
@@ -184,7 +194,8 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		"hero_defeated": hero_defeated,
 		"ally_defeated": ally_defeated,
 		"total_hurt": total_hurt,
-		"boss_transition": boss_transition
+		"boss_transition": boss_transition,
+		"events": events
 	}
 
 static func select_target(battle: Dictionary, enemy: Dictionary) -> Dictionary:
@@ -214,6 +225,16 @@ static func _damage_effect(target: Vector2i, damage: int, blocked: int = 0) -> D
 	if blocked > 0:
 		text += "  挡%d" % blocked
 	return {"x": target.x, "y": target.y, "text": text, "type": "damage"}
+
+static func _hit_event(actor: String, target_name: String, target: Vector2i, damage: int, blocked: int = 0) -> Dictionary:
+	return {
+		"type": "hit",
+		"actor": actor,
+		"target_name": target_name,
+		"target": target,
+		"damage": damage,
+		"blocked": blocked
+	}
 
 static func _clear_effect(battle: Dictionary) -> void:
 	battle.effect = {}
