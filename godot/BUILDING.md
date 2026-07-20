@@ -92,9 +92,13 @@ Capture a live martial-skill impact frame after changing combat presentation:
 & $godot --path $project --script res://tests/test_controls_view.gd
 
 & $godot --path $project --script res://tests/test_character_view.gd
+
+& $godot --path $project --script res://tests/test_training_menu_view.gd
 ```
 
 `test_crafting_view.gd` also confirms the workshop's fourth "离开工坊" option stays enabled and actually returns to `location` when every real recipe is disabled (a fresh save has zero herbs/ore, so this is the default state for a new player, not an edge case) — the workshop reuses the generic `choice` screen, which `NAVIGATION_RULES.back_action()` deliberately blocks from any back/cancel action since most `choice` screens are one-way story decisions. Without that fixed fourth option, a player who can't yet afford any recipe has no way to leave the screen.
+
+`test_training_menu_view.gd` covers the same gap on the Qingyun training menu, which shares the same generic `choice` screen: a top-level "暂不修炼" option that returns to `location` without spending a week, and a "返回" option on the nested sparring weapon-choice sub-menu that returns to the training menu rather than exiting the training flow entirely. `ChoiceView` itself now wraps its option list in a `ScrollContainer` — with the two escape options added, the training menu can show six options at once, enough to risk the same fixed-height overflow the character sheet hit.
 
 `test_character_view.gd` requires the trailing skill-mastery line to actually be reachable inside the info panel's `ScrollContainer` after scrolling to the bottom, not merely present in the node tree — the panel's content (specialties, skills, inventory, herbarium/mineralogy, companions, faction relations, mastery) is long enough to overflow a fixed 1280x720 layout without it.
 

@@ -843,6 +843,16 @@ func _location_actions(location_id: String) -> Array:
 		{"id": "map", "text": "城门 · 返回舆图", "x": 930, "y": 445}
 	]
 
+func _show_training_menu() -> void:
+	choice_event = "training"
+	choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
+	choice_options = TRAINING_RULES.options(GameState.data)
+	var spar_rotation := SPARRING_RULES.rotation_for(int(GameState.data.week))
+	choice_options.append(["实战切磋 · %s" % spar_rotation.name, "%s；%s。" % [spar_rotation.focus, SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))], "qingyun_spar"])
+	choice_options.append(["暂不修炼", "不消耗行动点，返回青云门。", "leave"])
+	screen = "choice"
+	_rebuild()
+
 func _location_action_requested(action_id: String) -> void:
 	match action_id:
 		"map": screen = "map"; _rebuild()
@@ -851,13 +861,7 @@ func _location_action_requested(action_id: String) -> void:
 			if GameState.deadline_reached() or int(GameState.data.energy) <= 0:
 				_toast(_time_action_failure_message())
 				return
-			choice_event = "training"
-			choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
-			choice_options = TRAINING_RULES.options(GameState.data)
-			var spar_rotation := SPARRING_RULES.rotation_for(int(GameState.data.week))
-			choice_options.append(["实战切磋 · %s" % spar_rotation.name, "%s；%s。" % [spar_rotation.focus, SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))], "qingyun_spar"])
-			screen = "choice"
-			_rebuild()
+			_show_training_menu()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
 		"workshop":
 			choice_event = "workshop"
@@ -1037,14 +1041,19 @@ func _resolve_choice(route: String) -> void:
 			choice_prompt = "选择本次实战切磋的兵器方向"
 			choice_options = [
 				["以剑应战", "切磋评价将提升剑法专精。", "swordsmanship"],
-				["以刀应战", "切磋评价将提升刀法专精。", "bladesmanship"]
+				["以刀应战", "切磋评价将提升刀法专精。", "bladesmanship"],
+				["返回", "不消耗行动点，返回修炼选择。", "leave"]
 			]
 			screen = "choice"
 			_rebuild()
 			return
-		_start_training(route)
-		return
+		if route != "leave":
+			_start_training(route)
+			return
 	elif choice_event == "spar_focus":
+		if route == "leave":
+			_show_training_menu()
+			return
 		choice_event = ""
 		if not GameState.start_qingyun_spar_battle(route):
 				_toast(_time_action_failure_message())
@@ -1407,7 +1416,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.65.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.66.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
