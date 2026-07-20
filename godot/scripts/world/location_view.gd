@@ -1,6 +1,8 @@
 class_name LocationView
 extends Control
 
+const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
+
 signal action_requested(id: String)
 
 func setup(background: Texture2D, heading_text: String, objective_text: String, actions: Array) -> void:
@@ -27,17 +29,10 @@ func setup(background: Texture2D, heading_text: String, objective_text: String, 
 	objective.add_theme_color_override("font_color", Color("#f5ecda"))
 	add_child(objective)
 	for action in actions:
-		var button := Button.new()
-		button.text = str(action.get("text", "事件"))
+		var button := UI_THEME.action_button(str(action.get("text", "事件")), Color("#263f34"))
 		button.position = Vector2(float(action.get("x", 0)), float(action.get("y", 0)))
 		button.size = Vector2(260, 58)
 		button.disabled = bool(action.get("disabled", false))
-		button.add_theme_font_size_override("font_size", 16)
-		button.add_theme_color_override("font_color", Color("#f5ecd9"))
-		button.add_theme_stylebox_override("normal", _box(Color("#263f34ee")))
-		button.add_theme_stylebox_override("hover", _box(Color("#3e6654")))
-		button.add_theme_stylebox_override("focus", _box(Color("#5b8f76")))
-		button.add_theme_stylebox_override("disabled", _box(Color("#3d423fbb")))
 		button.pressed.connect(_emit_action.bind(str(action.get("id", ""))))
 		add_child(button)
 
@@ -45,13 +40,4 @@ func _emit_action(id: String) -> void:
 	action_requested.emit(id)
 
 func _box(color: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = color
-	box.border_color = color.lightened(0.18)
-	box.set_border_width_all(1)
-	box.set_corner_radius_all(2)
-	box.content_margin_left = 12
-	box.content_margin_right = 12
-	box.content_margin_top = 8
-	box.content_margin_bottom = 8
-	return box
+	return UI_THEME.box(color)

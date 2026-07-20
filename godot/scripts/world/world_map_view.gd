@@ -1,6 +1,8 @@
 class_name WorldMapView
 extends Control
 
+const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
+
 signal destination_requested(id: String)
 signal enter_requested
 signal rest_requested
@@ -25,7 +27,7 @@ func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, av
 	var side_panel := PanelContainer.new()
 	side_panel.position = Vector2(855, 30)
 	side_panel.size = Vector2(390, 500)
-	side_panel.add_theme_stylebox_override("panel", _box(Color("#172820e8")))
+	side_panel.add_theme_stylebox_override("panel", UI_THEME.panel_box(UI_THEME.DARK_TINT))
 	add_child(side_panel)
 	var side := VBoxContainer.new()
 	side.add_theme_constant_override("separation", 12)
@@ -69,39 +71,55 @@ func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, av
 	chronicle.add_theme_color_override("font_color", Color("#f6f0e4"))
 	add_child(chronicle)
 
+const MARKER_WIDTH := 78.0
+
 func _add_marker(label_text: String, at: Vector2, id: String, current: bool) -> void:
+	var texture: Texture2D = UI_THEME.map_marker("current" if current else "visited")
+	var marker_size := Vector2(texture.get_width(), texture.get_height()) * (MARKER_WIDTH / float(texture.get_width()))
+	var origin := at - Vector2(marker_size.x / 2.0, marker_size.y * 0.08)
+
+	var art := TextureRect.new()
+	art.texture = texture
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.position = origin
+	art.size = marker_size
+	art.stretch_mode = TextureRect.STRETCH_SCALE
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.z_index = 2
+	add_child(art)
+
+	var name_label := Label.new()
+	name_label.text = "%s\n当前所在" % label_text if current else label_text
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.position = Vector2(at.x - 65, origin.y + marker_size.y * 0.34)
+	name_label.size = Vector2(130, 46)
+	name_label.add_theme_font_size_override("font_size", 15)
+	name_label.add_theme_color_override("font_color", Color("#fff6df") if current else Color("#e8e2d2"))
+	name_label.add_theme_color_override("font_shadow_color", Color("#0000009f"))
+	name_label.add_theme_constant_override("shadow_offset_x", 1)
+	name_label.add_theme_constant_override("shadow_offset_y", 1)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.z_index = 3
+	add_child(name_label)
+
 	var button := Button.new()
-	button.text = "%s\n当前所在" % label_text if current else label_text
-	button.position = at
-	button.size = Vector2(132, 58)
-	button.z_index = 2
-	button.add_theme_font_size_override("font_size", 18)
-	button.add_theme_color_override("font_color", Color("#fff6df"))
-	button.add_theme_stylebox_override("normal", _box(Color("#9f4032ee") if current else Color("#263f34ee")))
-	button.add_theme_stylebox_override("hover", _box(Color("#b15443")))
-	button.add_theme_stylebox_override("focus", _box(Color("#d07861")))
+	button.flat = true
+	button.position = origin
+	button.size = marker_size
+	button.z_index = 4
+	button.focus_mode = Control.FOCUS_ALL
+	button.tooltip_text = label_text
+	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.mouse_entered.connect(func(): art.modulate = Color("#ffe9b8"))
+	button.mouse_exited.connect(func(): art.modulate = Color.WHITE)
 	button.pressed.connect(func(): destination_requested.emit(id))
 	add_child(button)
 
 func _action_button(text_value: String, color: Color) -> Button:
-	var button := Button.new()
-	button.text = text_value
-	button.custom_minimum_size.y = 48
-	button.add_theme_font_size_override("font_size", 16)
-	button.add_theme_color_override("font_color", Color("#f5ecd9"))
-	button.add_theme_stylebox_override("normal", _box(color))
-	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12)))
-	button.add_theme_stylebox_override("focus", _box(color.lightened(0.24)))
-	return button
+	return UI_THEME.action_button(text_value, color)
 
 func _box(color: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = color
-	box.border_color = color.lightened(0.18)
-	box.set_border_width_all(1)
-	box.set_corner_radius_all(2)
-	box.content_margin_left = 12
-	box.content_margin_right = 12
-	box.content_margin_top = 8
-	box.content_margin_bottom = 8
-	return box
+	return UI_THEME.box(color)

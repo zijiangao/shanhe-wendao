@@ -1,6 +1,8 @@
 class_name ChoiceView
 extends Control
 
+const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
+
 signal option_selected(id: String)
 
 func setup(background: Texture2D, prompt_text: String, options: Array, title_text: String = "抉 择") -> void:
@@ -32,14 +34,9 @@ func setup(background: Texture2D, prompt_text: String, options: Array, title_tex
 	prompt.add_theme_color_override("font_color", Color("#f6f0e4"))
 	panel.add_child(prompt)
 	for option in options:
-		var button := Button.new()
-		button.text = "%s\n%s" % [option[0], option[1]]
+		var button := UI_THEME.action_button("%s\n%s" % [option[0], option[1]], Color("#294438"))
 		button.custom_minimum_size.y = 82
 		button.add_theme_font_size_override("font_size", 18)
-		button.add_theme_color_override("font_color", Color("#f5ecd9"))
-		button.add_theme_stylebox_override("normal", _box(Color("#294438")))
-		button.add_theme_stylebox_override("hover", _box(Color("#3b604f")))
-		button.add_theme_stylebox_override("focus", _box(Color("#5b8f76")))
 		button.disabled = option.size() > 3 and bool(option[3])
 		button.pressed.connect(_emit_option.bind(str(option[2])))
 		panel.add_child(button)
@@ -48,13 +45,4 @@ func _emit_option(id: String) -> void:
 	option_selected.emit(id)
 
 func _box(color: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = color
-	box.border_color = color.lightened(0.18)
-	box.set_border_width_all(1)
-	box.set_corner_radius_all(2)
-	box.content_margin_left = 12
-	box.content_margin_right = 12
-	box.content_margin_top = 8
-	box.content_margin_bottom = 8
-	return box
+	return UI_THEME.box(color)

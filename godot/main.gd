@@ -31,6 +31,7 @@ const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
+const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
@@ -494,11 +495,18 @@ func _build_shell() -> void:
 	for pair in [["天下舆图", "map"], ["任务", "quests"], ["人物", "character"], ["成就", "achievements"], ["存档", "save"], ["设置", "settings"]]:
 		var button := Button.new()
 		button.text = pair[0]
+		button.icon = UI_THEME.nav_icon(pair[1])
+		button.expand_icon = false
+		button.add_theme_constant_override("icon_max_width", 18)
+		button.add_theme_constant_override("h_separation", 6)
 		button.flat = true
 		button.add_theme_font_size_override("font_size", 16)
 		button.add_theme_color_override("font_color", Color("#d8d0bd"))
 		button.add_theme_color_override("font_hover_color", Color("#ffffff"))
 		button.add_theme_color_override("font_pressed_color", Color("#dfbf74"))
+		button.add_theme_color_override("icon_normal_color", Color("#d8d0bd"))
+		button.add_theme_color_override("icon_hover_color", Color("#ffffff"))
+		button.add_theme_color_override("icon_pressed_color", Color("#dfbf74"))
 		button.pressed.connect(_switch_screen.bind(pair[1]))
 		header.add_child(button)
 	if OS.is_debug_build():
@@ -551,10 +559,11 @@ func _show_menu() -> void:
 	panel.add_theme_constant_override("separation", 14)
 	content.add_child(panel)
 
-	var title := Label.new()
-	title.text = "山河问道"
-	title.add_theme_font_size_override("font_size", 48)
-	title.add_theme_color_override("font_color", Color("#f2e5c8"))
+	var title := TextureRect.new()
+	title.texture = UI_THEME.LOGO_WORDMARK
+	title.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	title.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	title.custom_minimum_size = Vector2(390, 112)
 	panel.add_child(title)
 
 	var subtitle := Label.new()
@@ -614,11 +623,7 @@ func _show_pause() -> void:
 	shade.color = Color("#07110de6")
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(shade)
-	var panel := VBoxContainer.new()
-	panel.position = Vector2(390, 65)
-	panel.size = Vector2(500, 490)
-	panel.add_theme_constant_override("separation", 12)
-	content.add_child(panel)
+	var panel := UI_THEME.framed_panel(content, Vector2(390, 65), Vector2(500, 490), UI_THEME.DARK_TINT)
 	var title := Label.new()
 	title.text = "暂 歇 江 湖"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1333,11 +1338,7 @@ func _show_achievements() -> void:
 	backdrop.color = Color("#d8cfbd")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(backdrop)
-	var panel := VBoxContainer.new()
-	panel.position = Vector2(185, 28)
-	panel.size = Vector2(910, 520)
-	panel.add_theme_constant_override("separation", 10)
-	content.add_child(panel)
+	var panel := UI_THEME.framed_panel(content, Vector2(185, 28), Vector2(910, 520), UI_THEME.PARCHMENT_TINT, 10)
 	var title := Label.new()
 	title.text = "江 湖 成 就    %d/%d" % [SteamService.unlocked_count(), SteamService.definitions.size()]
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1359,15 +1360,27 @@ func _show_achievements() -> void:
 	for value in SteamService.definitions:
 		var definition: Dictionary = value
 		var unlocked: bool = SteamService.is_unlocked(str(definition.api_name))
-		var entry := Label.new()
 		var progress := SteamService.progress_text(str(definition.api_name), GameState.data)
+		var row := PanelContainer.new()
+		row.add_theme_stylebox_override("panel", _box(Color("#294438") if unlocked else Color("#4b514d")))
+		var row_content := HBoxContainer.new()
+		row_content.add_theme_constant_override("separation", 14)
+		row.add_child(row_content)
+		var badge := TextureRect.new()
+		badge.texture = UI_THEME.achievement_badge(unlocked)
+		badge.custom_minimum_size = Vector2(52, 52)
+		badge.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		row_content.add_child(badge)
+		var entry := Label.new()
 		entry.text = "%s  %s%s\n%s" % ["已解锁" if unlocked else "未解锁", str(definition.title), "  ·  %s" % progress if not unlocked and not progress.is_empty() else "", str(definition.description)]
 		entry.custom_minimum_size.y = 62
+		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		entry.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		entry.add_theme_font_size_override("font_size", 17)
 		entry.add_theme_color_override("font_color", Color("#f2dfb3") if unlocked else Color("#b9b4aa"))
-		entry.add_theme_stylebox_override("normal", _box(Color("#294438") if unlocked else Color("#4b514d")))
-		list.add_child(entry)
+		row_content.add_child(entry)
+		list.add_child(row)
 
 func _show_credits() -> void:
 	_clear_content()
@@ -1579,7 +1592,7 @@ func _show_character() -> void:
 	var portrait_frame := PanelContainer.new()
 	portrait_frame.custom_minimum_size.x = 355
 	portrait_frame.clip_contents = true
-	portrait_frame.add_theme_stylebox_override("panel", _box(Color("#25382f")))
+	portrait_frame.add_theme_stylebox_override("panel", UI_THEME.panel_box(UI_THEME.DARK_TINT))
 	page.add_child(portrait_frame)
 	var portrait_stack := Control.new()
 	portrait_stack.clip_contents = true
@@ -1607,7 +1620,7 @@ func _show_character() -> void:
 	# 右侧采用可扫描的信息卡布局。
 	var info_panel := PanelContainer.new()
 	info_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info_panel.add_theme_stylebox_override("panel", _box(Color("#172820")))
+	info_panel.add_theme_stylebox_override("panel", UI_THEME.panel_box(UI_THEME.DARK_TINT))
 	page.add_child(info_panel)
 	var info := VBoxContainer.new()
 	# Keep long-term training records and both field guides visible at 1080p.
@@ -1695,11 +1708,7 @@ func _show_settings() -> void:
 	backdrop.color = Color("#d8cfbd")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(backdrop)
-	var panel := VBoxContainer.new()
-	panel.position = Vector2(300, 28)
-	panel.size = Vector2(680, 520)
-	panel.add_theme_constant_override("separation", 12)
-	content.add_child(panel)
+	var panel := UI_THEME.framed_panel(content, Vector2(300, 28), Vector2(680, 520), UI_THEME.PARCHMENT_TINT)
 	var title := Label.new()
 	title.text = "设 置"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1816,11 +1825,7 @@ func _show_controls() -> void:
 	backdrop.color = Color("#d8cfbd")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(backdrop)
-	var panel := VBoxContainer.new()
-	panel.position = Vector2(250, 32)
-	panel.size = Vector2(780, 510)
-	panel.add_theme_constant_override("separation", 14)
-	content.add_child(panel)
+	var panel := UI_THEME.framed_panel(content, Vector2(250, 12), Vector2(780, 596), UI_THEME.PARCHMENT_TINT, 10)
 	var title := Label.new()
 	title.text = "键 位 设 置"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1894,14 +1899,7 @@ func _show_saves() -> void:
 	backdrop.color = Color("#d8cfbd")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(backdrop)
-	var panel := VBoxContainer.new()
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel.offset_left = 75
-	panel.offset_top = 30
-	panel.offset_right = -75
-	panel.offset_bottom = -30
-	panel.add_theme_constant_override("separation", 12)
-	content.add_child(panel)
+	var panel := UI_THEME.framed_panel_rect(content, 75, 30, -75, -30, UI_THEME.PARCHMENT_TINT)
 	var title := Label.new()
 	title.text = "江湖行卷"
 	title.add_theme_font_size_override("font_size", 30)
@@ -2657,27 +2655,10 @@ func _battle_texture(battle_id: String) -> Texture2D:
 	return texture if texture != null else BATTLE_TEXTURE
 
 func _action_button(text_value: String, color: Color) -> Button:
-	var button := Button.new()
-	button.text = text_value
-	button.custom_minimum_size.y = 48
-	button.add_theme_font_size_override("font_size", 16)
-	button.add_theme_color_override("font_color", Color("#f5ecd9"))
-	button.add_theme_stylebox_override("normal", _box(color))
-	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12)))
-	button.add_theme_stylebox_override("focus", _box(color.lightened(0.24)))
-	return button
+	return UI_THEME.action_button(text_value, color)
 
 func _box(color: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = color
-	box.border_color = color.lightened(0.18)
-	box.set_border_width_all(1)
-	box.set_corner_radius_all(2)
-	box.content_margin_left = 12
-	box.content_margin_right = 12
-	box.content_margin_top = 8
-	box.content_margin_bottom = 8
-	return box
+	return UI_THEME.box(color)
 
 func _toast(message: String) -> void:
 	toast_label.text = message

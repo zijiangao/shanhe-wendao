@@ -6,6 +6,7 @@ const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const SPARRING_RULES := preload("res://scripts/progression/sparring_rules.gd")
+const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 
 signal cell_selected(x: int, y: int)
 signal mode_selected(mode: String)
@@ -330,24 +331,9 @@ func _battle_token(index: int) -> Texture2D:
 	return token
 
 func _action_button(text_value: String, color: Color) -> Button:
-	var button := Button.new()
-	button.text = text_value
+	var button := UI_THEME.action_button(text_value, color)
 	button.custom_minimum_size.y = 42
-	button.add_theme_font_size_override("font_size", 16)
-	button.add_theme_color_override("font_color", Color("#f5ecd9"))
-	button.add_theme_stylebox_override("normal", _box(color))
-	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12)))
-	button.add_theme_stylebox_override("focus", _box(color.lightened(0.24)))
 	return button
 
 func _box(color: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = color
-	box.border_color = color.lightened(0.18)
-	box.set_border_width_all(1)
-	box.set_corner_radius_all(2)
-	box.content_margin_left = 12
-	box.content_margin_right = 12
-	box.content_margin_top = 8
-	box.content_margin_bottom = 8
-	return box
+	return UI_THEME.box(color)

@@ -1,6 +1,8 @@
 class_name DialogueView
 extends Control
 
+const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
+
 signal continue_requested
 
 func setup(background: Texture2D, speaker_name: String, line: String, index: int, total: int) -> void:
@@ -29,26 +31,11 @@ func setup(background: Texture2D, speaker_name: String, line: String, index: int
 	dialogue_box.add_theme_color_override("font_color", Color("#f6f0e4"))
 	dialogue_box.add_theme_stylebox_override("normal", _box(Color("#172820f2")))
 	add_child(dialogue_box)
-	var next := Button.new()
-	next.text = "继续  %d/%d" % [index + 1, total]
+	var next := UI_THEME.action_button("继续  %d/%d" % [index + 1, total], Color("#8b493b"))
 	next.position = Vector2(935, 520)
 	next.size = Vector2(240, 52)
-	next.add_theme_font_size_override("font_size", 16)
-	next.add_theme_color_override("font_color", Color("#f5ecd9"))
-	next.add_theme_stylebox_override("normal", _box(Color("#8b493b")))
-	next.add_theme_stylebox_override("hover", _box(Color("#a45a4b")))
-	next.add_theme_stylebox_override("focus", _box(Color("#c77966")))
 	next.pressed.connect(func(): continue_requested.emit())
 	add_child(next)
 
 func _box(color: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = color
-	box.border_color = color.lightened(0.18)
-	box.set_border_width_all(1)
-	box.set_corner_radius_all(2)
-	box.content_margin_left = 12
-	box.content_margin_right = 12
-	box.content_margin_top = 8
-	box.content_margin_bottom = 8
-	return box
+	return UI_THEME.box(color)
