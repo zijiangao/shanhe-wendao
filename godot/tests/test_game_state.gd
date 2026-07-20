@@ -63,9 +63,10 @@ func _initialize() -> void:
 	state.data.materials.herbs = 2
 	assert(state.craft("healing_powder") and int(state.data.consumables.healing_powder) == 1, "GameState should expose medicine crafting through the saved inventory.")
 	assert("crafted_healing_powder" in state.data.flags, "Medicine crafting must persist its Steam milestone.")
-	state.data.materials.ore = 3
+	state.data.materials.ore = 5
 	state.data.silver = 8
 	assert(state.craft("temper_blade") and "tempered_blade" in state.data.flags, "Weapon tempering must persist its Steam milestone.")
+	assert(state.craft("thunder_stone") and int(state.data.consumables.thunder_stone) == 1 and "crafted_thunder_stone" in state.data.flags, "GameState should craft and persist the mining combat item milestone.")
 	var legacy_material_save: Dictionary = state.data.duplicate(true)
 	legacy_material_save.save_version = 6
 	legacy_material_save.erase("materials")

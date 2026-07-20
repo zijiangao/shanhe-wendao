@@ -7,6 +7,7 @@ func _initialize() -> void:
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
 	_test_healing_powder()
+	_test_thunder_stone()
 	_test_hero_brace_and_guard()
 	_test_cultivation_damage_bonus()
 	_test_specialty_damage_bonus()
@@ -116,6 +117,26 @@ func _test_healing_powder() -> void:
 	assert(int(player.consumables.healing_powder) == 0 and int(battle.ap) == 1, "Healing should consume one item and one action point.")
 	var failed: Dictionary = ENGINE.player_action(battle, player, "heal")
 	assert(not bool(failed.ok) and int(battle.ap) == 1, "Using a missing healing powder must preserve action points.")
+
+func _test_thunder_stone() -> void:
+	var battle := _fixture()
+	battle.erase("ally")
+	battle.active_unit = "hero"
+	battle.ap = 2
+	battle.enemies[0].role = "brute"
+	battle.enemies[0].hp = 50
+	battle.enemies[0].max_hp = 50
+	battle.enemies[0].x = 4
+	battle.enemies[0].y = 1
+	var player := _player_fixture()
+	player.mining = 10
+	player.consumables = {"healing_powder": 0, "thunder_stone": 1}
+	var result: Dictionary = ENGINE.player_action(battle, player, "thunder_stone", Vector2i(4, 1), _seeded_rng())
+	assert(bool(result.ok) and int(player.consumables.thunder_stone) == 0 and int(battle.ap) == 1, "A valid thunder-stone throw should consume one item and action point.")
+	assert(int(battle.enemies[0].armor) == 1 and int(result.damage) >= 15, "Mining mastery should power the throw while permanently removing one armor.")
+	battle.ap = 2
+	var failed: Dictionary = ENGINE.player_action(battle, player, "thunder_stone", Vector2i(4, 1), _seeded_rng())
+	assert(not bool(failed.ok) and int(battle.ap) == 2, "A missing thunder stone must preserve action points.")
 
 func _test_hero_brace_and_guard() -> void:
 	var battle := _fixture()

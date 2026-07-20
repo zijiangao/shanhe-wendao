@@ -10,6 +10,11 @@ const RECIPES := {
 		"description": "药材 2 · 战斗中消耗1行动点，恢复气血。",
 		"cost": {"herbs": 2, "ore": 0, "silver": 0}
 	},
+	"thunder_stone": {
+		"title": "打造 · 霹雳石",
+		"description": "矿石 2 · 战斗中消耗1行动点，直线投掷并削减护甲。",
+		"cost": {"herbs": 0, "ore": 2, "silver": 0}
+	},
 	"temper_blade": {
 		"title": "锻造 · 淬炼青锋",
 		"description": "矿石 3 · 银两 8 · 永久提高武器伤害，最多三级。",
@@ -22,6 +27,7 @@ static func options(state: Dictionary) -> Array:
 	var temper_cost := effective_cost(state, "temper_blade")
 	return [
 		[RECIPES.healing_powder.title, "%s 当前携带 %d 份。" % [RECIPES.healing_powder.description, int(state.get("consumables", {}).get("healing_powder", 0))], "healing_powder", not can_craft(state, "healing_powder")],
+		[RECIPES.thunder_stone.title, "%s 当前携带 %d 枚。" % [RECIPES.thunder_stone.description, int(state.get("consumables", {}).get("thunder_stone", 0))], "thunder_stone", not can_craft(state, "thunder_stone")],
 		[RECIPES.temper_blade.title, "矿石 %d · 银两 %d%s · 永久提高武器伤害。当前淬炼 %d/%d。" % [int(temper_cost.ore), int(temper_cost.silver), "（挖矿大成减免）" if int(temper_cost.silver) < int(RECIPES.temper_blade.cost.silver) else "", forge_level, MAX_FORGE_LEVEL], "temper_blade", not can_craft(state, "temper_blade")]
 	]
 
@@ -51,13 +57,16 @@ static func apply(state: Dictionary, recipe_id: String) -> bool:
 	state.silver = int(state.get("silver", 0)) - int(cost.silver)
 	if recipe_id == "healing_powder":
 		state.consumables.healing_powder = int(state.consumables.get("healing_powder", 0)) + 1
+	elif recipe_id == "thunder_stone":
+		state.consumables.thunder_stone = int(state.consumables.get("thunder_stone", 0)) + 1
 	else:
 		state.forge_level = int(state.get("forge_level", 0)) + 1
 	return true
 
 static func inventory_text(state: Dictionary) -> String:
-	return "药材 %d · 矿石 %d · 银两 %d · 回春散 %d · 淬炼 %d/%d" % [
+	return "药材 %d · 矿石 %d · 银两 %d · 回春散 %d · 霹雳石 %d · 淬炼 %d/%d" % [
 		int(state.get("materials", {}).get("herbs", 0)), int(state.get("materials", {}).get("ore", 0)),
 		int(state.get("silver", 0)), int(state.get("consumables", {}).get("healing_powder", 0)),
+		int(state.get("consumables", {}).get("thunder_stone", 0)),
 		int(state.get("forge_level", 0)), MAX_FORGE_LEVEL
 	]

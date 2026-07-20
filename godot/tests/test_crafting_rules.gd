@@ -7,6 +7,8 @@ func _initialize() -> void:
 	assert(RULES.can_craft(state, "healing_powder"), "Two herbs should enable a healing powder recipe.")
 	assert(RULES.apply(state, "healing_powder"), "A valid medicine recipe should apply.")
 	assert(int(state.materials.herbs) == 1 and int(state.consumables.healing_powder) == 1, "Medicine crafting should consume herbs and produce one combat item.")
+	assert(RULES.apply(state, "thunder_stone"), "Two ore should produce one throwable thunder stone.")
+	assert(int(state.materials.ore) == 3 and int(state.consumables.thunder_stone) == 1, "Thunder-stone crafting should consume exactly two ore.")
 	assert(RULES.apply(state, "temper_blade"), "Enough ore and silver should temper the weapon.")
 	assert(int(state.materials.ore) == 0 and int(state.silver) == 12 and int(state.forge_level) == 1, "Tempering should consume its full cost and raise the permanent level.")
 	state.materials.ore = 9
@@ -21,10 +23,10 @@ func _initialize() -> void:
 	master.silver = 5
 	master.mining = 10
 	assert(RULES.effective_cost(master, "temper_blade").silver == 5 and RULES.can_craft(master, "temper_blade"), "Mining mastery should reduce the tempering silver cost from eight to five.")
-	assert("挖矿大成减免" in str(RULES.options(master)[1][1]), "The workshop choice should disclose the mastery discount before crafting.")
+	assert("挖矿大成减免" in str(RULES.options(master)[2][1]), "The workshop choice should disclose the mastery discount before crafting.")
 	assert(RULES.apply(master, "temper_blade") and int(master.silver) == 0, "The discounted cost should be charged exactly once.")
 	print("Crafting rules tests passed.")
 	quit()
 
 func _state() -> Dictionary:
-	return {"materials": {"herbs": 3, "ore": 3}, "consumables": {"healing_powder": 0}, "silver": 20, "forge_level": 0, "mining": 0}
+	return {"materials": {"herbs": 3, "ore": 5}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 20, "forge_level": 0, "mining": 0}

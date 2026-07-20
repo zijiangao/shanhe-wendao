@@ -72,6 +72,8 @@ static func player_action(battle: Dictionary, player: Dictionary, action: String
 			return _frost_guard(battle, player)
 		"heal":
 			return _use_healing_powder(battle, player)
+		"thunder_stone":
+			return _use_thunder_stone(battle, player, target, rng)
 		"brace":
 			return _hero_brace(battle, player)
 		_:
@@ -196,6 +198,26 @@ static func _use_healing_powder(battle: Dictionary, player: Dictionary) -> Dicti
 	battle.result = "沈羽服下回春散，恢复%d点气血。" % (int(player.hp) - before)
 	_clear_effect(battle)
 	return {"ok": true, "battle": battle, "damage": 0, "healed": int(player.hp) - before, "error": ""}
+
+static func _use_thunder_stone(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) != "hero":
+		return _failure("霹雳石只能由沈羽使用。")
+	var consumables: Dictionary = player.get("consumables", {})
+	if int(consumables.get("thunder_stone", 0)) <= 0:
+		return _failure("行囊中没有霹雳石。")
+	if not RULES.can_attack_cell(battle, target, true, 1, 0):
+		return _failure("霹雳石只能投向同一直线三格内的敌人。")
+	var enemy_index := RULES.enemy_at(battle, target)
+	var old_armor := RULES.enemy_armor(battle.enemies[enemy_index])
+	var damage := 8 + int(player.get("mining", 0)) / 2 + TRAINING_RULES.gathering_bonus(int(player.get("mining", 0))) + _roll_range(rng, 0, 2)
+	player.consumables.thunder_stone = int(player.consumables.thunder_stone) - 1
+	battle.enemies[enemy_index].armor = maxi(0, old_armor - 1)
+	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
+	battle.ap = int(battle.ap) - 1
+	battle.result = "霹雳石命中%s，造成%d点伤害并削去1点护甲！" % [battle.enemies[enemy_index].name, damage]
+	battle.skill_flash = true
+	battle.skill_name = "霹 雳 石"
+	return _success(battle, damage)
 
 static func _hero_brace(battle: Dictionary, player: Dictionary) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) != "hero":

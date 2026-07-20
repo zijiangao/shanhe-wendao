@@ -31,5 +31,6 @@ func _capture() -> void:
 	valid = valid and texts.any(func(value: String): return "演武课题" in value and "兵器方向：刀法" in value)
 	valid = valid and texts.any(func(value: String): return "青云快剑" in value)
 	valid = valid and buttons.any(func(value: String): return "断岳刀法" in value and "6真气" in value)
+	valid = valid and buttons.any(func(value: String): return "霹雳石 ×0" in value)
 	print("Qingyun sparring preview saved to: %s" % ProjectSettings.globalize_path(output_path))
 	quit(0 if valid else 22)

@@ -140,14 +140,19 @@ func _verify_training_flow() -> void:
 
 func _verify_crafting_flow() -> void:
 	GameState.new_game()
-	GameState.data.materials = {"herbs": 2, "ore": 3}
+	GameState.data.materials = {"herbs": 2, "ore": 5}
 	var medicine_ok := GameState.craft("healing_powder")
+	var stone_ok := GameState.craft("thunder_stone")
 	var forge_ok := GameState.craft("temper_blade")
 	var battle_ok := GameState.start_blackreed_battle()
+	GameState.data.battle.enemies[0].x = 4
+	GameState.data.battle.enemies[0].y = 3
 	GameState.data.hp = 20
-	var outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, "heal")
-	var valid := medicine_ok and forge_ok and battle_ok and bool(outcome.get("ok", false))
+	var stone_outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, "thunder_stone", Vector2i(4, 3))
+	var heal_outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, "heal")
+	var valid := medicine_ok and stone_ok and forge_ok and battle_ok and bool(stone_outcome.get("ok", false)) and bool(heal_outcome.get("ok", false))
 	valid = valid and int(GameState.data.hp) == 32 and int(GameState.data.consumables.healing_powder) == 0
+	valid = valid and int(GameState.data.consumables.thunder_stone) == 0 and int(GameState.data.battle.enemies[0].armor) == 1
 	valid = valid and int(GameState.data.forge_level) == 1 and int(GameState.data.materials.herbs) == 0 and int(GameState.data.materials.ore) == 0
 	print("Crafting flow verification passed." if valid else "Crafting flow verification failed.")
 	get_tree().quit(0 if valid else 16)
@@ -1388,7 +1393,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.58.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.59.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1669,7 +1674,7 @@ func _show_character() -> void:
 	item_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(item_title)
 	var items := Label.new()
-	items.text = "已装备：青锋剑（淬炼 %d/3）\n材料：药材 %d · 矿石 %d · 回春散 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
+	items.text = "已装备：青锋剑（淬炼 %d/3）\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
 	items.add_theme_font_size_override("font_size", 17)
 	items.add_theme_color_override("font_color", Color("#f4eee2"))
 	info.add_child(items)
@@ -2005,6 +2010,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 			var attack_valid: bool = battle_mode == "attack" and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, cell, true, int(GameState.data.qi), TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)))
 			var blade_valid: bool = battle_mode == "blade_skill" and int(GameState.data.qi) >= BATTLE_ENGINE.BLADE_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
+			var thunder_valid: bool = battle_mode == "thunder_stone" and int(GameState.data.consumables.get("thunder_stone", 0)) > 0 and BATTLE_RULES.can_attack_cell(battle, cell, true, 1, 0)
 			var frost_valid: bool = battle_mode == "frost_dash" and BATTLE_RULES.can_frost_dash(battle, cell)
 			if move_valid:
 				data.color = "#28678aee"
@@ -2014,6 +2020,8 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				data.color = "#c18b2fee"
 			elif blade_valid:
 				data.color = "#b85b35ee"
+			elif thunder_valid:
+				data.color = "#8a6a36ee"
 			elif frost_valid:
 				data.color = "#668fbbee"
 			elif boss_danger:
@@ -2037,7 +2045,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 					var trait_text := BATTLE_RULES.enemy_trait_text(enemy)
 					data.text = "%s\n%d/%d%s" % [enemy.name, enemy.hp, enemy.max_hp, "\n" + trait_text if not trait_text.is_empty() else ""]
 					data.token = 1 if enemy.name == "黑苇寨主" else (3 if "弓手" in enemy.name else 2)
-					if not attack_valid and not skill_valid and not blade_valid and not frost_valid:
+					if not attack_valid and not skill_valid and not blade_valid and not thunder_valid and not frost_valid:
 						data.color = "#71322dee"
 			cells.append(data)
 	return cells
@@ -2233,7 +2241,7 @@ func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) ->
 		AudioFeedback.play("error")
 		_toast(str(outcome.error))
 		return
-	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "blade_skill": "skill", "frost_dash": "skill", "frost_guard": "turn", "brace": "turn", "heal": "confirm"}.get(action, "confirm"))
+	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "blade_skill": "skill", "thunder_stone": "heavy_hit", "frost_dash": "skill", "frost_guard": "turn", "brace": "turn", "heal": "confirm"}.get(action, "confirm"))
 	var battle: Dictionary = outcome.battle
 	if _check_tactical_victory(battle):
 		SaveManager.save_auto()
@@ -2393,7 +2401,7 @@ func _show_demo_complete() -> void:
 	panel.add_child(menu)
 
 func _mode_name(mode: String) -> String:
-	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "blade_skill": "断岳刀法", "inspect": "查看战场"}.get(mode, mode)
+	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "blade_skill": "断岳刀法", "thunder_stone": "霹雳石", "inspect": "查看战场"}.get(mode, mode)
 
 func _battle_token(index: int) -> AtlasTexture:
 	var token := AtlasTexture.new()

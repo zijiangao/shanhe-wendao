@@ -50,7 +50,7 @@ func new_game() -> void:
 		"materials": {"herbs": 0, "ore": 0},
 		"herbarium": {},
 		"mineralogy": {},
-		"consumables": {"healing_powder": 0},
+		"consumables": {"healing_powder": 0, "thunder_stone": 0},
 		"forge_level": 0,
 		"flags": [],
 		"quest_stage": "meet_master",
@@ -176,8 +176,8 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 func craft(recipe_id: String) -> bool:
 	if not CRAFTING_RULES.apply(data, recipe_id):
 		return false
-	var milestone := "crafted_healing_powder" if recipe_id == "healing_powder" else "tempered_blade"
-	if milestone not in data.flags:
+	var milestone: String = str({"healing_powder": "crafted_healing_powder", "thunder_stone": "crafted_thunder_stone", "temper_blade": "tempered_blade"}.get(recipe_id, ""))
+	if not milestone.is_empty() and milestone not in data.flags:
 		data.flags.append(milestone)
 	add_log("青云工坊完成：%s。" % str(CRAFTING_RULES.RECIPES[recipe_id].title))
 	state_changed.emit()
@@ -470,7 +470,7 @@ func _migrate_and_validate() -> void:
 	data.training_records = TRAINING_RULES.normalize_records(data.get("training_records", {}))
 	data.sparring_record = SPARRING_RULES.normalize_record(data.get("sparring_record", {}))
 	if typeof(data.consumables) != TYPE_DICTIONARY:
-		data.consumables = {"healing_powder": 0}
+		data.consumables = {"healing_powder": 0, "thunder_stone": 0}
 	# Convert 0.27/0.28 herb items into the dedicated material inventory.
 	var migrated_items: Array = []
 	for item in data.items:
@@ -548,6 +548,7 @@ func _migrate_and_validate() -> void:
 			normalized_mineralogy[specimen_id] = count
 	data.mineralogy = normalized_mineralogy
 	data.consumables.healing_powder = maxi(0, int(data.consumables.get("healing_powder", 0)))
+	data.consumables.thunder_stone = maxi(0, int(data.consumables.get("thunder_stone", 0)))
 	data.forge_level = clampi(int(data.get("forge_level", 0)), 0, CRAFTING_RULES.MAX_FORGE_LEVEL)
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
