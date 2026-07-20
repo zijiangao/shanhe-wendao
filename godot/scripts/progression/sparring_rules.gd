@@ -1,6 +1,24 @@
 class_name SparringRules
 extends RefCounted
 
+const ROTATIONS := [
+	{"id": "swift_swords", "name": "快剑对练", "focus": "练习走位与护体", "result": "两名同门抱剑行礼，以连环快剑检验你的步法。", "blocked": [[3, 1], [4, 4]], "enemies": [
+		{"name": "青云快剑", "role": "duelist", "hp": 14, "max_hp": 14, "attack": 3, "range": 1, "x": 6, "y": 2},
+		{"name": "青云守式", "role": "melee", "hp": 18, "max_hp": 18, "attack": 4, "range": 1, "x": 6, "y": 4}
+	]},
+	{"id": "blade_line", "name": "破阵刀课", "focus": "练习破甲与回气", "result": "演武弟子结成刀阵，逼你在强攻间隙调整真气。", "blocked": [[3, 2], [5, 4]], "enemies": [
+		{"name": "演武刀首", "role": "brute", "hp": 22, "max_hp": 22, "attack": 5, "range": 1, "x": 6, "y": 2},
+		{"name": "刀阵侧锋", "role": "melee", "hp": 13, "max_hp": 13, "attack": 3, "range": 1, "x": 5, "y": 4}
+	]},
+	{"id": "bow_step", "name": "弓步协同", "focus": "练习威胁排序与接近远敌", "result": "弓手居后压阵，持剑弟子封住前路，考验你的进攻次序。", "blocked": [[3, 1], [4, 3], [3, 5]], "enemies": [
+		{"name": "青云练弓手", "role": "archer", "hp": 12, "max_hp": 12, "attack": 3, "range": 4, "x": 6, "y": 1},
+		{"name": "封步剑手", "role": "duelist", "hp": 17, "max_hp": 17, "attack": 4, "range": 1, "x": 5, "y": 4}
+	]}
+]
+
+static func rotation_for(week: int) -> Dictionary:
+	return Dictionary(ROTATIONS[posmod(week - 1, ROTATIONS.size())]).duplicate(true)
+
 static func empty_record() -> Dictionary:
 	return {"attempts": 0, "best_turns": 0, "best_grade": "--"}
 

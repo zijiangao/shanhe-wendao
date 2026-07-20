@@ -222,19 +222,17 @@ func start_blackreed_battle() -> bool:
 	return true
 
 func start_qingyun_spar_battle() -> bool:
+	var rotation := SPARRING_RULES.rotation_for(int(data.week))
 	if not spend_week():
 		return false
 	data.qi = 20
 	data.battle = {
-		"battle_id": "qingyun_spar", "name": "青云门同门切磋", "width": 8, "height": 6,
+		"battle_id": "qingyun_spar", "rotation_id": rotation.id, "name": "青云门 · %s" % rotation.name, "width": 8, "height": 6,
 		"player_x": 1, "player_y": 3, "ap": 2, "active_unit": "hero", "hero_guard": 0, "turn": 1,
 		"objective": {"type": "eliminate"},
-		"result": "两名同门抱剑行礼。这是一场点到即止的晨间演武。",
-		"blocked": [[3, 1], [4, 4]],
-		"enemies": [
-			{"name": "青云快剑", "role": "duelist", "hp": 14, "max_hp": 14, "attack": 3, "range": 1, "x": 6, "y": 2},
-			{"name": "青云守式", "role": "melee", "hp": 18, "max_hp": 18, "attack": 4, "range": 1, "x": 6, "y": 4}
-		]
+		"result": rotation.result,
+		"blocked": rotation.blocked,
+		"enemies": rotation.enemies
 	}
 	_apply_current_difficulty()
 	capture_battle_checkpoint()

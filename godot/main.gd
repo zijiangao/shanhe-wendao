@@ -844,7 +844,8 @@ func _location_action_requested(action_id: String) -> void:
 			choice_event = "training"
 			choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
 			choice_options = TRAINING_RULES.options(GameState.data)
-			choice_options.append(["实战切磋 · 青云演武场", "短战练习走位、护体与回气；%s。" % SPARRING_RULES.record_text(GameState.data.get("sparring_record", {})), "qingyun_spar"])
+			var spar_rotation := SPARRING_RULES.rotation_for(int(GameState.data.week))
+			choice_options.append(["实战切磋 · %s" % spar_rotation.name, "%s；%s。" % [spar_rotation.focus, SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))], "qingyun_spar"])
 			screen = "choice"
 			_rebuild()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
@@ -1377,7 +1378,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.49.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.50.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
