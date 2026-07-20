@@ -31,6 +31,9 @@ static func grade_for(turns: int) -> String:
 		return "B"
 	return "C"
 
+static func bonus_xp_for_grade(grade: String) -> int:
+	return {"S": 4, "A": 2, "B": 1}.get(grade, 0)
+
 static func record_victory(record_value: Variant, turns: int) -> Dictionary:
 	var record := normalize_record(record_value)
 	var safe_turns := maxi(1, turns)
@@ -39,7 +42,8 @@ static func record_victory(record_value: Variant, turns: int) -> Dictionary:
 	if new_best:
 		record.best_turns = safe_turns
 		record.best_grade = grade_for(safe_turns)
-	return {"record": record, "grade": grade_for(safe_turns), "new_best": new_best}
+	var grade := grade_for(safe_turns)
+	return {"record": record, "grade": grade, "bonus_xp": bonus_xp_for_grade(grade), "new_best": new_best}
 
 static func normalize_record(value: Variant) -> Dictionary:
 	var record := empty_record()

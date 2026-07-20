@@ -1378,7 +1378,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.50.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.51.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2398,6 +2398,8 @@ func _show_victory() -> void:
 		last_rewards = REWARD_RULES.base_for(reward_battle_id)
 		last_rewards.turns = int(pending.get("turns", last_rewards.get("turns", 0)))
 		last_rewards.grade = str(pending.get("grade", ""))
+		last_rewards.performance_xp = int(pending.get("performance_xp", 0))
+		last_rewards.xp = int(last_rewards.xp) + int(last_rewards.performance_xp)
 		last_rewards.new_best = bool(pending.get("new_best", false))
 	var art := TextureRect.new()
 	art.texture = _battle_texture(last_battle_id)
@@ -2429,7 +2431,7 @@ func _show_victory() -> void:
 	panel.add_child(story)
 	if not str(last_rewards.get("grade", "")).is_empty():
 		var grade := Label.new()
-		grade.text = "演武评价  %s%s" % [last_rewards.grade, " · 新纪录" if bool(last_rewards.get("new_best", false)) else ""]
+		grade.text = "演武评价  %s · 表现修为 +%d%s" % [last_rewards.grade, last_rewards.get("performance_xp", 0), " · 新纪录" if bool(last_rewards.get("new_best", false)) else ""]
 		grade.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		grade.add_theme_font_size_override("font_size", 26)
 		grade.add_theme_color_override("font_color", Color("#dfbf74"))

@@ -318,7 +318,9 @@ func finish_battle(victory: bool) -> void:
 		if battle_id == "qingyun_spar":
 			var spar_result := SPARRING_RULES.record_victory(data.get("sparring_record", {}), battle_turns)
 			data.sparring_record = spar_result.record
+			data.xp += int(spar_result.bonus_xp)
 			data.pending_reward.grade = spar_result.grade
+			data.pending_reward.performance_xp = spar_result.bonus_xp
 			data.pending_reward.new_best = spar_result.new_best
 		if battle_id == "wuku_finale":
 			if "武库钥印" not in data.items:

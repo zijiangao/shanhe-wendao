@@ -105,8 +105,8 @@ func _initialize() -> void:
 	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Sparring should spend exactly one week and energy.")
 	state.finish_battle(true)
 	assert(str(state.data.quest_stage) == spar_stage and "玄铁令" not in state.data.items and "villain_revealed" not in state.data.flags, "Optional sparring must not advance or contaminate the main story.")
-	assert(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 4, "Sparring should grant its lighter base reward and save the choice.")
-	assert(str(state.data.pending_reward.grade) == "S" and state.data.pending_reward.new_best and int(state.data.sparring_record.best_turns) == 1, "A sparring victory should persist its grade and first personal best.")
+	assert(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 8, "An S-grade spar should combine its light base reward with the performance bonus.")
+	assert(str(state.data.pending_reward.grade) == "S" and int(state.data.pending_reward.performance_xp) == 4 and state.data.pending_reward.new_best and int(state.data.sparring_record.best_turns) == 1, "A sparring victory should persist its grade, bonus, and first personal best.")
 	assert(state.claim_pending_reward("fellowship") and int(state.data.faction_relations.qingyun) == 2, "Sparring should add the selected reward to the starting Qingyun relationship.")
 
 	state.new_game()
