@@ -125,6 +125,7 @@ func evaluate_state(state: Dictionary) -> void:
 	if highest_mastery >= 3: unlock("ACH_PRACTICED_HAND")
 	var flags: Array = state.get("flags", [])
 	if "training_s_grade" in flags: unlock("ACH_TRAINING_EXCELLENCE")
+	if "spar_s_grade" in flags: unlock("ACH_SPAR_MASTER")
 	if "training_event_seen" in flags: unlock("ACH_FORTUNATE_ENCOUNTER")
 	if "crafted_healing_powder" in flags: unlock("ACH_FIELD_APOTHECARY")
 	if "tempered_blade" in flags: unlock("ACH_FIRST_TEMPER")

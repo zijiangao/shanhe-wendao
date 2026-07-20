@@ -108,6 +108,7 @@ func _initialize() -> void:
 	assert(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 8, "An S-grade spar should combine its light base reward with the performance bonus.")
 	assert(str(state.data.pending_reward.grade) == "S" and int(state.data.pending_reward.performance_xp) == 4 and state.data.pending_reward.new_best and int(state.data.sparring_record.best_turns) == 1, "A sparring victory should persist its grade, bonus, and first personal best.")
 	assert(str(state.data.pending_reward.discipline) == "swordsmanship" and int(state.data.swordsmanship) == 2, "The default S-grade sword spar should improve swordsmanship twice.")
+	assert("spar_s_grade" in state.data.flags, "An S-grade spar should persist its Steam achievement milestone.")
 	assert(state.claim_pending_reward("fellowship") and int(state.data.faction_relations.qingyun) == 2, "Sparring should add the selected reward to the starting Qingyun relationship.")
 
 	state.new_game()

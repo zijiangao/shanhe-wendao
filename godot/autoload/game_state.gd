@@ -329,6 +329,8 @@ func finish_battle(victory: bool) -> void:
 			data.pending_reward.discipline = spar_discipline
 			data.pending_reward.skill_gain = skill_gain
 			data.pending_reward.new_best = spar_result.new_best
+			if str(spar_result.grade) == "S" and "spar_s_grade" not in data.flags:
+				data.flags.append("spar_s_grade")
 		if battle_id == "wuku_finale":
 			if "武库钥印" not in data.items:
 				data.items.append("武库钥印")

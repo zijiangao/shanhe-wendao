@@ -52,7 +52,7 @@ func _initialize() -> void:
 	var backend = LOCAL_BACKEND.new(TEST_PATH)
 	assert(service.use_backend(backend), "The local Steam backend should initialize without the SDK.")
 	assert(not service.is_live(), "The local backend must never claim a live Steam connection.")
-	assert(service.definitions.size() == 19, "The commercial achievement set should cover progression, mastery, collections, crafting, finale, and endings.")
+	assert(service.definitions.size() == 20, "The commercial achievement set should cover progression, sparring, mastery, collections, crafting, finale, and endings.")
 	assert(service.release_data_errors().is_empty(), "Shipping achievement metadata should satisfy the Steam release contract.")
 	var ids: Dictionary = {}
 	for definition in service.definitions:
@@ -74,7 +74,7 @@ func _initialize() -> void:
 
 	var state := {
 		"quest_stage": "game_complete",
-		"flags": ["villain_revealed", "game_complete", "training_s_grade", "training_event_seen", "crafted_healing_powder", "tempered_blade"],
+		"flags": ["villain_revealed", "game_complete", "training_s_grade", "spar_s_grade", "training_event_seen", "crafted_healing_powder", "tempered_blade"],
 		"companions": ["lin_qingshuang"],
 		"items": ["思过崖通行令"],
 		"skill_mastery": {"cloud": 3, "frost": 0, "frost_guard": 0},
@@ -85,7 +85,7 @@ func _initialize() -> void:
 		"mineralogy": {"ironstone": 1, "silver_sand": 1, "fire_copper": 1, "star_marrow": 1}
 	}
 	service.evaluate_state(state)
-	assert(service.unlocked_count() == 17, "One completed route should unlock progression, mastery, collections, crafting, and exactly one ending.")
+	assert(service.unlocked_count() == 18, "One completed route should unlock progression, sparring, mastery, collections, crafting, and exactly one ending.")
 	state.ending.id = "seal"
 	service.evaluate_state(state)
 	state.ending.id = "preserve"

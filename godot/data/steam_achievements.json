@@ -48,6 +48,12 @@
     "hidden": false
   },
   {
+    "api_name": "ACH_SPAR_MASTER",
+    "title": "三招定胜",
+    "description": "在青云实战切磋中取得S级评价。",
+    "hidden": false
+  },
+  {
     "api_name": "ACH_FORTUNATE_ENCOUNTER",
     "title": "机缘自来",
     "description": "在修炼结束后触发一次专项奇遇。",
