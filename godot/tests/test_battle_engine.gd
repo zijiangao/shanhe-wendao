@@ -13,6 +13,7 @@ func _initialize() -> void:
 	_test_specialty_damage_bonus()
 	_test_specialty_mastery_perks()
 	_test_armor_and_exposure_combo()
+	_test_equipped_gear_bonuses()
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
 	_test_ranged_enemy_attack_and_cover()
@@ -276,6 +277,80 @@ func _test_armor_and_exposure_combo() -> void:
 	var plain_skill: Dictionary = ENGINE.player_action(plain, _player_fixture(), "skill", Vector2i(1, 4), _seeded_rng())
 	assert(int(skill.damage) == int(plain_skill.damage) + 4, "Flowing Cloud Sword should gain four damage per exposure stack.")
 	assert(int(armored.enemies[0].exposure) == 0, "Flowing Cloud Sword should consume all exposure stacks.")
+
+func _test_equipped_gear_bonuses() -> void:
+	var bare_battle := _fixture()
+	bare_battle.erase("ally")
+	bare_battle.active_unit = "hero"
+	bare_battle.ap = 2
+	bare_battle.enemies[0].x = 2
+	bare_battle.enemies[0].y = 1
+	bare_battle.enemies[0].hp = 100
+	bare_battle.enemies[0].max_hp = 100
+	var bare_result: Dictionary = ENGINE.player_action(bare_battle, _player_fixture(), "attack", Vector2i(2, 1), _seeded_rng())
+
+	var armed_battle := _fixture()
+	armed_battle.erase("ally")
+	armed_battle.active_unit = "hero"
+	armed_battle.ap = 2
+	armed_battle.enemies[0].x = 2
+	armed_battle.enemies[0].y = 1
+	armed_battle.enemies[0].hp = 100
+	armed_battle.enemies[0].max_hp = 100
+	var armed_player := _player_fixture()
+	armed_player.equipped_weapon = "cold_crow_blade"
+	var armed_result: Dictionary = ENGINE.player_action(armed_battle, armed_player, "attack", Vector2i(2, 1), _seeded_rng())
+	assert(bool(bare_result.ok) and bool(armed_result.ok), "Both attacks must land to compare their damage.")
+	assert(int(armed_result.damage) == int(bare_result.damage) + 2, "An equipped weapon should add its flat attack bonus (two, for the cold crow blade) to normal-attack damage.")
+
+	# A weapon with no matching catalog entry (a corrupted or removed id) must
+	# behave exactly like being unarmed rather than erroring out.
+	var unknown_player := _player_fixture()
+	unknown_player.equipped_weapon = "not_a_real_weapon"
+	var unknown_battle := _fixture()
+	unknown_battle.erase("ally")
+	unknown_battle.active_unit = "hero"
+	unknown_battle.ap = 2
+	unknown_battle.enemies[0].x = 2
+	unknown_battle.enemies[0].y = 1
+	unknown_battle.enemies[0].hp = 100
+	unknown_battle.enemies[0].max_hp = 100
+	var unknown_result: Dictionary = ENGINE.player_action(unknown_battle, unknown_player, "attack", Vector2i(2, 1), _seeded_rng())
+	assert(int(unknown_result.damage) == int(bare_result.damage), "An unrecognized equipped_weapon id must contribute zero bonus, not crash or guess.")
+
+	# Armor should reduce incoming hero damage by an exact flat amount without
+	# affecting the ally, who has her own separate guard resource.
+	var unarmored := _fixture()
+	unarmored.active_unit = "hero"
+	unarmored.ap = 2
+	unarmored.hero_guard = 0
+	unarmored.enemies[0].x = 2
+	unarmored.enemies[0].y = 1
+	var ally_hp_before := int(unarmored.ally.hp)
+	var unarmored_outcome: Dictionary = ENGINE.enemy_turn(unarmored, 20, _seeded_rng())
+
+	var armored_hero := _fixture()
+	armored_hero.active_unit = "hero"
+	armored_hero.ap = 2
+	armored_hero.hero_guard = 0
+	armored_hero.enemies[0].x = 2
+	armored_hero.enemies[0].y = 1
+	var armored_outcome: Dictionary = ENGINE.enemy_turn(armored_hero, 20, _seeded_rng(), 3)
+	assert(int(armored_outcome.hero_hp) == int(unarmored_outcome.hero_hp) + 3, "Three points of equipped armor should reduce the same seeded strike by exactly three, a flat reduction rather than a percentage.")
+	assert(int(armored_hero.ally.hp) == ally_hp_before, "Hero-only armor must never reduce damage the ally takes from an unrelated hit.")
+
+	# Omitting the new parameter entirely (three positional args, exactly as
+	# every pre-existing call site in this file already does) must behave
+	# identically to explicitly passing zero armor -- this is the contract
+	# that keeps every other test in this file valid without modification.
+	var implicit_battle := _fixture()
+	implicit_battle.active_unit = "hero"
+	implicit_battle.ap = 2
+	implicit_battle.hero_guard = 0
+	implicit_battle.enemies[0].x = 2
+	implicit_battle.enemies[0].y = 1
+	var implicit_outcome: Dictionary = ENGINE.enemy_turn(implicit_battle, 20, _seeded_rng())
+	assert(int(implicit_outcome.hero_hp) == int(unarmored_outcome.hero_hp), "Calling enemy_turn with only three positional arguments must default armor to zero.")
 
 func _test_invalid_action_preserves_resources() -> void:
 	var battle := _fixture()

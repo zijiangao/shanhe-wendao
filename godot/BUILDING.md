@@ -40,7 +40,8 @@ $tests = @(
     "test_demo_policy.gd",
 	"test_qingyun_spar.gd",
 	"test_sparring_rules.gd",
-	"test_training_keyboard_input.gd"
+	"test_training_keyboard_input.gd",
+	"test_shop_rules.gd"
 )
 
 foreach ($test in $tests) {
@@ -95,6 +96,8 @@ Capture a live martial-skill impact frame after changing combat presentation:
 & $godot --path $project --script res://tests/test_character_view.gd
 
 & $godot --path $project --script res://tests/test_training_menu_view.gd
+
+& $godot --path $project --script res://tests/test_market_view.gd
 ```
 
 `test_crafting_view.gd` also confirms the workshop's fourth "离开工坊" option stays enabled and actually returns to `location` when every real recipe is disabled (a fresh save has zero herbs/ore, so this is the default state for a new player, not an edge case) — the workshop reuses the generic `choice` screen, which `NAVIGATION_RULES.back_action()` deliberately blocks from any back/cancel action since most `choice` screens are one-way story decisions. Without that fixed fourth option, a player who can't yet afford any recipe has no way to leave the screen.
@@ -105,6 +108,14 @@ Capture a live martial-skill impact frame after changing combat presentation:
 `test_training_menu_view.gd` covers the same gap on the Qingyun training menu, which shares the same generic `choice` screen: a top-level "暂不修炼" option that returns to `location` without spending a week, and a "返回" option on the nested sparring weapon-choice sub-menu that returns to the training menu rather than exiting the training flow entirely. `ChoiceView` itself now wraps its option list in a `ScrollContainer` — with the two escape options added, the training menu can show six options at once, enough to risk the same fixed-height overflow the character sheet hit.
 
 `test_character_view.gd` requires the trailing skill-mastery line to actually be reachable inside the info panel's `ScrollContainer` after scrolling to the bottom, not merely present in the node tree — the panel's content (specialties, skills, inventory, herbarium/mineralogy, companions, faction relations, mastery) is long enough to overflow a fixed 1280x720 layout without it.
+
+## Shop system (西市 · 洛阳)
+
+洛阳城's "西市 · 商旅云集" hotspot (previously a one-line static dialogue) opens a real shop: `scripts/progression/shop_rules.gd` defines a small hand-authored catalog of three weapons and three armors (`ShopRules.WEAPONS`/`ARMORS`, flat `attack_bonus`/`defense_bonus` each) plus per-unit buy/sell prices for the four existing tradeable goods (herbs, ore, healing_powder, thunder_stone). It reuses the existing `ChoiceView` + nested `choice_event` sub-menu pattern that the training menu's `spar_focus` sub-menu established — `market` → `market_weapons`/`market_armor`/`market_goods`, each with a "返回" back to its parent — rather than a new dedicated view class, since a single-list-of-buttons-with-disabled-state is exactly what crafting's workshop already proved out for a very similar "browse options, spend a resource" flow.
+
+Weapons and armor are real equipped items (`GameState.data.equipped_weapon`/`equipped_armor`, plus `owned_weapons`/`owned_armors` arrays), independent of and additive with the pre-existing `forge_level` tempering mechanic (0-3, from the workshop's "淬炼青锋" recipe) — a player's total attack bonus is tempering *plus* whatever weapon is equipped, not one replacing the other. Buying a weapon/armor immediately equips it; owning more than one lets a later choice-screen visit re-equip an older piece via `equip_weapon`/`equip_armor`; selling the currently equipped piece refunds half its price and leaves the hero bare-handed/unarmored rather than silently falling back to a different owned piece.
+
+**Armor is a genuinely new combat mechanic, not an extension of an existing one** — before this, the player had zero persistent damage mitigation; only the temporary "运气护体" (`hero_guard`) resource existed. `BattleEngine.enemy_turn()` gained a fourth parameter, `hero_armor: int = 0`, **appended after `rng` rather than inserted before it** — `test_battle_engine.gd` has roughly twenty call sites that pass `rng` as a bare third positional argument, and inserting a parameter ahead of it would have silently fed those calls' RNG objects into the wrong slot. Armor is subtracted from an incoming hit before `hero_guard` absorbs whatever remains (mirroring how enemy armor already works against the player: a permanent flat layer, with any temporary shield stacked on top), and only ever applies to hits landing on the hero — 林清霜 keeps her own separate `guard` stat and is untouched by the hero's personal gear. `test_shop_rules.gd` covers the buy/equip/sell state machine directly; `test_battle_engine.gd`'s `_test_equipped_gear_bonuses()` covers the combat-formula integration, including an explicit check that calling `enemy_turn()` with only three positional arguments (every pre-existing call site's shape) still behaves as zero armor.
 
 The training result screen also lists a per-round breakdown (elapsed time, feedback tier, and score for each of the session's rounds, from `training_round_details` in `main.gd`) beneath the summary card, so a player can see exactly which hit cost them the grade rather than only the total.
 

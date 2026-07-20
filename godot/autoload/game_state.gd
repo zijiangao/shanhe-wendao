@@ -8,6 +8,7 @@ const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rul
 const TRAINING_EVENT_RULES := preload("res://scripts/progression/training_event_rules.gd")
 const SPARRING_RULES := preload("res://scripts/progression/sparring_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
+const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 
@@ -52,6 +53,10 @@ func new_game() -> void:
 		"mineralogy": {},
 		"consumables": {"healing_powder": 0, "thunder_stone": 0},
 		"forge_level": 0,
+		"equipped_weapon": "",
+		"equipped_armor": "",
+		"owned_weapons": [],
+		"owned_armors": [],
 		"flags": [],
 		"quest_stage": "meet_master",
 		"investigations": [],
@@ -75,7 +80,8 @@ func new_game() -> void:
 
 func power() -> int:
 	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
-	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2 + int(data.get("forge_level", 0)) * 2)
+	var equipment_power := int(data.get("forge_level", 0)) * 2 + SHOP_RULES.weapon_attack_bonus(data) + SHOP_RULES.armor_defense_bonus(data)
+	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2 + equipment_power)
 
 func weeks_left() -> int:
 	return maxi(0, FINAL_WEEK - int(data.week))
@@ -550,6 +556,16 @@ func _migrate_and_validate() -> void:
 	data.consumables.healing_powder = maxi(0, int(data.consumables.get("healing_powder", 0)))
 	data.consumables.thunder_stone = maxi(0, int(data.consumables.get("thunder_stone", 0)))
 	data.forge_level = clampi(int(data.get("forge_level", 0)), 0, CRAFTING_RULES.MAX_FORGE_LEVEL)
+	if typeof(data.get("owned_weapons", [])) != TYPE_ARRAY:
+		data.owned_weapons = []
+	data.owned_weapons = Array(data.owned_weapons).filter(func(id): return SHOP_RULES.WEAPONS.has(str(id)))
+	if typeof(data.get("owned_armors", [])) != TYPE_ARRAY:
+		data.owned_armors = []
+	data.owned_armors = Array(data.owned_armors).filter(func(id): return SHOP_RULES.ARMORS.has(str(id)))
+	if str(data.get("equipped_weapon", "")) not in data.owned_weapons:
+		data.equipped_weapon = ""
+	if str(data.get("equipped_armor", "")) not in data.owned_armors:
+		data.equipped_armor = ""
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
 	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:

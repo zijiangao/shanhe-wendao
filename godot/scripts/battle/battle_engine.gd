@@ -4,6 +4,7 @@ extends RefCounted
 const RULES := preload("res://scripts/battle/battle_rules.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const BLADE_QI_COST := 6
 
 static func is_victory(battle: Dictionary) -> bool:
@@ -25,15 +26,15 @@ static func objective_text(battle: Dictionary) -> String:
 	return "击败所有敌人"
 
 static func normal_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0))
+	var base := int(player.get("strength", 0)) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player)
 	return Vector2i(base, base + 2)
 
 static func cloud_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3
+	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3
 	return Vector2i(base, base + 3)
 
 static func blade_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0))
+	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player)
 	return Vector2i(base, base + 3)
 
 static func blade_armor_break(player: Dictionary) -> int:
@@ -52,7 +53,11 @@ static func hero_action_help(player: Dictionary) -> String:
 	var blade := blade_damage_range(player)
 	var exposure := TRAINING_RULES.attack_exposure_gain(int(player.get("bladesmanship", 0)))
 	var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
-	return "普攻 %d–%d（护甲前）· 命中制造%d层破绽\n剑法 %d–%d（无视护甲）· 引爆破绽 · %d真气\n刀法 %d–%d（相邻）· 永久破甲%d · %d真气\n护体%d并回3气 · 回春散恢复%d气血" % [normal.x, normal.y, exposure, cloud.x, cloud.y, qi_cost, blade.x, blade.y, blade_armor_break(player), BLADE_QI_COST, hero_guard_amount(player), healing_amount(player)]
+	var text := "普攻 %d–%d（护甲前）· 命中制造%d层破绽\n剑法 %d–%d（无视护甲）· 引爆破绽 · %d真气\n刀法 %d–%d（相邻）· 永久破甲%d · %d真气\n护体%d并回3气 · 回春散恢复%d气血" % [normal.x, normal.y, exposure, cloud.x, cloud.y, qi_cost, blade.x, blade.y, blade_armor_break(player), BLADE_QI_COST, hero_guard_amount(player), healing_amount(player)]
+	var armor := SHOP_RULES.armor_defense_bonus(player)
+	if armor > 0:
+		text += "\n随身护甲：每次受创减免%d点" % armor
+	return text
 
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
 	if int(battle.ap) <= 0:
@@ -93,7 +98,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	if not RULES.can_attack_cell(battle, target, false, int(player.qi)):
 		return _failure("普通攻击只能命中相邻敌人。")
 	var enemy_index := RULES.enemy_at(battle, target)
-	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0))
+	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player)
 	var armor := RULES.enemy_armor(battle.enemies[enemy_index])
 	var damage := maxi(1, base_damage + _roll_bonus(rng) - armor)
 	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
@@ -117,7 +122,7 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	var enemy_index := RULES.enemy_at(battle, target)
 	var exposure := RULES.enemy_exposure(battle.enemies[enemy_index])
 	var exposure_bonus := exposure * 4
-	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
+	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
 	player.qi = int(player.qi) - qi_cost
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
 	battle.enemies[enemy_index].exposure = 0
@@ -233,7 +238,7 @@ static func _hero_brace(battle: Dictionary, player: Dictionary) -> Dictionary:
 	battle.skill_name = "运 气 护 体"
 	return _success(battle, 0)
 
-static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenerator = null) -> Dictionary:
+static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenerator = null, hero_armor: int = 0) -> Dictionary:
 	var total_hurt := 0
 	var special_notes: PackedStringArray = []
 	var ally_was_active := battle.has("ally") and int(battle.ally.hp) > 0
@@ -254,8 +259,9 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 			var sweep_damage := int(enemy.attack) + 2 + _roll_bonus(rng)
 			var sweep_hits := 0
 			if RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.player_x), int(battle.player_y))):
-				var hero_blocked := mini(sweep_damage, maxi(0, int(battle.get("hero_guard", 0))))
-				var hero_hurt := sweep_damage - hero_blocked
+				var sweep_after_armor := maxi(0, sweep_damage - hero_armor)
+				var hero_blocked := mini(sweep_after_armor, maxi(0, int(battle.get("hero_guard", 0))))
+				var hero_hurt := sweep_after_armor - hero_blocked
 				battle.hero_guard = maxi(0, int(battle.get("hero_guard", 0)) - hero_blocked)
 				hero_hp = maxi(0, hero_hp - hero_hurt)
 				total_hurt += hero_hurt
@@ -298,6 +304,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				effects.append(_damage_effect(target, hurt, blocked))
 				events.append(_hit_event(str(enemy.name), str(battle.ally.name), target, hurt, blocked, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
 			else:
+				hurt = maxi(0, hurt - hero_armor)
 				var hero_blocked := mini(hurt, maxi(0, int(battle.get("hero_guard", 0))))
 				hurt -= hero_blocked
 				battle.hero_guard = maxi(0, int(battle.get("hero_guard", 0)) - hero_blocked)

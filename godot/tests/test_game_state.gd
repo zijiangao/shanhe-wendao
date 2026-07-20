@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
+
 func _initialize() -> void:
 	var state = load("res://autoload/game_state.gd").new()
 	root.add_child(state)
@@ -146,6 +148,32 @@ func _initialize() -> void:
 	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("sparring") and state.data.tutorial.has("battle_tactics") and state.data.tutorial.has("battle_arts") and state.data.tutorial.has("battle_defense"), "Migration should add every current tutorial progress field.")
 	assert(typeof(state.data.pending_reward) == TYPE_DICTIONARY and state.data.pending_reward.is_empty(), "Older saves should gain an empty pending reward safely.")
 	assert(typeof(state.data.sparring_record) == TYPE_DICTIONARY and int(state.data.sparring_record.attempts) == 0, "Older saves should gain an empty sparring record safely.")
+
+	var pre_shop_save: Dictionary = state.data.duplicate(true)
+	pre_shop_save.erase("equipped_weapon")
+	pre_shop_save.erase("equipped_armor")
+	pre_shop_save.erase("owned_weapons")
+	pre_shop_save.erase("owned_armors")
+	assert(state.import_data(pre_shop_save), "Saves from before the shop system should still migrate.")
+	assert(str(state.data.equipped_weapon) == "" and str(state.data.equipped_armor) == "", "A save with no equipment fields should default to bare-handed and unarmored.")
+	assert(state.data.owned_weapons.is_empty() and state.data.owned_armors.is_empty(), "A save with no equipment fields should default to empty inventories.")
+
+	var corrupted_equipment_save: Dictionary = state.data.duplicate(true)
+	corrupted_equipment_save.owned_weapons = ["iron_sword", "a_deleted_weapon_id"]
+	corrupted_equipment_save.equipped_weapon = "a_deleted_weapon_id"
+	corrupted_equipment_save.owned_armors = "not even an array"
+	corrupted_equipment_save.equipped_armor = "hedgehog_mail"
+	assert(state.import_data(corrupted_equipment_save), "A save with stale or malformed equipment data must still load.")
+	assert(state.data.owned_weapons == ["iron_sword"], "An unrecognized weapon id must be dropped from the owned list on migration.")
+	assert(str(state.data.equipped_weapon) == "", "Equipping a weapon id that failed to migrate must fall back to bare-handed rather than crash or keep a dangling reference.")
+	assert(typeof(state.data.owned_armors) == TYPE_ARRAY and state.data.owned_armors.is_empty(), "A non-array owned_armors field must be repaired to an empty list.")
+	assert(str(state.data.equipped_armor) == "", "An armor id that is not actually owned (post-repair) must be cleared rather than trusted.")
+
+	state.new_game()
+	state.data.silver = 1000
+	var power_before := int(state.power())
+	assert(SHOP_RULES.buy_weapon(state.data, "dragon_etched_sword") and SHOP_RULES.buy_armor(state.data, "cold_jade_armor"), "A well-funded fresh save should be able to gear up at the shop.")
+	assert(int(state.power()) == power_before + 6, "Equipping the top-tier sword (+3 attack) and armor (+3 defense) should raise reported combat power by exactly six.")
 
 	state.new_game()
 	state.data.energy = 3

@@ -30,6 +30,7 @@ const SPARRING_RULES := preload("res://scripts/progression/sparring_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
+const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 const CREDITS_PATH := "res://data/credits.json"
@@ -96,6 +97,8 @@ func _ready() -> void:
 		call_deferred("_verify_training_flow")
 	elif "--verify-crafting-flow" in OS.get_cmdline_user_args():
 		call_deferred("_verify_crafting_flow")
+	elif "--verify-shop-flow" in OS.get_cmdline_user_args():
+		call_deferred("_verify_shop_flow")
 	elif "--verify-pause-flow" in OS.get_cmdline_user_args():
 		call_deferred("_verify_pause_flow")
 	elif "--capture-store-screenshots" in OS.get_cmdline_user_args():
@@ -158,6 +161,28 @@ func _verify_crafting_flow() -> void:
 	valid = valid and int(GameState.data.forge_level) == 1 and int(GameState.data.materials.herbs) == 0 and int(GameState.data.materials.ore) == 0
 	print("Crafting flow verification passed." if valid else "Crafting flow verification failed.")
 	get_tree().quit(0 if valid else 16)
+
+func _verify_shop_flow() -> void:
+	GameState.new_game()
+	GameState.data.silver = 1000
+	var power_before := int(GameState.power())
+	var weapon_ok := SHOP_RULES.buy_weapon(GameState.data, "cold_crow_blade")
+	var armor_ok := SHOP_RULES.buy_armor(GameState.data, "dark_iron_armor")
+	var power_after := int(GameState.power())
+	var help_text := BATTLE_ENGINE.hero_action_help(GameState.data)
+	var battle_ok := GameState.start_blackreed_battle()
+	# The hero starts this battle at (1, 3); a plain melee "attack" requires
+	# an adjacent target (distance 1), unlike the ranged thunder_stone/skill
+	# actions other verifiers here use, which tolerate distance up to three.
+	GameState.data.battle.enemies[0].x = 2
+	GameState.data.battle.enemies[0].y = 3
+	var attack_outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, "attack", Vector2i(2, 3))
+	var valid := weapon_ok and armor_ok and battle_ok and bool(attack_outcome.get("ok", false))
+	valid = valid and str(GameState.data.equipped_weapon) == "cold_crow_blade" and str(GameState.data.equipped_armor) == "dark_iron_armor"
+	valid = valid and power_after == power_before + 4
+	valid = valid and "随身护甲：每次受创减免2点" in help_text
+	print("Shop flow verification passed." if valid else "Shop flow verification failed.")
+	get_tree().quit(0 if valid else 19)
 
 func _verify_pause_flow() -> void:
 	GameState.new_game()
@@ -854,6 +879,39 @@ func _show_training_menu() -> void:
 	screen = "choice"
 	_rebuild()
 
+func _show_market() -> void:
+	choice_event = "market"
+	choice_prompt = "西市 · 银两 %d" % int(GameState.data.silver)
+	choice_options = [
+		["武器坊", "购置/更换随身兵刃，永久提升攻击。", "weapons"],
+		["护具坊", "购置/更换护身甲胄，永久减免受创。", "armor"],
+		["杂货铺", "买卖药材、矿石、回春散与霹雳石。", "goods"],
+		["离开西市", "不消耗行动点，返回舆图。", "leave"]
+	]
+	screen = "choice"
+	_rebuild()
+
+func _show_market_weapons() -> void:
+	choice_event = "market_weapons"
+	choice_prompt = "武器坊 · 银两 %d · 当前攻击加成 +%d" % [int(GameState.data.silver), SHOP_RULES.weapon_attack_bonus(GameState.data)]
+	choice_options = SHOP_RULES.options_weapons(GameState.data)
+	screen = "choice"
+	_rebuild()
+
+func _show_market_armor() -> void:
+	choice_event = "market_armor"
+	choice_prompt = "护具坊 · 银两 %d · 当前防御加成 +%d" % [int(GameState.data.silver), SHOP_RULES.armor_defense_bonus(GameState.data)]
+	choice_options = SHOP_RULES.options_armor(GameState.data)
+	screen = "choice"
+	_rebuild()
+
+func _show_market_goods() -> void:
+	choice_event = "market_goods"
+	choice_prompt = "杂货铺 · 银两 %d" % int(GameState.data.silver)
+	choice_options = SHOP_RULES.options_goods(GameState.data)
+	screen = "choice"
+	_rebuild()
+
 func _location_action_requested(action_id: String) -> void:
 	match action_id:
 		"map": screen = "map"; _rebuild()
@@ -876,7 +934,7 @@ func _location_action_requested(action_id: String) -> void:
 		"fight": _begin_blackreed_battle()
 		"gate": _start_dialogue("luoyang_gate", [["守城军士", "近日太守府戒备森严，夜里还有禁军出入。"], ["沈羽", "玄铁令的消息恐怕已经传进官府。"]])
 		"inn": _start_dialogue("luoyang_inn", [["说书人", "厉千秋尚未出关，他的义子却已在洛阳搜寻前朝武库。"], ["沈羽", "看来必须赶在他们之前找到下一枚钥匙。"]])
-		"market": _start_dialogue("luoyang_market", [["药铺掌柜", "少侠初到洛阳，这包金疮药便宜卖你。真正值钱的消息，要去白马寺问。"]])
+		"market": _show_market()
 		"temple": _baima_event()
 		"palace": _enter_palace()
 		"huashan_gate": _start_dialogue("huashan_arrival", [["华山执事", "青云门沈羽，持武库名录而来？剑会只认剑，也认胆识。"], ["沈羽", "晚辈愿依华山规矩，查清残图下落。"]])
@@ -1032,7 +1090,10 @@ func _show_choice() -> void:
 	_clear_content()
 	var view: ChoiceView = CHOICE_VIEW.instantiate()
 	content.add_child(view)
-	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, "青 云 工 坊" if choice_event == "workshop" else "抉 择")
+	var choice_title := "青 云 工 坊" if choice_event == "workshop" else "抉 择"
+	if choice_event.begins_with("market"):
+		choice_title = "西 市 坊 市"
+	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_title)
 	view.option_selected.connect(_resolve_choice)
 
 func _resolve_choice(route: String) -> void:
@@ -1063,6 +1124,63 @@ func _resolve_choice(route: String) -> void:
 		screen = "battle"
 		SaveManager.save_auto()
 		_rebuild()
+		return
+	elif choice_event == "market":
+		match route:
+			"weapons": _show_market_weapons(); return
+			"armor": _show_market_armor(); return
+			"goods": _show_market_goods(); return
+	elif choice_event == "market_weapons":
+		if route == "leave":
+			_show_market()
+			return
+		var ok := false
+		if route.begins_with("buy_"):
+			ok = SHOP_RULES.buy_weapon(GameState.data, route.trim_prefix("buy_"))
+		elif route.begins_with("equip_"):
+			ok = SHOP_RULES.equip_weapon(GameState.data, route.trim_prefix("equip_"))
+		elif route.begins_with("sell_"):
+			ok = SHOP_RULES.sell_weapon(GameState.data, route.trim_prefix("sell_"))
+		if not ok:
+			_toast("银两不足，或这件兵刃不在你的行囊中。")
+			return
+		_toast("武器坊交易完成。")
+		SaveManager.save_auto()
+		_show_market_weapons()
+		return
+	elif choice_event == "market_armor":
+		if route == "leave":
+			_show_market()
+			return
+		var ok := false
+		if route.begins_with("buy_"):
+			ok = SHOP_RULES.buy_armor(GameState.data, route.trim_prefix("buy_"))
+		elif route.begins_with("equip_"):
+			ok = SHOP_RULES.equip_armor(GameState.data, route.trim_prefix("equip_"))
+		elif route.begins_with("sell_"):
+			ok = SHOP_RULES.sell_armor(GameState.data, route.trim_prefix("sell_"))
+		if not ok:
+			_toast("银两不足，或这件护具不在你的行囊中。")
+			return
+		_toast("护具坊交易完成。")
+		SaveManager.save_auto()
+		_show_market_armor()
+		return
+	elif choice_event == "market_goods":
+		if route == "leave":
+			_show_market()
+			return
+		var ok := false
+		if route.begins_with("buy_"):
+			ok = SHOP_RULES.buy_good(GameState.data, route.trim_prefix("buy_"))
+		elif route.begins_with("sell_"):
+			ok = SHOP_RULES.sell_good(GameState.data, route.trim_prefix("sell_"))
+		if not ok:
+			_toast("银两不足，或库存不够出售。")
+			return
+		_toast("杂货铺交易完成。")
+		SaveManager.save_auto()
+		_show_market_goods()
 		return
 	elif choice_event == "workshop":
 		if route != "leave":
@@ -1435,7 +1553,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.69.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.70.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1721,7 +1839,11 @@ func _show_character() -> void:
 	item_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(item_title)
 	var items := Label.new()
-	items.text = "已装备：青锋剑（淬炼 %d/3）\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
+	var weapon_id := str(GameState.data.get("equipped_weapon", ""))
+	var weapon_text := "赤手" if weapon_id == "" else "%s（攻击+%d）" % [str(SHOP_RULES.WEAPONS.get(weapon_id, {}).get("title", "")), SHOP_RULES.weapon_attack_bonus(GameState.data)]
+	var armor_id := str(GameState.data.get("equipped_armor", ""))
+	var armor_text := "无护具" if armor_id == "" else "%s（防御+%d）" % [str(SHOP_RULES.ARMORS.get(armor_id, {}).get("title", "")), SHOP_RULES.armor_defense_bonus(GameState.data)]
+	items.text = "已装备：青锋剑（淬炼 %d/3）· %s · %s\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [GameState.data.forge_level, weapon_text, armor_text, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
 	items.add_theme_font_size_override("font_size", 17)
 	items.add_theme_color_override("font_color", Color("#f4eee2"))
 	info.add_child(items)
@@ -2291,7 +2413,7 @@ func _enemy_turn() -> void:
 		return
 	enemy_turn_active = true
 	var battle: Dictionary = GameState.data.battle
-	var outcome: Dictionary = BATTLE_ENGINE.enemy_turn(battle, int(GameState.data.hp))
+	var outcome: Dictionary = BATTLE_ENGINE.enemy_turn(battle, int(GameState.data.hp), null, SHOP_RULES.armor_defense_bonus(GameState.data))
 	if is_instance_valid(active_battle_view):
 		await active_battle_view.play_enemy_events(Array(outcome.get("events", [])))
 	enemy_turn_active = false
