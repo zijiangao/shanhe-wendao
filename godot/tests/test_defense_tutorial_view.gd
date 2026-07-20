@@ -8,7 +8,7 @@ func _capture() -> void:
 	game_state.new_game()
 	game_state.data.energy = 3
 	assert(game_state.start_blackreed_battle(), "The defense tutorial preview needs a live tactical battle.")
-	game_state.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": true, "battle_defense": false}
+	game_state.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": true, "battle_arts": true, "battle_defense": false}
 	var main_scene: Control = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main_scene)
 	await process_frame

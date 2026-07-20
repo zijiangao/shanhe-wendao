@@ -1,7 +1,7 @@
 class_name TutorialRules
 extends RefCounted
 
-const STEPS := ["map", "location", "sparring", "battle", "battle_tactics", "battle_defense"]
+const STEPS := ["map", "location", "sparring", "battle", "battle_tactics", "battle_arts", "battle_defense"]
 
 static func step_for(screen: String, state: Dictionary) -> String:
 	var seen: Dictionary = state.get("tutorial", {})
@@ -16,6 +16,8 @@ static func step_for(screen: String, state: Dictionary) -> String:
 		return "battle"
 	if screen == "battle" and not bool(seen.get("battle_tactics", false)):
 		return "battle_tactics"
+	if screen == "battle" and not bool(seen.get("battle_arts", false)):
+		return "battle_arts"
 	if screen == "battle" and not bool(seen.get("battle_defense", false)):
 		return "battle_defense"
 	return ""
@@ -52,6 +54,11 @@ static func content(step: String, objective: String) -> Dictionary:
 				"title": "攻 守 有 度 · 运 气 护 体",
 				"body": "沈羽可消耗1行动点施展“运气护体”：\n\n· 获得由根骨决定的护体值，敌人攻击会先削减护体，再伤及气血。\n· 同时恢复3点真气，可在剑法之后重新蓄气。\n· 护体不会叠加；重复施展会用新的护体值覆盖旧值。\n· 敌方预判出现蓄力重击，或首领周围格位变红时，优先撤离；来不及撤离再运气护体。\n· 右侧状态栏会持续显示当前护体，挡伤也会出现在命中反馈中。"
 			}
+		"battle_arts":
+			return {
+				"title": "剑 刀 相 济 · 拆 招 破 势",
+				"body": "沈羽的三种进攻方式各有职责：\n\n· 普通攻击不耗真气，命中存活敌人后制造破绽；刀法精通时一次制造2层。\n· 断岳刀法消耗6真气，只能攻击相邻敌人；它会永久削减护甲并直接制造2层破绽。\n· 流云剑法可攻击直线三格，无视护甲，并引爆所有破绽，每层追加4点伤害。\n· 推荐顺序：面对重装敌人先用刀破甲，再以普攻蓄破绽，最后用剑法引爆。\n· 普通敌人可以直接以剑远攻；真气不足时运气护体即可恢复。"
+			}
 	return {}
 
 static func mark_seen(state: Dictionary, step: String) -> void:
@@ -62,4 +69,4 @@ static func mark_seen(state: Dictionary, step: String) -> void:
 	state.tutorial[step] = true
 
 static func reset(state: Dictionary) -> void:
-	state.tutorial = {"map": false, "location": false, "sparring": false, "battle": false, "battle_tactics": false, "battle_defense": false}
+	state.tutorial = {"map": false, "location": false, "sparring": false, "battle": false, "battle_tactics": false, "battle_arts": false, "battle_defense": false}

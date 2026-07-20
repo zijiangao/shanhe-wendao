@@ -8,7 +8,7 @@ func _capture() -> void:
 	game_state.new_game()
 	game_state.data.energy = 3
 	assert(game_state.start_qingyun_spar_battle("bladesmanship"), "The sparring preview needs a live blade lesson.")
-	game_state.data.tutorial = {"map": true, "location": true, "sparring": true, "battle": true, "battle_tactics": true, "battle_defense": true}
+	game_state.data.tutorial = {"map": true, "location": true, "sparring": true, "battle": true, "battle_tactics": true, "battle_arts": true, "battle_defense": true}
 	var main_scene: Control = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main_scene)
 	await process_frame

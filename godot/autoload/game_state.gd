@@ -65,7 +65,7 @@ func new_game() -> void:
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
 		"emei_entry": "",
 		"ending": {},
-		"tutorial": {"map": false, "location": false, "sparring": false, "battle": false, "battle_tactics": false, "battle_defense": false},
+		"tutorial": {"map": false, "location": false, "sparring": false, "battle": false, "battle_tactics": false, "battle_arts": false, "battle_defense": false},
 		"battle_retry": {},
 		"pending_reward": {},
 		"log": ["你拜入青云门。距离厉千秋出关还有两年。"],
@@ -511,8 +511,8 @@ func _migrate_and_validate() -> void:
 		if not data.skill_mastery.has(skill):
 			data.skill_mastery[skill] = 0
 	if typeof(data.tutorial) != TYPE_DICTIONARY:
-		data.tutorial = {"map": false, "location": false, "sparring": false, "battle": false, "battle_tactics": false, "battle_defense": false}
-	for step in ["map", "location", "sparring", "battle", "battle_tactics", "battle_defense"]:
+		data.tutorial = {"map": false, "location": false, "sparring": false, "battle": false, "battle_tactics": false, "battle_arts": false, "battle_defense": false}
+	for step in ["map", "location", "sparring", "battle", "battle_tactics", "battle_arts", "battle_defense"]:
 		data.tutorial[step] = bool(data.tutorial.get(step, false))
 	if typeof(data.battle_retry) != TYPE_DICTIONARY:
 		data.battle_retry = {}
