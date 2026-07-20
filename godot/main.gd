@@ -1388,7 +1388,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.56.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.57.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1656,7 +1656,7 @@ func _show_character() -> void:
 	skill_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(skill_title)
 	var skill_card := Label.new()
-	skill_card.text = "流云剑法   ·   直线剑招   ·   消耗 %d 真气\n当前效果：无视护甲并引爆破绽；臂力、悟性、境界与熟练度都会提高威力。" % TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship))
+	skill_card.text = "流云剑法 · 直线三格 · %d真气：无视护甲并引爆破绽。\n断岳刀法 · 相邻重击 · %d真气：永久破甲并制造2层破绽；刀法精通后破甲翻倍。" % [TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)), BATTLE_ENGINE.BLADE_QI_COST]
 	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_card.add_theme_font_size_override("font_size", 17)
 	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))
@@ -2004,6 +2004,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 			var move_valid: bool = battle_mode == "move" and BATTLE_RULES.can_move_to(battle, cell)
 			var attack_valid: bool = battle_mode == "attack" and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, cell, true, int(GameState.data.qi), TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)))
+			var blade_valid: bool = battle_mode == "blade_skill" and int(GameState.data.qi) >= BATTLE_ENGINE.BLADE_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var frost_valid: bool = battle_mode == "frost_dash" and BATTLE_RULES.can_frost_dash(battle, cell)
 			if move_valid:
 				data.color = "#28678aee"
@@ -2011,6 +2012,8 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				data.color = "#c94b3fee"
 			elif skill_valid:
 				data.color = "#c18b2fee"
+			elif blade_valid:
+				data.color = "#b85b35ee"
 			elif frost_valid:
 				data.color = "#668fbbee"
 			elif boss_danger:
@@ -2034,7 +2037,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 					var trait_text := BATTLE_RULES.enemy_trait_text(enemy)
 					data.text = "%s\n%d/%d%s" % [enemy.name, enemy.hp, enemy.max_hp, "\n" + trait_text if not trait_text.is_empty() else ""]
 					data.token = 1 if enemy.name == "黑苇寨主" else (3 if "弓手" in enemy.name else 2)
-					if not attack_valid and not skill_valid and not frost_valid:
+					if not attack_valid and not skill_valid and not blade_valid and not frost_valid:
 						data.color = "#71322dee"
 			cells.append(data)
 	return cells
@@ -2230,7 +2233,7 @@ func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) ->
 		AudioFeedback.play("error")
 		_toast(str(outcome.error))
 		return
-	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "frost_dash": "skill", "frost_guard": "turn", "brace": "turn", "heal": "confirm"}.get(action, "confirm"))
+	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "blade_skill": "skill", "frost_dash": "skill", "frost_guard": "turn", "brace": "turn", "heal": "confirm"}.get(action, "confirm"))
 	var battle: Dictionary = outcome.battle
 	if _check_tactical_victory(battle):
 		SaveManager.save_auto()
@@ -2390,7 +2393,7 @@ func _show_demo_complete() -> void:
 	panel.add_child(menu)
 
 func _mode_name(mode: String) -> String:
-	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "inspect": "查看战场"}.get(mode, mode)
+	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "blade_skill": "断岳刀法", "inspect": "查看战场"}.get(mode, mode)
 
 func _battle_token(index: int) -> AtlasTexture:
 	var token := AtlasTexture.new()

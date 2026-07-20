@@ -149,13 +149,14 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	else:
 		var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
 		actions.append(["流云剑法 · %d真气" % qi_cost, "skill"])
+		actions.append(["断岳刀法 · %d真气" % BATTLE_ENGINE.BLADE_QI_COST, "blade_skill"])
 		actions.append(["运气护体 · 回3气", "brace"])
 		actions.append(["回春散 · 回%d" % BATTLE_ENGINE.healing_amount(player), "heal"])
 		actions.append(["取消选择", "inspect"])
 	for action in actions:
 		var button := _action_button(action[0], Color("#8b493b") if mode == action[1] else Color("#315f4b"))
 		button.custom_minimum_size.x = 174
-		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp)))
+		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "blade_skill" and int(player.qi) < BATTLE_ENGINE.BLADE_QI_COST) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp)))
 		button.pressed.connect(_emit_mode.bind(str(action[1])))
 		action_grid.add_child(button)
 	var end_button := _action_button("结束回合", Color("#806c4f"))
@@ -316,7 +317,7 @@ func _animate_skill_name(label: Control) -> void:
 	tween.tween_property(label, "modulate:a", 1.0, 0.12)
 
 func _mode_name(mode: String) -> String:
-	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "brace": "运气护体", "frost_dash": "霜华刺", "frost_guard": "寒锋守势", "inspect": "查看战场"}.get(mode, mode)
+	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "blade_skill": "断岳刀法", "brace": "运气护体", "frost_dash": "霜华刺", "frost_guard": "寒锋守势", "inspect": "查看战场"}.get(mode, mode)
 
 func _battle_token(index: int) -> Texture2D:
 	if index == 4:

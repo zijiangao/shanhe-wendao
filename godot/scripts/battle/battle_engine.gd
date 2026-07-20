@@ -4,6 +4,7 @@ extends RefCounted
 const RULES := preload("res://scripts/battle/battle_rules.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const BLADE_QI_COST := 6
 
 static func is_victory(battle: Dictionary) -> bool:
 	if str(battle.get("objective", {}).get("type", "eliminate")) == "survive":
@@ -31,6 +32,13 @@ static func cloud_damage_range(player: Dictionary) -> Vector2i:
 	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3
 	return Vector2i(base, base + 3)
 
+static func blade_damage_range(player: Dictionary) -> Vector2i:
+	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0))
+	return Vector2i(base, base + 3)
+
+static func blade_armor_break(player: Dictionary) -> int:
+	return 2 if int(player.get("bladesmanship", 0)) >= 6 else 1
+
 static func healing_amount(player: Dictionary) -> int:
 	var herbalism := int(player.get("herbalism", 0))
 	return 12 + herbalism / 2 + TRAINING_RULES.medicine_mastery_bonus(herbalism)
@@ -41,9 +49,10 @@ static func hero_guard_amount(player: Dictionary) -> int:
 static func hero_action_help(player: Dictionary) -> String:
 	var normal := normal_damage_range(player)
 	var cloud := cloud_damage_range(player)
+	var blade := blade_damage_range(player)
 	var exposure := TRAINING_RULES.attack_exposure_gain(int(player.get("bladesmanship", 0)))
 	var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
-	return "普攻 %d–%d（护甲前）· 命中制造%d层破绽\n剑法 %d–%d（无视护甲）· 每层破绽追加4 · 消耗%d真气\n运气护体获得%d护体并恢复3真气 · 回春散恢复%d气血" % [normal.x, normal.y, exposure, cloud.x, cloud.y, qi_cost, hero_guard_amount(player), healing_amount(player)]
+	return "普攻 %d–%d（护甲前）· 命中制造%d层破绽\n剑法 %d–%d（无视护甲）· 引爆破绽 · %d真气\n刀法 %d–%d（相邻）· 永久破甲%d · %d真气\n护体%d并回3气 · 回春散恢复%d气血" % [normal.x, normal.y, exposure, cloud.x, cloud.y, qi_cost, blade.x, blade.y, blade_armor_break(player), BLADE_QI_COST, hero_guard_amount(player), healing_amount(player)]
 
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
 	if int(battle.ap) <= 0:
@@ -55,6 +64,8 @@ static func player_action(battle: Dictionary, player: Dictionary, action: String
 			return _attack(battle, player, target, rng)
 		"skill":
 			return _cloud_skill(battle, player, target, rng)
+		"blade_skill":
+			return _blade_skill(battle, player, target, rng)
 		"frost_dash":
 			return _frost_dash(battle, player, target, rng)
 		"frost_guard":
@@ -114,6 +125,28 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	battle.result = "流云剑气无视护甲，对%s造成%d点伤害%s！" % [battle.enemies[enemy_index].name, damage, exposure_note]
 	battle.skill_flash = true
 	battle.skill_name = "流 云 剑 法"
+	return _success(battle, damage)
+
+static func _blade_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) == "ally":
+		return _failure("林清霜无法施展断岳刀法。")
+	if int(player.get("qi", 0)) < BLADE_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
+		return _failure("断岳刀法需要%d点真气，并只能攻击相邻敌人。" % BLADE_QI_COST)
+	var enemy_index := RULES.enemy_at(battle, target)
+	var old_armor := RULES.enemy_armor(battle.enemies[enemy_index])
+	var armor_break := mini(old_armor, blade_armor_break(player))
+	var remaining_armor := maxi(0, old_armor - armor_break)
+	var damage_range := blade_damage_range(player)
+	var damage := maxi(1, damage_range.x + _roll_range(rng, 0, damage_range.y - damage_range.x) - remaining_armor)
+	player.qi = int(player.qi) - BLADE_QI_COST
+	battle.enemies[enemy_index].armor = remaining_armor
+	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
+	if int(battle.enemies[enemy_index].hp) > 0:
+		battle.enemies[enemy_index].exposure = 2
+	battle.ap = int(battle.ap) - 1
+	battle.result = "断岳刀势劈中%s，造成%d点伤害，永久削去%d点护甲并制造2层破绽！" % [battle.enemies[enemy_index].name, damage, armor_break]
+	battle.skill_flash = true
+	battle.skill_name = "断 岳 刀 法"
 	return _success(battle, damage)
 
 static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:

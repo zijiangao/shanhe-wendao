@@ -63,6 +63,25 @@ func _test_player_skills_and_resources() -> void:
 	assert(int(player.skill_mastery.cloud) == 1 and bool(battle.skill_flash), "Using a skill should increase mastery and trigger its visual state.")
 
 	battle = _fixture()
+	battle.active_unit = "hero"
+	battle.ap = 2
+	battle.enemies[0].x = 2
+	battle.enemies[0].y = 1
+	battle.enemies[0].role = "brute"
+	battle.enemies[0].hp = 100
+	battle.enemies[0].max_hp = 100
+	player = _player_fixture()
+	player.bladesmanship = 6
+	var blade: Dictionary = ENGINE.player_action(battle, player, "blade_skill", Vector2i(2, 1), _seeded_rng())
+	assert(bool(blade.ok) and int(player.qi) == 14 and int(battle.ap) == 1, "Mountain-Breaking Blade should consume six qi and one action point.")
+	assert(int(battle.enemies[0].armor) == 0 and int(battle.enemies[0].exposure) == 2, "Trained blade technique should permanently remove two armor and expose a surviving target.")
+	assert(bool(battle.skill_flash) and str(battle.skill_name) == "断 岳 刀 法", "Blade technique should expose its own presentation title.")
+	battle.ap = 2
+	player.qi = 5
+	var failed_blade: Dictionary = ENGINE.player_action(battle, player, "blade_skill", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(failed_blade.ok) and int(player.qi) == 5 and int(battle.ap) == 2, "A failed blade technique must preserve qi and action points.")
+
+	battle = _fixture()
 	battle.active_unit = "ally"
 	battle.ap = 2
 	battle.ally.x = 2
@@ -198,7 +217,7 @@ func _test_specialty_mastery_perks() -> void:
 	var medicine_result: Dictionary = ENGINE.player_action(medicine_battle, herbal_master, "heal")
 	assert(bool(medicine_result.ok) and int(medicine_result.healed) == 22, "Herbalism mastery should add five healing on top of its continuous level bonus.")
 	var help_text := ENGINE.hero_action_help({"strength": 4, "xp": 0, "bladesmanship": 10, "swordsmanship": 10, "insight": 4, "forge_level": 0, "skill_mastery": {"cloud": 0}, "herbalism": 10})
-	assert("制造2层破绽" in help_text and "消耗6真气" in help_text and "恢复22气血" in help_text, "The tactical action preview should expose all active mastery values.")
+	assert("制造2层破绽" in help_text and "剑法" in help_text and "永久破甲2" in help_text and "恢复22气血" in help_text, "The tactical action preview should expose all active mastery values and the trained blade break.")
 
 func _test_armor_and_exposure_combo() -> void:
 	var armored := _fixture()

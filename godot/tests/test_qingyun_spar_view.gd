@@ -23,9 +23,13 @@ func _capture() -> void:
 	var texts: Array[String] = []
 	for label in main_scene.find_children("*", "Label", true, false):
 		texts.append(str((label as Label).text))
+	var buttons: Array[String] = []
+	for button in main_scene.find_children("*", "Button", true, false):
+		buttons.append(str((button as Button).text))
 	var valid: bool = result == OK and str(game_state.data.battle.battle_id) == "qingyun_spar"
 	valid = valid and texts.any(func(value: String): return "青云演武场" in value and "第 1 回合" in value)
 	valid = valid and texts.any(func(value: String): return "演武课题" in value and "兵器方向：刀法" in value)
 	valid = valid and texts.any(func(value: String): return "青云快剑" in value)
+	valid = valid and buttons.any(func(value: String): return "断岳刀法" in value and "6真气" in value)
 	print("Qingyun sparring preview saved to: %s" % ProjectSettings.globalize_path(output_path))
 	quit(0 if valid else 22)
