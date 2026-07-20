@@ -24,7 +24,8 @@ func _capture() -> void:
 	var texts: Array[String] = []
 	for label in labels:
 		texts.append(str((label as Label).text))
-	var valid := result == OK and texts.any(func(value: String): return "江 湖 成 就" in value and "/19" in value)
+	var expected_total := "/%d" % SteamService.definitions.size()
+	var valid := result == OK and texts.any(func(value: String): return "江 湖 成 就" in value and expected_total in value)
 	valid = valid and texts.any(func(value: String): return "一艺通神" in value)
 	valid = valid and texts.any(func(value: String): return "百草入谱" in value)
 	print("Achievement preview saved to: %s" % ProjectSettings.globalize_path(output_path))

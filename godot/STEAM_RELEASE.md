@@ -6,7 +6,7 @@ The live adapter waits for `current_stats_received` before writing account data.
 
 ## Achievements
 
-The authoritative 19 definitions are in `data/steam_achievements.json`. Create matching achievements in Steamworks using the exact `api_name` values before enabling the live adapter. Training/crafting milestones use saved world-state flags; mastery, perfect-score, herbarium, and mineralogy achievements are reconstructed from persistent progression data after loading. Account-level unlock state remains in `ISteamUserStats` and is never embedded in a game save. Configure both integer stats, `STAT_HIGHEST_MASTERY` and `STAT_HIGHEST_SPECIALTY`, before testing the live adapter.
+The authoritative 20 definitions are in `data/steam_achievements.json`. Create matching achievements in Steamworks using the exact `api_name` values before enabling the live adapter. Training/crafting milestones use saved world-state flags; mastery, perfect-score, herbarium, and mineralogy achievements are reconstructed from persistent progression data after loading. Account-level unlock state remains in `ISteamUserStats` and is never embedded in a game save. Configure both integer stats, `STAT_HIGHEST_MASTERY` and `STAT_HIGHEST_SPECIALTY`, before testing the live adapter.
 
 The local simulation stores `user://steam_local.cfg` only for development. Do not include that file in Steam Auto-Cloud.
 
