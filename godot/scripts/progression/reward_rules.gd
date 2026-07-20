@@ -2,12 +2,18 @@ class_name RewardRules
 extends RefCounted
 
 const BASE_REWARDS := {
+	"qingyun_spar": {"title": "同 门 切 磋", "story": "晨光落在演武场上。胜负点到即止，你与同门互相指出了招式中的破绽。", "xp": 4, "silver": 2, "renown": 0, "item": "无", "next_screen": "location"},
 	"blackreed": {"title": "大 捷", "story": "黑苇寨众溃散，渡口重归平静。你从寨主身上搜出一枚玄铁令，厉千秋的阴谋终于露出端倪。", "xp": 22, "silver": 15, "renown": 4, "item": "玄铁令", "next_screen": "map"},
 	"huashan_trial": {"title": "剑 会 胜 出", "story": "你与林清霜剑路相合，通过华山双人试炼。守台长老准许你们前往思过崖查看残图。", "xp": 30, "silver": 10, "renown": 3, "item": "思过崖通行令", "next_screen": "map"},
 	"wuku_finale": {"title": "天 门 已 定", "story": "厉无咎的刀落在石阶上。武库机关仍在轰鸣，而决定它命运的人已经变成了你。", "xp": 60, "silver": 30, "renown": 8, "item": "武库钥印", "next_screen": "final_choice"}
 }
 
 const CHOICES := {
+	"qingyun_spar": [
+		{"id": "review", "title": "复盘剑路", "description": "修为 +4", "effects": {"xp": 4}},
+		{"id": "stipend", "title": "领取演武津贴", "description": "银两 +6 · 真气回满", "effects": {"silver": 6, "restore_qi": true}},
+		{"id": "fellowship", "title": "与同门交流", "description": "声望 +1 · 青云关系 +1", "effects": {"renown": 1, "faction": {"qingyun": 1}}}
+	],
 	"blackreed": [
 		{"id": "temper", "title": "参悟寨主刀势", "description": "修为 +8 · 流云熟练度 +1", "effects": {"xp": 8, "mastery": {"cloud": 1}}},
 		{"id": "supplies", "title": "收整渡口货箱", "description": "银两 +15 · 真气回满", "effects": {"silver": 15, "restore_qi": true}},

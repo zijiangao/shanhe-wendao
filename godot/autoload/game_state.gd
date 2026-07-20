@@ -219,6 +219,27 @@ func start_blackreed_battle() -> bool:
 	state_changed.emit()
 	return true
 
+func start_qingyun_spar_battle() -> bool:
+	if not spend_week():
+		return false
+	data.qi = 20
+	data.battle = {
+		"battle_id": "qingyun_spar", "name": "青云门同门切磋", "width": 8, "height": 6,
+		"player_x": 1, "player_y": 3, "ap": 2, "active_unit": "hero", "hero_guard": 0, "turn": 1,
+		"objective": {"type": "eliminate"},
+		"result": "两名同门抱剑行礼。这是一场点到即止的晨间演武。",
+		"blocked": [[3, 1], [4, 4]],
+		"enemies": [
+			{"name": "青云快剑", "role": "duelist", "hp": 14, "max_hp": 14, "attack": 3, "range": 1, "x": 6, "y": 2},
+			{"name": "青云守式", "role": "melee", "hp": 18, "max_hp": 18, "attack": 4, "range": 1, "x": 6, "y": 4}
+		]
+	}
+	_apply_current_difficulty()
+	capture_battle_checkpoint()
+	battle_started.emit()
+	state_changed.emit()
+	return true
+
 func start_huashan_trial_battle() -> bool:
 	if not spend_week():
 		return false
@@ -302,12 +323,17 @@ func finish_battle(victory: bool) -> void:
 			if "思过崖通行令" not in data.items:
 				data.items.append("思过崖通行令")
 			add_log("你与林清霜通过华山双人试炼，获准前往思过崖。")
+		elif battle_id == "qingyun_spar":
+			add_log("你在青云演武场胜出，与同门复盘了攻守得失。")
 		else:
 			if "玄铁令" not in data.items:
 				data.items.append("玄铁令")
 			if "villain_revealed" not in data.flags:
 				data.flags.append("villain_revealed")
 			add_log("黑苇寨主败退。你夺得玄铁令，并查明厉千秋的阴谋。")
+	elif battle_id == "qingyun_spar":
+		data.hp = data.max_hp
+		add_log("你在切磋中落败，同门扶你下场休整；未损失银两。")
 	else:
 		var recovery: Dictionary = DIFFICULTY_RULES.defeat_recovery(battle_difficulty, int(data.max_hp), int(data.silver))
 		data.hp = recovery.hp
@@ -478,7 +504,7 @@ func _migrate_and_validate() -> void:
 			data.battle_retry = {}
 	if typeof(data.pending_reward) != TYPE_DICTIONARY:
 		data.pending_reward = {}
-	elif not data.pending_reward.is_empty() and str(data.pending_reward.get("battle_id", "")) not in ["blackreed", "huashan_trial", "wuku_finale"]:
+	elif not data.pending_reward.is_empty() and str(data.pending_reward.get("battle_id", "")) not in ["blackreed", "qingyun_spar", "huashan_trial", "wuku_finale"]:
 		data.pending_reward = {}
 	if not _valid_battle(data.battle):
 		data.battle = {}

@@ -99,6 +99,17 @@ func _initialize() -> void:
 
 	state.new_game()
 	state.data.energy = 3
+	var spar_stage := str(state.data.quest_stage)
+	assert(state.start_qingyun_spar_battle(), "Qingyun sparring should be available as repeatable training.")
+	assert(str(state.data.battle.battle_id) == "qingyun_spar" and state.data.battle.enemies.size() == 2, "Sparring should use its short two-opponent encounter.")
+	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Sparring should spend exactly one week and energy.")
+	state.finish_battle(true)
+	assert(str(state.data.quest_stage) == spar_stage and "玄铁令" not in state.data.items and "villain_revealed" not in state.data.flags, "Optional sparring must not advance or contaminate the main story.")
+	assert(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 4, "Sparring should grant its lighter base reward and save the choice.")
+	assert(state.claim_pending_reward("fellowship") and int(state.data.faction_relations.qingyun) == 2, "Sparring should add the selected reward to the starting Qingyun relationship.")
+
+	state.new_game()
+	state.data.energy = 3
 	state.data.investigations = ["archer", "herbs"]
 	assert(state.start_blackreed_battle(), "The first tactical encounter should start.")
 	assert(state.data.battle.enemies.size() == 4 and str(state.data.battle.enemies.back().role) == "duelist", "Encounter preparation should be applied before GameState captures the battle.")

@@ -7,6 +7,7 @@ func _initialize() -> void:
 	assert(not POLICY.is_demo_complete(fresh, true), "A fresh demo save should remain playable.")
 	assert(POLICY.should_end_after_victory("blackreed", true), "The Blackreed victory is the intended demo boundary.")
 	assert(not POLICY.should_end_after_victory("huashan_trial", true), "Later full-game battles must not define the demo boundary.")
+	assert(not POLICY.should_end_after_victory("qingyun_spar", true), "Optional sparring must return the player to Qingyun in the demo.")
 	assert(not POLICY.should_end_after_victory("blackreed", false), "The full build must never apply the demo cutoff.")
 	var completed := {"quest_stage": "return_master", "flags": ["villain_revealed"]}
 	assert(POLICY.is_demo_complete(completed, true), "A completed demo save should be recognized after restart.")

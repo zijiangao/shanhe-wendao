@@ -37,7 +37,8 @@ $tests = @(
     "test_tutorial_rules.gd",
     "test_cue_synth.gd",
     "test_steam_service.gd",
-    "test_demo_policy.gd"
+    "test_demo_policy.gd",
+	"test_qingyun_spar.gd"
 )
 
 foreach ($test in $tests) {
@@ -148,6 +149,8 @@ New-Item -ItemType Directory -Force -Path (Join-Path $PWD "build/windows-demo") 
 The Windows release is written to `build/windows/ShanheWendao.exe` with `ShanheWendao.pck` beside it. Both files are required. Keeping game content separate improves SteamPipe patch behavior. The `build` directory is intentionally ignored by Git.
 
 The demo is written separately to `build/windows-demo/ShanheWendaoDemo.exe` with `ShanheWendaoDemo.pck`. Its `demo` custom feature enforces the Blackreed victory boundary; the full preset has no such feature.
+
+The Qingyun training menu also offers a repeatable, nonlethal sparring battle. It spends one week, returns to Qingyun after a lightweight reward choice, and never advances the main quest or triggers the demo boundary.
 
 To visually review the second first-battle tutorial page from the shipping UI, run the full build with `--capture-tactical-tutorial`. It writes `tactical_tutorial_preview.png` to the Godot user-data folder and exits non-zero if the expected tutorial page was not active.
 

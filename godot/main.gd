@@ -843,6 +843,7 @@ func _location_action_requested(action_id: String) -> void:
 			choice_event = "training"
 			choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
 			choice_options = TRAINING_RULES.options(GameState.data)
+			choice_options.append(["实战切磋 · 青云演武场", "短战练习走位、护体与回气；奖励较轻，可反复参加。", "qingyun_spar"])
 			screen = "choice"
 			_rebuild()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
@@ -1019,6 +1020,16 @@ func _show_choice() -> void:
 
 func _resolve_choice(route: String) -> void:
 	if choice_event == "training":
+		if route == "qingyun_spar":
+			choice_event = ""
+			if not GameState.start_qingyun_spar_battle():
+				_toast(_time_action_failure_message())
+				return
+			battle_mode = "move"
+			screen = "battle"
+			SaveManager.save_auto()
+			_rebuild()
+			return
 		_start_training(route)
 		return
 	elif choice_event == "workshop":
@@ -1365,7 +1376,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.47.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.48.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2307,7 +2318,12 @@ func _check_tactical_victory(battle: Dictionary) -> bool:
 	last_rewards = REWARD_RULES.base_for(battle_id)
 	last_rewards.turns = int(battle.turn)
 	GameState.finish_battle(true)
-	GameState.data.quest_stage = "final_choice" if battle_id == "wuku_finale" else ("huashan_trial_complete" if battle_id == "huashan_trial" else "return_master")
+	if battle_id == "wuku_finale":
+		GameState.data.quest_stage = "final_choice"
+	elif battle_id == "huashan_trial":
+		GameState.data.quest_stage = "huashan_trial_complete"
+	elif battle_id != "qingyun_spar":
+		GameState.data.quest_stage = "return_master"
 	screen = "victory"
 	return true
 

@@ -4,7 +4,7 @@ const SPEC := preload("res://scripts/battle/battle_scene_spec.gd")
 
 func _initialize() -> void:
 	var texture_paths: Dictionary = {}
-	for battle_id in ["blackreed", "huashan_trial", "wuku_finale"]:
+	for battle_id in ["qingyun_spar", "blackreed", "huashan_trial", "wuku_finale"]:
 		var scene: Dictionary = SPEC.scene_for(battle_id)
 		var texture_path := str(scene.get("texture", ""))
 		assert(FileAccess.file_exists(texture_path), "%s should reference a shipping battle backdrop." % battle_id)
@@ -15,4 +15,3 @@ func _initialize() -> void:
 	assert(SPEC.scene_for("unknown") == SPEC.scene_for(SPEC.FALLBACK_ID), "Unknown battles should use the safe fallback scene.")
 	print("Battle scene specification tests passed.")
 	quit()
-

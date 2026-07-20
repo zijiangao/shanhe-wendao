@@ -10,7 +10,7 @@ func _initialize() -> void:
 	quit()
 
 func _test_reward_catalog() -> void:
-	for battle_id in ["blackreed", "huashan_trial", "wuku_finale"]:
+	for battle_id in ["qingyun_spar", "blackreed", "huashan_trial", "wuku_finale"]:
 		var base := RULES.base_for(battle_id)
 		var choices := RULES.choices_for(battle_id)
 		assert(int(base.xp) > 0 and int(base.silver) >= 0 and not str(base.item).is_empty(), "Every encounter needs a complete base reward.")
@@ -32,6 +32,9 @@ func _test_each_reward_axis() -> void:
 	state = _state()
 	assert(RULES.apply_choice(state, "huashan_trial", "fellowship"), "A valid relationship reward should apply.")
 	assert(int(state.renown) == 2 and int(state.faction_relations.huashan) == 2, "Relationship rewards should affect long-term route values.")
+	state = _state()
+	assert(RULES.apply_choice(state, "qingyun_spar", "fellowship"), "Sparring should support a Qingyun relationship reward.")
+	assert(int(state.renown) == 1 and int(state.faction_relations.qingyun) == 1, "Sparring fellowship should reward its home faction.")
 
 func _test_invalid_choice_is_safe() -> void:
 	var state := _state()
