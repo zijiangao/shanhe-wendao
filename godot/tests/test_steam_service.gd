@@ -52,7 +52,7 @@ func _initialize() -> void:
 	var backend = LOCAL_BACKEND.new(TEST_PATH)
 	assert(service.use_backend(backend), "The local Steam backend should initialize without the SDK.")
 	assert(not service.is_live(), "The local backend must never claim a live Steam connection.")
-	assert(service.definitions.size() == 20, "The commercial achievement set should cover progression, sparring, mastery, collections, crafting, finale, and endings.")
+	assert(service.RELEASE_ACHIEVEMENT_COUNT == 20 and service.definitions.size() == service.RELEASE_ACHIEVEMENT_COUNT, "The commercial achievement set and release gate should share one authoritative count.")
 	assert(service.release_data_errors().is_empty(), "Shipping achievement metadata should satisfy the Steam release contract.")
 	var ids: Dictionary = {}
 	for definition in service.definitions:

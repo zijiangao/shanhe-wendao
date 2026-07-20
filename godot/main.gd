@@ -168,12 +168,12 @@ func _verify_pause_flow() -> void:
 
 func _verify_steam_data() -> void:
 	var errors := SteamService.release_data_errors()
-	var valid := errors.is_empty() and SteamService.definitions.size() == 19
+	var valid := errors.is_empty() and SteamService.definitions.size() == SteamService.RELEASE_ACHIEVEMENT_COUNT
 	if not valid:
 		for error in errors:
 			push_error(error)
-		if SteamService.definitions.size() != 19:
-			push_error("Expected 19 Steam achievement definitions, found %d." % SteamService.definitions.size())
+		if SteamService.definitions.size() != SteamService.RELEASE_ACHIEVEMENT_COUNT:
+			push_error("Expected %d Steam achievement definitions, found %d." % [SteamService.RELEASE_ACHIEVEMENT_COUNT, SteamService.definitions.size()])
 	print("Steam release data verification passed." if valid else "Steam release data verification failed.")
 	get_tree().quit(0 if valid else 7)
 
@@ -1388,7 +1388,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.55.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.56.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1644,7 +1644,7 @@ func _show_character() -> void:
 	specialty_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(specialty_title)
 	var specialties := Label.new()
-	specialties.text = "本周专精：%s（完成额外修为 +%d）\n剑法 %d·%s  ·  刀法 %d·%s  ·  采药 %d·%s  ·  挖矿 %d·%s\n修炼战绩：%s\n剑法强化流云剑法，刀法强化普通攻击；采集精通后提高材料产量。" % [TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week))), TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS, GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining)), TRAINING_RULES.records_text(GameState.data.training_records)]
+	specialties.text = "本周专精：%s（完成额外修为 +%d）\n剑法 %d·%s  ·  刀法 %d·%s  ·  采药 %d·%s  ·  挖矿 %d·%s\n修炼战绩：%s\n实战切磋：%s\n剑法强化流云剑法，刀法强化普通攻击；采集精通后提高材料产量。" % [TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week))), TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS, GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining)), TRAINING_RULES.records_text(GameState.data.training_records), SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))]
 	specialties.add_theme_font_size_override("font_size", 15)
 	specialties.add_theme_color_override("font_color", Color("#f4eee2"))
 	specialties.add_theme_stylebox_override("normal", _box(Color("#223a30")))

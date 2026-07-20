@@ -5,6 +5,7 @@ signal achievement_unlocked(api_name: String, title: String)
 const LOCAL_BACKEND := preload("res://scripts/steam/local_steam_backend.gd")
 const LIVE_BACKEND := preload("res://scripts/steam/godot_steam_backend.gd")
 const ACHIEVEMENTS_PATH := "res://data/steam_achievements.json"
+const RELEASE_ACHIEVEMENT_COUNT := 20
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
