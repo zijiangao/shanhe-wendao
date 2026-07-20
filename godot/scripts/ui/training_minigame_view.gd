@@ -95,11 +95,13 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 		var button := Button.new()
 		button.text = "%s  %s" % [{"up": "↑", "right": "→", "down": "↓", "left": "←"}[direction], RULES.DIRECTION_LABELS[direction]]
 		button.custom_minimum_size = Vector2(180, 72)
-		button.focus_mode = Control.FOCUS_ALL
+		# Non-focusable: keyboard/controller direction presses go straight to
+		# _unhandled_input below; a focusable button here would let Godot's
+		# focus-navigation steal those same ui_up/down/left/right presses first.
+		button.focus_mode = Control.FOCUS_NONE
 		button.add_theme_font_size_override("font_size", 24)
 		button.add_theme_stylebox_override("normal", _box(Color("#294438")))
 		button.add_theme_stylebox_override("hover", _box(Color("#365b4b")))
-		button.add_theme_stylebox_override("focus", _box(spec.accent.darkened(0.3)))
 		button.pressed.connect(func(): direction_selected.emit(direction))
 		buttons[direction] = button
 		grid.add_child(button)
@@ -118,6 +120,12 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 		streak_label.scale = Vector2(0.88, 0.88)
 		streak_label.pivot_offset = streak_label.size * 0.5
 		create_tween().tween_property(streak_label, "scale", Vector2.ONE, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# A focused control anywhere on screen -- including a header nav button
+	# left over from before training started -- can still steal ui_up/down/
+	# left/right via its own focus-navigation (e.g. the horizontally laid out
+	# header consumes ui_right/ui_left to move between its own buttons).
+	# Release focus entirely so every direction press reaches _unhandled_input.
+	get_viewport().gui_release_focus()
 
 func _process(_delta: float) -> void:
 	if timing_fill == null or round_started_ms <= 0:
