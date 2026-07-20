@@ -47,6 +47,14 @@ func setup(background: Texture2D, prompt_text: String, options: Array, title_tex
 		button.custom_minimum_size.y = 82
 		button.add_theme_font_size_override("font_size", 18)
 		button.disabled = option.size() > 3 and bool(option[3])
+		# Optional 5th tuple slot: a Texture2D icon (e.g. a shop item's art).
+		# Left null/absent for every non-visual choice screen (dialogue,
+		# training menu, etc.) -- only screens that pass one get an icon.
+		if option.size() > 4 and option[4] != null:
+			button.icon = option[4]
+			button.expand_icon = false
+			button.add_theme_constant_override("icon_max_width", 56)
+			button.add_theme_constant_override("h_separation", 16)
 		button.pressed.connect(_emit_option.bind(str(option[2])))
 		list.add_child(button)
 

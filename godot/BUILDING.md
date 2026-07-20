@@ -41,7 +41,8 @@ $tests = @(
 	"test_qingyun_spar.gd",
 	"test_sparring_rules.gd",
 	"test_training_keyboard_input.gd",
-	"test_shop_rules.gd"
+	"test_shop_rules.gd",
+	"test_choice_view_icon.gd"
 )
 
 foreach ($test in $tests) {
@@ -98,6 +99,8 @@ Capture a live martial-skill impact frame after changing combat presentation:
 & $godot --path $project --script res://tests/test_training_menu_view.gd
 
 & $godot --path $project --script res://tests/test_market_view.gd
+
+& $godot --path $project --script res://tests/test_backpack_view.gd
 ```
 
 `test_crafting_view.gd` also confirms the workshop's fourth "离开工坊" option stays enabled and actually returns to `location` when every real recipe is disabled (a fresh save has zero herbs/ore, so this is the default state for a new player, not an edge case) — the workshop reuses the generic `choice` screen, which `NAVIGATION_RULES.back_action()` deliberately blocks from any back/cancel action since most `choice` screens are one-way story decisions. Without that fixed fourth option, a player who can't yet afford any recipe has no way to leave the screen.
@@ -118,6 +121,12 @@ Weapons and armor are real equipped items (`GameState.data.equipped_weapon`/`equ
 **Armor is a genuinely new combat mechanic, not an extension of an existing one** — before this, the player had zero persistent damage mitigation; only the temporary "运气护体" (`hero_guard`) resource existed. `BattleEngine.enemy_turn()` gained a fourth parameter, `hero_armor: int = 0`, **appended after `rng` rather than inserted before it** — `test_battle_engine.gd` has roughly twenty call sites that pass `rng` as a bare third positional argument, and inserting a parameter ahead of it would have silently fed those calls' RNG objects into the wrong slot. Armor is subtracted from an incoming hit before `hero_guard` absorbs whatever remains (mirroring how enemy armor already works against the player: a permanent flat layer, with any temporary shield stacked on top), and only ever applies to hits landing on the hero — 林清霜 keeps her own separate `guard` stat and is untouched by the hero's personal gear. `test_shop_rules.gd` covers the buy/equip/sell state machine directly; `test_battle_engine.gd`'s `_test_equipped_gear_bonuses()` covers the combat-formula integration, including an explicit check that calling `enemy_turn()` with only three positional arguments (every pre-existing call site's shape) still behaves as zero armor.
 
 The training result screen also lists a per-round breakdown (elapsed time, feedback tier, and score for each of the session's rounds, from `training_round_details` in `main.gd`) beneath the summary card, so a player can see exactly which hit cost them the grade rather than only the total.
+
+## Backpack screen and item icons (背包)
+
+A new "背包" header nav button (between 人物 and 成就) opens `_show_backpack()`, a read-only view of the shop-driven equipment/goods system: equipped weapon and armor shown first and highlighted, then any other owned-but-unequipped weapons/armor, then the four tradeable goods with their carried counts — reusing the achievements screen's `framed_panel` + scrollable icon-row pattern rather than inventing a new layout. It intentionally does not duplicate `_show_character()`'s existing "已装备" summary line or let the player equip/sell from here directly; all transactions still happen at 西市, keeping one source of truth for that logic rather than wiring the same buy/sell/equip actions into two screens.
+
+Item icons are optional everywhere they appear (backpack rows and the market's `ChoiceView` option rows, via a new optional 5th tuple slot) because **no actual item art has shipped yet** — `UITheme.item_icon(id)` looks up `res://assets/ui/item_<id>.png` with `load()` + `ResourceLoader.exists()` rather than `preload()`, specifically so the project keeps compiling and every screen renders correctly (just without icons) until real art lands, at which point dropping in files named to match each `ShopRules` catalog id (e.g. `item_iron_sword.png`, `item_healing_powder.png`) makes them appear with no further code changes. `test_choice_view_icon.gd` exercises the icon-rendering branch directly with a stand-in texture (an existing nav icon), since no current screen has real art to exercise it with; `test_backpack_view.gd` covers full-inventory scroll reachability the same way `test_character_view.gd` already does for the character sheet.
 
 The training preview covers the advanced three-technique sword sequence, the short-echo mining window, and the final mining score/reward card with rank-up and personal-best banners, mineral discovery, and encounter panels. Each discipline introduces an advanced variant after round one. Training streaks begin at 85 points and grant capped combo bonuses; the packaged verifier checks a three-round 315-point streak. Exact records persist for all four disciplines. Specialty levels cross stable thresholds at 3/6/10 for 熟手/精通/大成. At 大成, sword training reduces Flowing Cloud Sword from eight to six qi, blade training makes normal attacks create two exposure layers, herbalism adds five healing to powder, and mining reduces weapon-tempering silver from eight to five. The tactical battle panel derives its action labels, enablement rules, pre-armor normal damage range, armor-ignoring sword range, exposure gain, qi cost, and exact healing amount from the same shipping formulas. Character and workshop screens also show the effective dynamic values instead of stale base costs.
 

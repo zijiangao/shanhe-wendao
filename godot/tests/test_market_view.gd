@@ -63,6 +63,32 @@ func _capture() -> void:
 			await process_frame
 		back_ok = str(main_scene.choice_event) == "market" and main_scene.screen == "choice"
 
-	var valid: bool = top_result == OK and top_prompt_ok and poor_result == OK and poor_gating_ok and rich_afford_ok and bought_result == OK and purchase_ok and back_ok
+	# Armor and goods share _with_item_icons() with the weapons submenu just
+	# exercised above, but each has its own option list (goods rows in
+	# particular have a different tuple shape, "buy"/"sell" pairs instead of
+	# a single buy-or-equip-or-sell action). A bug in that shared helper --
+	# such as the real one this test caught during development, where the
+	# icon silently landed in the "disabled" slot on the leave row's shorter
+	# 3-element tuple and crashed ChoiceView.setup() on `bool(Texture2D)` --
+	# could easily fix one submenu while leaving the others broken. Confirm
+	# "leave" round-trips correctly from all three, not just weapons.
+	var side_trips_ok := true
+	for route in ["armor", "goods"]:
+		main_scene._show_market()
+		for frame in range(2):
+			await process_frame
+		main_scene._resolve_choice(route)
+		for frame in range(3):
+			await process_frame
+		var side_leave: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return (b as Button).text.begins_with("返回"))
+		if side_leave.size() != 1:
+			side_trips_ok = false
+			continue
+		(side_leave[0] as Button).pressed.emit()
+		for frame in range(2):
+			await process_frame
+		side_trips_ok = side_trips_ok and str(main_scene.choice_event) == "market" and main_scene.screen == "choice"
+
+	var valid: bool = top_result == OK and top_prompt_ok and poor_result == OK and poor_gating_ok and rich_afford_ok and bought_result == OK and purchase_ok and back_ok and side_trips_ok
 	print("Market previews saved to: %s, %s, and %s" % [ProjectSettings.globalize_path(top_path), ProjectSettings.globalize_path(poor_path), ProjectSettings.globalize_path(bought_path)])
 	quit(0 if valid else 18)

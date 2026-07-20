@@ -518,7 +518,7 @@ func _build_shell() -> void:
 	brand.add_theme_color_override("font_color", Color("#eadfc7"))
 	header.add_child(brand)
 
-	for pair in [["天下舆图", "map"], ["任务", "quests"], ["人物", "character"], ["成就", "achievements"], ["存档", "save"], ["设置", "settings"]]:
+	for pair in [["天下舆图", "map"], ["任务", "quests"], ["人物", "character"], ["背包", "backpack"], ["成就", "achievements"], ["存档", "save"], ["设置", "settings"]]:
 		var button := Button.new()
 		button.text = pair[0]
 		button.icon = UI_THEME.nav_icon(pair[1])
@@ -745,6 +745,7 @@ func _rebuild() -> void:
 		"palace": _show_palace()
 		"dev": _show_dev_menu()
 		"character": _show_character()
+		"backpack": _show_backpack()
 		"save": _show_saves()
 		"settings": _show_settings()
 		"controls": _show_controls()
@@ -894,21 +895,46 @@ func _show_market() -> void:
 func _show_market_weapons() -> void:
 	choice_event = "market_weapons"
 	choice_prompt = "武器坊 · 银两 %d · 当前攻击加成 +%d" % [int(GameState.data.silver), SHOP_RULES.weapon_attack_bonus(GameState.data)]
-	choice_options = SHOP_RULES.options_weapons(GameState.data)
+	choice_options = _with_item_icons(SHOP_RULES.options_weapons(GameState.data))
 	screen = "choice"
 	_rebuild()
 
 func _show_market_armor() -> void:
 	choice_event = "market_armor"
 	choice_prompt = "护具坊 · 银两 %d · 当前防御加成 +%d" % [int(GameState.data.silver), SHOP_RULES.armor_defense_bonus(GameState.data)]
-	choice_options = SHOP_RULES.options_armor(GameState.data)
+	choice_options = _with_item_icons(SHOP_RULES.options_armor(GameState.data))
 	screen = "choice"
 	_rebuild()
+
+## ShopRules stays UI-agnostic (like every other _rules.gd file, it only
+## returns [title, description, id, disabled] tuples) -- this is the layer
+## that knows about ChoiceView's optional 5th icon slot, so it maps each
+## option's "buy_<id>"/"equip_<id>"/"sell_<id>" action id back to the plain
+## item id and looks up its art. Silently omits the icon (UI_THEME.item_icon
+## returns null) until real item art is actually shipped.
+func _with_item_icons(options: Array) -> Array:
+	var enriched := []
+	for option in options:
+		var item_id := str(option[2])
+		for prefix in ["buy_", "equip_", "sell_"]:
+			if item_id.begins_with(prefix):
+				item_id = item_id.trim_prefix(prefix)
+				break
+		var row: Array = option.duplicate()
+		# ChoiceView reads index 3 as "disabled" and index 4 as the icon --
+		# the "leave" row has no disabled flag (only 3 elements), so padding
+		# to exactly 4 first is required or the icon would land in the
+		# disabled slot instead and crash on bool(Texture2D).
+		while row.size() < 4:
+			row.append(false)
+		row.append(UI_THEME.item_icon(item_id))
+		enriched.append(row)
+	return enriched
 
 func _show_market_goods() -> void:
 	choice_event = "market_goods"
 	choice_prompt = "杂货铺 · 银两 %d" % int(GameState.data.silver)
-	choice_options = SHOP_RULES.options_goods(GameState.data)
+	choice_options = _with_item_icons(SHOP_RULES.options_goods(GameState.data))
 	screen = "choice"
 	_rebuild()
 
@@ -1553,7 +1579,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.70.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.71.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1860,6 +1886,111 @@ func _show_character() -> void:
 	var bottom_spacer := Control.new()
 	bottom_spacer.custom_minimum_size.y = 16
 	info.add_child(bottom_spacer)
+
+func _show_backpack() -> void:
+	_clear_content()
+	var backdrop := ColorRect.new()
+	backdrop.color = Color("#d8cfbd")
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(backdrop)
+	var panel := UI_THEME.framed_panel(content, Vector2(185, 28), Vector2(910, 520), UI_THEME.PARCHMENT_TINT, 10)
+	var title := Label.new()
+	title.text = "背 囊"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#193128"))
+	panel.add_child(title)
+	var hint := Label.new()
+	hint.text = "前往洛阳城西市可购置、更换或出售装备与物资。"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_color_override("font_color", Color("#526159"))
+	panel.add_child(hint)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 8)
+	scroll.add_child(list)
+
+	list.add_child(_backpack_section_title("已装备"))
+	var equipped_weapon := str(GameState.data.get("equipped_weapon", ""))
+	var equipped_armor := str(GameState.data.get("equipped_armor", ""))
+	list.add_child(_backpack_equipment_row("weapon", equipped_weapon, true))
+	list.add_child(_backpack_equipment_row("armor", equipped_armor, true))
+
+	var owned_weapons: Array = GameState.data.get("owned_weapons", [])
+	var unequipped_weapons: Array = owned_weapons.filter(func(id): return str(id) != equipped_weapon)
+	if not unequipped_weapons.is_empty():
+		list.add_child(_backpack_section_title("其余兵刃"))
+		for id in unequipped_weapons:
+			list.add_child(_backpack_equipment_row("weapon", str(id), false))
+
+	var owned_armors: Array = GameState.data.get("owned_armors", [])
+	var unequipped_armors: Array = owned_armors.filter(func(id): return str(id) != equipped_armor)
+	if not unequipped_armors.is_empty():
+		list.add_child(_backpack_section_title("其余护具"))
+		for id in unequipped_armors:
+			list.add_child(_backpack_equipment_row("armor", str(id), false))
+
+	list.add_child(_backpack_section_title("材料与药品"))
+	for good_id in ["herbs", "ore", "healing_powder", "thunder_stone"]:
+		list.add_child(_backpack_goods_row(good_id))
+	var bottom_spacer2 := Control.new()
+	bottom_spacer2.custom_minimum_size.y = 16
+	list.add_child(bottom_spacer2)
+
+func _backpack_section_title(text_value: String) -> Label:
+	var label := Label.new()
+	label.text = text_value
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", Color("#193128"))
+	return label
+
+## category is "weapon" or "armor"; id is a ShopRules catalog key or "" for
+## bare-handed/unarmored. equipped controls the highlighted row color and the
+## "【当前装备】" prefix -- callers pass true for the two fixed equipped-slot
+## rows and false for every other owned-but-inactive item.
+func _backpack_equipment_row(category: String, id: String, equipped: bool) -> PanelContainer:
+	var catalog: Dictionary = SHOP_RULES.WEAPONS if category == "weapon" else SHOP_RULES.ARMORS
+	var bonus_key := "attack_bonus" if category == "weapon" else "defense_bonus"
+	var bonus_label := "攻击" if category == "weapon" else "防御"
+	var item: Dictionary = catalog.get(id, {})
+	var fallback_name := "赤手" if category == "weapon" else "无护具"
+	var name_text := str(item.get("title", fallback_name)) if id != "" else fallback_name
+	var primary := ("【当前装备】" + name_text) if equipped else name_text
+	var secondary := "%s +%d" % [bonus_label, int(item.get(bonus_key, 0))] if id != "" else "尚未购置"
+	var panel_color := Color("#294438") if equipped else Color("#4b514d")
+	var text_color := Color("#f2dfb3") if equipped else Color("#dbe0d9")
+	return _backpack_row(UI_THEME.item_icon(id) if id != "" else null, primary, secondary, panel_color, text_color)
+
+func _backpack_goods_row(good_id: String) -> PanelContainer:
+	var item: Dictionary = SHOP_RULES.GOODS.get(good_id, {})
+	var count := int(GameState.data.materials.get(good_id, 0)) if good_id in ["herbs", "ore"] else int(GameState.data.consumables.get(good_id, 0))
+	return _backpack_row(UI_THEME.item_icon(good_id), str(item.get("title", good_id)), "携带 %d 份" % count, Color("#4b514d"), Color("#dbe0d9"))
+
+func _backpack_row(icon_texture: Texture2D, primary_text: String, secondary_text: String, panel_color: Color, text_color: Color) -> PanelContainer:
+	var row := PanelContainer.new()
+	row.add_theme_stylebox_override("panel", _box(panel_color))
+	var row_content := HBoxContainer.new()
+	row_content.add_theme_constant_override("separation", 14)
+	row.add_child(row_content)
+	if icon_texture != null:
+		var icon := TextureRect.new()
+		icon.texture = icon_texture
+		icon.custom_minimum_size = Vector2(52, 52)
+		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		row_content.add_child(icon)
+	var entry := Label.new()
+	entry.text = "%s\n%s" % [primary_text, secondary_text]
+	entry.custom_minimum_size.y = 52
+	entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	entry.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	entry.add_theme_font_size_override("font_size", 17)
+	entry.add_theme_color_override("font_color", text_color)
+	row_content.add_child(entry)
+	return row
 
 func _show_settings() -> void:
 	_clear_content()

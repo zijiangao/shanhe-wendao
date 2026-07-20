@@ -134,3 +134,14 @@ static func achievement_badge(unlocked: bool) -> Texture2D:
 
 static func map_marker(state: String) -> Texture2D:
 	return MAP_MARKERS.get(state, MAP_MARKERS.locked)
+
+## Shop/backpack item icons (weapons, armor, goods) are looked up by the same
+## ids ShopRules already uses, via load() rather than preload(): unlike the
+## other art in this file, these files may not exist yet on a given checkout
+## (production is a separate, external art-generation step -- see
+## ASSET_PROVENANCE.md), and preload() would break the whole project's import
+## if any one were missing. Screens using this must render without an icon
+## when it returns null rather than assuming one is always available.
+static func item_icon(id: String) -> Texture2D:
+	var path := "res://assets/ui/item_%s.png" % id
+	return load(path) if ResourceLoader.exists(path) else null
