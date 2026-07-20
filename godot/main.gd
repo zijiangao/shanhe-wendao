@@ -1055,10 +1055,11 @@ func _resolve_choice(route: String) -> void:
 		_rebuild()
 		return
 	elif choice_event == "workshop":
-		if not GameState.craft(route):
-			_toast("材料不足，或青锋剑已淬炼至最高等级。")
-			return
-		_toast("工坊制作完成。")
+		if route != "leave":
+			if not GameState.craft(route):
+				_toast("材料不足，或青锋剑已淬炼至最高等级。")
+				return
+			_toast("工坊制作完成。")
 	elif choice_event == "baima_route":
 		GameState.data.alignment[route] = int(GameState.data.alignment.get(route, 0)) + 1
 		GameState.data.luoyang_route = route
@@ -1406,7 +1407,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.64.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.65.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

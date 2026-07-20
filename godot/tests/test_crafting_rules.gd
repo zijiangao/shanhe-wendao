@@ -25,6 +25,14 @@ func _initialize() -> void:
 	assert(RULES.effective_cost(master, "temper_blade").silver == 5 and RULES.can_craft(master, "temper_blade"), "Mining mastery should reduce the tempering silver cost from eight to five.")
 	assert("挖矿大成减免" in str(RULES.options(master)[2][1]), "The workshop choice should disclose the mastery discount before crafting.")
 	assert(RULES.apply(master, "temper_blade") and int(master.silver) == 0, "The discounted cost should be charged exactly once.")
+	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "forge_level": 0, "mining": 0}
+	var broke_options: Array = RULES.options(broke)
+	assert(broke_options.size() == 4, "A fresh recruit with no materials should still see a fourth way out of the workshop.")
+	for option in broke_options.slice(0, 3):
+		assert(bool(option[3]), "Every real recipe should be disabled when nothing is affordable.")
+	var leave_option: Array = broke_options[3]
+	assert(str(leave_option[2]) == "leave", "The escape option must be the fixed 'leave' id, not a recipe.")
+	assert(leave_option.size() <= 3 or not bool(leave_option[3]), "Leaving the workshop must never be disabled, even with zero materials.")
 	print("Crafting rules tests passed.")
 	quit()
 
