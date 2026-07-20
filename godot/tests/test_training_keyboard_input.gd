@@ -94,8 +94,37 @@ func _run() -> void:
 		await _press(KEYCODES[target2])
 		case2_ok = events == [target, target2]
 
-	var valid := button_grab_refused and case1_ok and case2_ok
+	# Case 3: once the session finishes, the result screen's "收功" button
+	# must respond to a real confirm keypress. Unlike the round's own
+	# direction buttons (deliberately FOCUS_NONE, driven by _unhandled_input),
+	# this is a normal focusable Button the player is meant to focus and
+	# confirm -- a regression in _process()'s continuous focus-release guard
+	# once made it silently inert to BOTH keyboard confirm and mouse clicks
+	# (it stole focus back before a click or confirm-press could complete),
+	# a real softlock with no way off the result screen.
+	while main_scene.training_result.is_empty() and int(main_scene.training_round) < 10:
+		var live_targets: Array = main_scene.training_challenge.get("targets", [])
+		if live_targets.is_empty() or int(main_scene.training_input_index) >= live_targets.size():
+			break
+		main_scene._training_direction_selected(str(live_targets[main_scene.training_input_index]))
+		await create_timer(0.3 + main_scene.TRAINING_READY_DELAY).timeout
+		for frame in range(3):
+			await process_frame
+	var case3_ok := false
+	if not main_scene.training_result.is_empty():
+		var result_view: Control = main_scene.active_training_view
+		var done_buttons: Array = result_view.find_children("*", "Button", true, false).filter(
+			func(b: Button): return "收功" in str(b.text)
+		)
+		if not done_buttons.is_empty():
+			var done := done_buttons[0] as Button
+			done.grab_focus()
+			await process_frame
+			await _press(KEY_ENTER)
+			case3_ok = main_scene.screen == "location"
+
+	var valid := button_grab_refused and case1_ok and case2_ok and case3_ok
 	if not valid:
-		push_error("Training keyboard-input regression: button_grab_refused=%s case1_ok=%s case2_ok=%s events=%s" % [button_grab_refused, case1_ok, case2_ok, events])
+		push_error("Training keyboard-input regression: button_grab_refused=%s case1_ok=%s case2_ok=%s case3_ok=%s events=%s" % [button_grab_refused, case1_ok, case2_ok, case3_ok, events])
 	print("Training keyboard input test %s." % ("passed" if valid else "failed"))
 	quit(0 if valid else 22)

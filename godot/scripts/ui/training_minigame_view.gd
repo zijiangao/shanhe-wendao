@@ -148,7 +148,14 @@ func _process(_delta: float) -> void:
 	# it ever reaches _unhandled_input below, exactly like the buttons this
 	# view already protects. Re-releasing every frame keeps the round's
 	# direction input safe for its whole lifetime, not just the first frame.
-	if get_viewport().gui_get_focus_owner() != null:
+	# Only steal focus back from OUTSIDE this view, though: the result
+	# screen's own "收功" button is a legitimate focusable control inside
+	# this view, and an unconditional release fought it every single frame,
+	# breaking it for keyboard/controller confirm AND mouse clicks (a click
+	# grabs focus as part of its own press/release cycle, which this same
+	# guard was un-granting before the cycle could complete).
+	var focus_owner := get_viewport().gui_get_focus_owner()
+	if focus_owner != null and not is_ancestor_of(focus_owner):
 		get_viewport().gui_release_focus()
 	if timing_fill == null or round_started_ms <= 0:
 		return
