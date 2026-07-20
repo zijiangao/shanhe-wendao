@@ -63,6 +63,7 @@ func _capture() -> void:
 		if last_good_title in str((label as Label).text):
 			trailing_label = label
 			break
+	var trailing_label_found := trailing_label != null
 	var reachable := false
 	if scroll != null and trailing_label != null:
 		var visible_rect := scroll.get_global_rect()
@@ -76,11 +77,28 @@ func _capture() -> void:
 	var equipped_armor_shown := labels.any(func(l): return "【当前装备】" in str((l as Label).text) and equipped_armor_title in str((l as Label).text))
 	var other_weapon_shown := labels.any(func(l): return other_weapon_title in str((l as Label).text) and "【当前装备】" not in str((l as Label).text))
 
+	# Owned-but-unequipped gear must be directly switchable from here, not
+	# just viewable -- find the one "装备" button that isn't attached to the
+	# already-equipped rows (they have none) and confirm pressing it actually
+	# re-equips, without requiring a trip back to 西市.
+	var equip_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b): return (b as Button).text == "装备")
+	var equip_button_count := equip_buttons.size()
+	var equip_switch_ok := false
+	if equip_button_count > 0:
+		(equip_buttons[0] as Button).pressed.emit()
+		for frame in range(2):
+			await process_frame
+		# One of the two catalogs' first still-owned, now-equipped id should
+		# have changed away from weapon_ids[0]/armor_ids[0] -- whichever
+		# button happened to be first in the tree (weapon or armor row).
+		equip_switch_ok = str(game_state.data.equipped_weapon) != weapon_ids[0] or str(game_state.data.equipped_armor) != armor_ids[0]
+
 	var output_path := "user://backpack_preview.png"
 	var result := main_scene.get_viewport().get_texture().get_image().save_png(output_path)
-	var valid := result == OK and bare_ok and has_scroll and trailing_label != null and reachable
+	var valid := result == OK and bare_ok and has_scroll and trailing_label_found and reachable
 	valid = valid and equipped_weapon_shown and equipped_armor_shown and other_weapon_shown
+	valid = valid and equip_button_count > 0 and equip_switch_ok
 	print("Backpack preview saved to: %s" % ProjectSettings.globalize_path(output_path))
 	if not valid:
-		push_error("Backpack screen regression: bare_ok=%s has_scroll=%s reachable=%s equipped_weapon_shown=%s equipped_armor_shown=%s other_weapon_shown=%s" % [bare_ok, has_scroll, reachable, equipped_weapon_shown, equipped_armor_shown, other_weapon_shown])
+		push_error("Backpack screen regression: result=%s trailing_label_found=%s bare_ok=%s has_scroll=%s reachable=%s equipped_weapon_shown=%s equipped_armor_shown=%s other_weapon_shown=%s equip_button_count=%s equip_switch_ok=%s" % [result, trailing_label_found, bare_ok, has_scroll, reachable, equipped_weapon_shown, equipped_armor_shown, other_weapon_shown, equip_button_count, equip_switch_ok])
 	quit(0 if valid else 20)

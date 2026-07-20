@@ -776,9 +776,13 @@ func _focus_first_content_control() -> void:
 
 func _show_map() -> void:
 	_clear_content()
-	var places: Array[String] = ["qingyun", "blackreed"]
-	if _luoyang_unlocked():
-		places.append("luoyang")
+	# Luoyang's West Market (shop + backpack economy) is meant to be usable
+	# from the very start of a playthrough, not gated behind story progress
+	# like the other locations -- deliberately does NOT use
+	# _luoyang_unlocked(), which still gates the quest-journal chapter text
+	# ladder in _show_quests() and must keep meaning "the main story has
+	# reached Luoyang," a separate concern from map reachability.
+	var places: Array[String] = ["qingyun", "blackreed", "luoyang"]
 	if _huashan_unlocked():
 		places.append("huashan")
 	if _emei_unlocked():
@@ -1579,7 +1583,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.72.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.73.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1869,7 +1873,7 @@ func _show_character() -> void:
 	var weapon_text := "赤手" if weapon_id == "" else "%s（攻击+%d）" % [str(SHOP_RULES.WEAPONS.get(weapon_id, {}).get("title", "")), SHOP_RULES.weapon_attack_bonus(GameState.data)]
 	var armor_id := str(GameState.data.get("equipped_armor", ""))
 	var armor_text := "无护具" if armor_id == "" else "%s（防御+%d）" % [str(SHOP_RULES.ARMORS.get(armor_id, {}).get("title", "")), SHOP_RULES.armor_defense_bonus(GameState.data)]
-	items.text = "已装备：青锋剑（淬炼 %d/3）· %s · %s\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [GameState.data.forge_level, weapon_text, armor_text, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
+	items.text = "已装备：%s · %s\n淬炼层数：%d/3（额外攻击 +%d，随手法生效，与是否佩剑无关）\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [weapon_text, armor_text, GameState.data.forge_level, GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
 	items.add_theme_font_size_override("font_size", 17)
 	items.add_theme_color_override("font_color", Color("#f4eee2"))
 	info.add_child(items)
@@ -1901,7 +1905,7 @@ func _show_backpack() -> void:
 	title.add_theme_color_override("font_color", Color("#193128"))
 	panel.add_child(title)
 	var hint := Label.new()
-	hint.text = "前往洛阳城西市可购置、更换或出售装备与物资。"
+	hint.text = "已购置的装备可在此直接更换；购置或出售仍需前往洛阳城西市。"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_color_override("font_color", Color("#526159"))
 	panel.add_child(hint)
@@ -1950,7 +1954,8 @@ func _backpack_section_title(text_value: String) -> Label:
 ## category is "weapon" or "armor"; id is a ShopRules catalog key or "" for
 ## bare-handed/unarmored. equipped controls the highlighted row color and the
 ## "【当前装备】" prefix -- callers pass true for the two fixed equipped-slot
-## rows and false for every other owned-but-inactive item.
+## rows and false for every other owned-but-inactive item, which get their
+## own "装备" button so switching gear doesn't require a trip to 西市.
 func _backpack_equipment_row(category: String, id: String, equipped: bool) -> PanelContainer:
 	var catalog: Dictionary = SHOP_RULES.WEAPONS if category == "weapon" else SHOP_RULES.ARMORS
 	var bonus_key := "attack_bonus" if category == "weapon" else "defense_bonus"
@@ -1962,14 +1967,28 @@ func _backpack_equipment_row(category: String, id: String, equipped: bool) -> Pa
 	var secondary := "%s +%d" % [bonus_label, int(item.get(bonus_key, 0))] if id != "" else "尚未购置"
 	var panel_color := Color("#294438") if equipped else Color("#4b514d")
 	var text_color := Color("#f2dfb3") if equipped else Color("#dbe0d9")
-	return _backpack_row(UI_THEME.item_icon(id) if id != "" else null, primary, secondary, panel_color, text_color)
+	var action_button: Button = null
+	if not equipped and id != "":
+		action_button = UI_THEME.action_button("装备", Color("#294438"))
+		action_button.custom_minimum_size = Vector2(96, 44)
+		action_button.add_theme_font_size_override("font_size", 16)
+		action_button.pressed.connect(_equip_from_backpack.bind(category, id))
+	return _backpack_row(UI_THEME.item_icon(id) if id != "" else null, primary, secondary, panel_color, text_color, action_button)
+
+func _equip_from_backpack(category: String, id: String) -> void:
+	var ok := SHOP_RULES.equip_weapon(GameState.data, id) if category == "weapon" else SHOP_RULES.equip_armor(GameState.data, id)
+	if not ok:
+		_toast("这件装备不在你的行囊中。")
+		return
+	SaveManager.save_auto()
+	_show_backpack()
 
 func _backpack_goods_row(good_id: String) -> PanelContainer:
 	var item: Dictionary = SHOP_RULES.GOODS.get(good_id, {})
 	var count := int(GameState.data.materials.get(good_id, 0)) if good_id in ["herbs", "ore"] else int(GameState.data.consumables.get(good_id, 0))
-	return _backpack_row(UI_THEME.item_icon(good_id), str(item.get("title", good_id)), "携带 %d 份" % count, Color("#4b514d"), Color("#dbe0d9"))
+	return _backpack_row(UI_THEME.item_icon(good_id), str(item.get("title", good_id)), "携带 %d 份" % count, Color("#4b514d"), Color("#dbe0d9"), null)
 
-func _backpack_row(icon_texture: Texture2D, primary_text: String, secondary_text: String, panel_color: Color, text_color: Color) -> PanelContainer:
+func _backpack_row(icon_texture: Texture2D, primary_text: String, secondary_text: String, panel_color: Color, text_color: Color, action_button: Button) -> PanelContainer:
 	var row := PanelContainer.new()
 	row.add_theme_stylebox_override("panel", _box(panel_color))
 	var row_content := HBoxContainer.new()
@@ -1990,6 +2009,9 @@ func _backpack_row(icon_texture: Texture2D, primary_text: String, secondary_text
 	entry.add_theme_font_size_override("font_size", 17)
 	entry.add_theme_color_override("font_color", text_color)
 	row_content.add_child(entry)
+	if action_button != null:
+		action_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row_content.add_child(action_button)
 	return row
 
 func _show_settings() -> void:
