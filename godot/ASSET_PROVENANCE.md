@@ -18,6 +18,7 @@ All files below were created specifically for this project under human art direc
 | `assets/art/ui-source/map-marker-states-black.png` | World-map marker atlas source | Original inactive, current, and unknown painted banner markers on flat black |
 | `assets/art/ui-source/top-nav-icons-black.png` | Top-navigation icon atlas source | Six original monochrome ink-brush navigation symbols on flat black |
 | `assets/art/ui-source/achievement-badge-states-black.png` | Achievement frame atlas source | Matching locked and unlocked ornamental medallion frames on flat black |
+| `assets/art/ui-source/item-icons-sheet-black.png` | Shop/backpack item icon atlas source | Ten original monochrome ink-brush icons (three weapons, three armors, four tradeable goods matching the shop's item catalog) on flat black |
 | `assets/art/locations/qingyun-courtyard.png` | Qingyun location | Cool dawn mountain sect courtyard with lower-center interaction space |
 | `assets/art/locations/luoyang-market.png` | Luoyang location | Warm late-afternoon ancient city market and governor residence |
 | `assets/art/locations/huashan-terrace.png` | Huashan location | Cool daylight cliff-top sword trial terrace and sea of clouds |
@@ -38,6 +39,7 @@ The six `ui-source/*.png` files above were generated on a flat chroma backdrop (
 | `assets/ui/map_marker_visited.png`, `map_marker_current.png`, `map_marker_locked.png` | `ui-source/map-marker-states-black.png` (3-way split) |
 | `assets/ui/achievement_badge_locked.png`, `achievement_badge_unlocked.png` | `ui-source/achievement-badge-states-black.png` (2-way split) |
 | `assets/ui/nav_icon_map.png`, `nav_icon_quest.png`, `nav_icon_character.png`, `nav_icon_achievement.png`, `nav_icon_save.png`, `nav_icon_settings.png` | `ui-source/top-nav-icons-black.png` (6-way split) |
+| `assets/ui/item_iron_sword.png`, `item_cold_crow_blade.png`, `item_dragon_etched_sword.png`, `item_hedgehog_mail.png`, `item_dark_iron_armor.png`, `item_cold_jade_armor.png`, `item_herbs.png`, `item_ore.png`, `item_healing_powder.png`, `item_thunder_stone.png` | `ui-source/item-icons-sheet-black.png` (10-way split) |
 
 ## Audio assets
 
