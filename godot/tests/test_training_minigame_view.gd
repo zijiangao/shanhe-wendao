@@ -11,6 +11,13 @@ func _capture() -> void:
 	main_scene._start_training("swordsmanship")
 	main_scene.training_round = 1
 	main_scene._next_training_target()
+	# _next_training_target() resets training_started_ms to the "pending
+	# start" sentinel (0) that TRAINING_READY_DELAY relies on in normal play.
+	# This test calls it directly instead of going through
+	# _show_training_round_ready(), so nothing would ever clear the sentinel
+	# on its own -- these previews are meant to depict a live, already-active
+	# round, not the disabled pre-start state, so force it forward.
+	main_scene.training_started_ms = Time.get_ticks_msec()
 	main_scene._rebuild()
 	for frame in range(4):
 		await process_frame
@@ -20,6 +27,7 @@ func _capture() -> void:
 	main_scene._start_training("mining")
 	main_scene.training_round = 1
 	main_scene._next_training_target()
+	main_scene.training_started_ms = Time.get_ticks_msec()
 	main_scene._rebuild()
 	await create_timer(0.8).timeout
 	await RenderingServer.frame_post_draw

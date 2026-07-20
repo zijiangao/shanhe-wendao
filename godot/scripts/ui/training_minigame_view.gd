@@ -20,6 +20,11 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	discipline_id = discipline
 	round_started_ms = started_ms
+	# 0 is the "not started yet" sentinel main.gd uses while the challenge is
+	# shown but the read-it-first grace window (TRAINING_READY_DELAY) hasn't
+	# elapsed. Buttons/keyboard input stay inert and the timing meter needle
+	# stays parked until a rebuild arrives with a real started_ms.
+	var is_pending_start := round_started_ms <= 0
 	timing_ideal_ms = int(challenge.get("ideal_ms", 1000 if discipline == "bladesmanship" else 1200))
 	var spec: Dictionary = RULES.DISCIPLINES[discipline]
 	var backdrop := ColorRect.new()
@@ -99,23 +104,30 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 		# _unhandled_input below; a focusable button here would let Godot's
 		# focus-navigation steal those same ui_up/down/left/right presses first.
 		button.focus_mode = Control.FOCUS_NONE
+		button.disabled = is_pending_start
 		button.add_theme_font_size_override("font_size", 24)
 		button.add_theme_stylebox_override("normal", _box(Color("#294438")))
 		button.add_theme_stylebox_override("hover", _box(Color("#365b4b")))
+		button.add_theme_stylebox_override("disabled", _box(Color("#1c2620")))
+		button.add_theme_color_override("font_disabled_color", Color("#6c766f"))
 		button.pressed.connect(func(): direction_selected.emit(direction))
 		buttons[direction] = button
 		grid.add_child(button)
 	feedback_label = Label.new()
-	feedback_label.text = (last_feedback + "\n" if last_feedback != "" else "") + "方向键 / 自定义键位 / 手柄方向 / 点击按钮"
+	var hint_text := "准备中…" if is_pending_start else "方向键 / 自定义键位 / 手柄方向 / 点击按钮"
+	feedback_label.text = (last_feedback + "\n" if last_feedback != "" else "") + hint_text
 	feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	feedback_label.add_theme_color_override("font_color", _quality_color(last_quality) if last_feedback != "" else Color("#aeb9b1"))
 	page.add_child(feedback_label)
 	if last_feedback != "":
+		# Fade-in only: feedback_label is a VBoxContainer child, so its real
+		# position is assigned by the container's own layout pass. Animating
+		# "position.y" here (as the streak label safely does with "scale")
+		# overwrote that assigned position with an absolute offset near the
+		# top of the panel instead of a relative nudge, pinning the label
+		# over the title on every round instead of below the button grid.
 		feedback_label.modulate.a = 0.0
-		feedback_label.position.y = 8.0
-		var feedback_tween := create_tween().set_parallel(true)
-		feedback_tween.tween_property(feedback_label, "modulate:a", 1.0, 0.16)
-		feedback_tween.tween_property(feedback_label, "position:y", 0.0, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		create_tween().tween_property(feedback_label, "modulate:a", 1.0, 0.16)
 	if streak >= 2:
 		streak_label.scale = Vector2(0.88, 0.88)
 		streak_label.pivot_offset = streak_label.size * 0.5
@@ -128,6 +140,16 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	get_viewport().gui_release_focus()
 
 func _process(_delta: float) -> void:
+	# setup() releases focus once at construction time, but a header nav
+	# button can still grab it again later (e.g. a stray Tab, or focus left
+	# over from before training started) -- and a horizontally laid out
+	# header has real left/right focus-neighbors of its own, which would
+	# swallow a ui_left/ui_right press via Godot's focus-navigation before
+	# it ever reaches _unhandled_input below, exactly like the buttons this
+	# view already protects. Re-releasing every frame keeps the round's
+	# direction input safe for its whole lifetime, not just the first frame.
+	if get_viewport().gui_get_focus_owner() != null:
+		get_viewport().gui_release_focus()
 	if timing_fill == null or round_started_ms <= 0:
 		return
 	var elapsed := maxi(0, Time.get_ticks_msec() - round_started_ms)
@@ -162,7 +184,7 @@ func _add_timing_meter(page: VBoxContainer, spec: Dictionary) -> void:
 	track.add_child(timing_fill)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not is_visible_in_tree() or prompt_label == null:
+	if not is_visible_in_tree() or prompt_label == null or round_started_ms <= 0:
 		return
 	var direction := ""
 	if event.is_action_pressed("ui_up"):
@@ -208,6 +230,21 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 	score.add_theme_font_size_override("font_size", 19)
 	score.add_theme_color_override("font_color", Color("#e9e1cf"))
 	page.add_child(score)
+	var round_details: Array = result.get("round_details", [])
+	if not round_details.is_empty():
+		var breakdown_card := PanelContainer.new()
+		breakdown_card.add_theme_stylebox_override("panel", _box(Color("#1c2e26")))
+		page.add_child(breakdown_card)
+		var breakdown_lines: Array[String] = []
+		for i in range(round_details.size()):
+			var detail: Dictionary = round_details[i]
+			breakdown_lines.append("第 %d 式：%.2f 秒 · %s · +%d 分" % [i + 1, float(detail.get("elapsed_ms", 0)) / 1000.0, str(detail.get("feedback", "")), int(detail.get("score", 0))])
+		var breakdown_text := Label.new()
+		breakdown_text.text = "\n".join(breakdown_lines)
+		breakdown_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		breakdown_text.add_theme_font_size_override("font_size", 15)
+		breakdown_text.add_theme_color_override("font_color", Color("#cfc8b8"))
+		breakdown_card.add_child(breakdown_text)
 	var event: Dictionary = result.get("event", {})
 	var discovery: Dictionary = result.get("herb_discovery", {})
 	if not discovery.is_empty():

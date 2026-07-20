@@ -61,6 +61,7 @@ var training_challenge: Dictionary = {}
 var training_input_index: int = 0
 var training_started_ms: int = 0
 var training_scores: Array = []
+var training_round_details: Array = []
 var training_result: Dictionary = {}
 var training_last_feedback: String = ""
 var training_streak: int = 0
@@ -1128,6 +1129,7 @@ func _start_training(discipline: String) -> void:
 	training_discipline = discipline
 	training_round = 0
 	training_scores = []
+	training_round_details = []
 	training_result = {}
 	training_last_feedback = ""
 	training_streak = 0
@@ -1135,7 +1137,22 @@ func _start_training(discipline: String) -> void:
 	training_last_quality = ""
 	choice_event = ""
 	_next_training_target()
+	_show_training_round_ready()
+
+const TRAINING_READY_DELAY := 0.6
+
+## Shows the freshly-built challenge immediately (so the player can read it)
+## but leaves training_started_ms at its 0 sentinel and the round buttons
+## disabled until TRAINING_READY_DELAY passes, then starts the real timer.
+## Without this gap, timing began the instant a round appeared, so reading a
+## multi-step prompt for the first time ate directly into the score window.
+func _show_training_round_ready() -> void:
 	screen = "training"
+	_rebuild()
+	await get_tree().create_timer(TRAINING_READY_DELAY).timeout
+	if screen != "training" or not training_result.is_empty():
+		return
+	training_started_ms = Time.get_ticks_msec()
 	_rebuild()
 
 func _next_training_target() -> void:
@@ -1146,7 +1163,7 @@ func _next_training_target() -> void:
 	training_challenge = TRAINING_RULES.challenge(training_discipline, primary, secondary, training_round >= 1)
 	training_input_index = 0
 	training_target = str(training_challenge.targets[0])
-	training_started_ms = Time.get_ticks_msec()
+	training_started_ms = 0
 
 func _show_training() -> void:
 	_clear_content()
@@ -1161,7 +1178,7 @@ func _show_training() -> void:
 	active_training_view.continue_requested.connect(_finish_training_screen)
 
 func _training_direction_selected(direction: String) -> void:
-	if screen != "training" or not training_result.is_empty() or active_training_view == null:
+	if screen != "training" or not training_result.is_empty() or active_training_view == null or training_started_ms <= 0:
 		return
 	active_training_view.set_locked()
 	var targets: Array = training_challenge.get("targets", [])
@@ -1180,6 +1197,7 @@ func _training_direction_selected(direction: String) -> void:
 	training_last_quality = str(evaluation.quality)
 	var bonus_text := " · 连击 +%d" % int(evaluation.combo_bonus) if int(evaluation.combo_bonus) > 0 else ""
 	training_last_feedback = "%s · +%d 分%s" % [str(evaluation.feedback), round_score, bonus_text]
+	training_round_details.append({"elapsed_ms": elapsed, "feedback": str(evaluation.feedback), "score": round_score})
 	AudioFeedback.play({"perfect": "training_perfect", "great": "training_good", "ok": "training_ok", "miss": "training_miss"}.get(training_last_quality, "training_ok"), 1.0 + 0.04 * float(training_streak))
 	training_round += 1
 	if training_round >= TRAINING_RULES.ROUND_COUNT:
@@ -1193,13 +1211,14 @@ func _training_direction_selected(direction: String) -> void:
 		else:
 			training_result.score = total
 			training_result.best_streak = training_best_streak
+			training_result.round_details = training_round_details.duplicate(true)
 			AudioFeedback.play("training_result", 1.12 if str(training_result.grade) == "S" else 1.0)
 			SaveManager.save_auto()
 		_rebuild()
 		return
 	await get_tree().create_timer(0.18).timeout
 	_next_training_target()
-	_rebuild()
+	_show_training_round_ready()
 
 func _finish_training_screen() -> void:
 	training_discipline = ""
@@ -1416,7 +1435,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.67.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.68.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

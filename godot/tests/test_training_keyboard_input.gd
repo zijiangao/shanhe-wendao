@@ -47,6 +47,12 @@ func _run() -> void:
 	for frame in range(2):
 		await process_frame
 	main_scene._start_training("swordsmanship")
+	# Rounds now open in a "pending start" state (see TRAINING_READY_DELAY in
+	# main.gd) where input is deliberately ignored until the read-it-first
+	# grace window elapses. Wait past it before pressing anything, or every
+	# press below would be silently dropped and this test would fail for a
+	# reason unrelated to the keyboard-focus regression it actually guards.
+	await create_timer(main_scene.TRAINING_READY_DELAY + 0.15).timeout
 	for frame in range(4):
 		await process_frame
 
