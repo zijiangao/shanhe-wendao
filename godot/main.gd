@@ -1622,10 +1622,15 @@ func _show_character() -> void:
 	info_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info_panel.add_theme_stylebox_override("panel", UI_THEME.panel_box(UI_THEME.DARK_TINT))
 	page.add_child(info_panel)
+	var info_scroll := ScrollContainer.new()
+	info_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	info_panel.add_child(info_scroll)
 	var info := VBoxContainer.new()
-	# Keep long-term training records and both field guides visible at 1080p.
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Content keeps growing (specialties, companions, mastery); scroll rather
+	# than rely on it fitting a fixed panel height at 1280x720.
 	info.add_theme_constant_override("separation", 6)
-	info_panel.add_child(info)
+	info_scroll.add_child(info)
 	var heading := Label.new()
 	heading.text = "人物总览"
 	heading.add_theme_font_size_override("font_size", 27)
@@ -1701,6 +1706,9 @@ func _show_character() -> void:
 	mastery.add_theme_font_size_override("font_size", 15)
 	mastery.add_theme_color_override("font_color", Color("#cfc8b8"))
 	info.add_child(mastery)
+	var bottom_spacer := Control.new()
+	bottom_spacer.custom_minimum_size.y = 16
+	info.add_child(bottom_spacer)
 
 func _show_settings() -> void:
 	_clear_content()
