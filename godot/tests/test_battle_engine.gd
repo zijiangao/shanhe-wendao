@@ -7,6 +7,7 @@ func _initialize() -> void:
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
 	_test_healing_powder()
+	_test_hero_brace_and_guard()
 	_test_cultivation_damage_bonus()
 	_test_specialty_damage_bonus()
 	_test_specialty_mastery_perks()
@@ -96,6 +97,26 @@ func _test_healing_powder() -> void:
 	assert(int(player.consumables.healing_powder) == 0 and int(battle.ap) == 1, "Healing should consume one item and one action point.")
 	var failed: Dictionary = ENGINE.player_action(battle, player, "heal")
 	assert(not bool(failed.ok) and int(battle.ap) == 1, "Using a missing healing powder must preserve action points.")
+
+func _test_hero_brace_and_guard() -> void:
+	var battle := _fixture()
+	battle.active_unit = "hero"
+	battle.ap = 2
+	battle.hero_guard = 0
+	battle.enemies[0].x = 2
+	battle.enemies[0].y = 1
+	var player := _player_fixture()
+	player.qi = 10
+	player.constitution = 4
+	var brace: Dictionary = ENGINE.player_action(battle, player, "brace")
+	assert(bool(brace.ok) and int(battle.hero_guard) == 8 and int(player.qi) == 13 and int(battle.ap) == 1, "Hero brace should trade one action for constitution-scaled guard and three qi.")
+	var outcome: Dictionary = ENGINE.enemy_turn(battle, 20, _seeded_rng())
+	assert(int(outcome.hero_hp) == 18 and int(battle.hero_guard) == 0, "Hero guard should absorb eight points from the seeded ten-damage strike before health.")
+	assert(str(battle.effects[0].type) == "damage" and int(outcome.events[1].blocked) == 8, "Partially blocked hero damage should reach both board feedback and presentation events.")
+	battle = _fixture()
+	battle.active_unit = "ally"
+	battle.ap = 1
+	assert(not bool(ENGINE.player_action(battle, player, "brace").ok) and int(battle.ap) == 1, "An ally turn must reject hero brace without consuming action points.")
 
 func _test_cultivation_damage_bonus() -> void:
 	var low_battle := _fixture()
@@ -417,6 +438,7 @@ func _fixture() -> Dictionary:
 		"player_x": 1,
 		"player_y": 1,
 		"active_unit": "ally",
+		"hero_guard": 0,
 		"ap": 0,
 		"turn": 1,
 		"blocked": [],

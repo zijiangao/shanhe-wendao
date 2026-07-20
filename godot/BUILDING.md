@@ -92,6 +92,8 @@ The training preview covers the advanced three-technique sword sequence, the sho
 
 The weekly training focus rotates deterministically through sword, blade, herbalism, and mining. Following the highlighted focus grants three extra cultivation points. The Qingyun training action, character overview, training choice, and result verdict all expose the current focus so the recommendation never depends on hidden knowledge.
 
+The hero combat action 运气护体 spends one action point to gain constitution-scaled guard and recover three qi. Incoming attacks consume this guard before health, including boss sweeps, while the tactical status and hit feedback expose both remaining and blocked amounts.
+
 Godot writes `combat_feedback_preview.png` to the project user-data folder after exercising the real skill-impact animation path.
 
 Verify the packaged one-time reward flow from either exported executable:

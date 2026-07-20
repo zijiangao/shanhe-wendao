@@ -1365,7 +1365,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.45.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.46.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1965,7 +1965,7 @@ func _show_battle() -> void:
 	view.end_turn_requested.connect(_enemy_turn)
 
 func _battle_mode_selected(next_mode: String) -> void:
-	if next_mode in ["frost_guard", "heal"]:
+	if next_mode in ["frost_guard", "brace", "heal"]:
 		_execute_player_action(next_mode)
 		return
 	battle_mode = next_mode
@@ -2207,7 +2207,7 @@ func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) ->
 		AudioFeedback.play("error")
 		_toast(str(outcome.error))
 		return
-	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "frost_dash": "skill", "frost_guard": "turn", "heal": "confirm"}.get(action, "confirm"))
+	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "frost_dash": "skill", "frost_guard": "turn", "brace": "turn", "heal": "confirm"}.get(action, "confirm"))
 	var battle: Dictionary = outcome.battle
 	if _check_tactical_victory(battle):
 		SaveManager.save_auto()

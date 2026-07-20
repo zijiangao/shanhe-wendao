@@ -115,7 +115,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	var active_name: String = "林清霜" if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
 	var active_hp: int = int(battle.ally.hp) if active_name == "林清霜" else int(player.hp)
 	var active_max_hp: int = int(battle.ally.max_hp) if active_name == "林清霜" else int(player.max_hp)
-	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if active_name == "林清霜" else "真气 %d/20" % player.qi
+	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if active_name == "林清霜" else "真气 %d/20 · 护体 %d" % [player.qi, int(battle.get("hero_guard", 0))]
 	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.ap, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
 	status.add_theme_font_size_override("font_size", 17)
 	status.add_theme_color_override("font_color", Color("#f2dfb3"))
@@ -146,6 +146,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	else:
 		var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
 		actions.append(["流云剑法 · %d真气" % qi_cost, "skill"])
+		actions.append(["运气护体 · 回3气", "brace"])
 		actions.append(["回春散 · 回%d" % BATTLE_ENGINE.healing_amount(player), "heal"])
 		actions.append(["取消选择", "inspect"])
 	for action in actions:
@@ -312,7 +313,7 @@ func _animate_skill_name(label: Control) -> void:
 	tween.tween_property(label, "modulate:a", 1.0, 0.12)
 
 func _mode_name(mode: String) -> String:
-	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "frost_dash": "霜华刺", "frost_guard": "寒锋守势", "inspect": "查看战场"}.get(mode, mode)
+	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "brace": "运气护体", "frost_dash": "霜华刺", "frost_guard": "寒锋守势", "inspect": "查看战场"}.get(mode, mode)
 
 func _battle_token(index: int) -> Texture2D:
 	if index == 4:

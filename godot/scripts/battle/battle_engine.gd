@@ -35,12 +35,15 @@ static func healing_amount(player: Dictionary) -> int:
 	var herbalism := int(player.get("herbalism", 0))
 	return 12 + herbalism / 2 + TRAINING_RULES.medicine_mastery_bonus(herbalism)
 
+static func hero_guard_amount(player: Dictionary) -> int:
+	return 6 + int(player.get("constitution", 0)) / 2
+
 static func hero_action_help(player: Dictionary) -> String:
 	var normal := normal_damage_range(player)
 	var cloud := cloud_damage_range(player)
 	var exposure := TRAINING_RULES.attack_exposure_gain(int(player.get("bladesmanship", 0)))
 	var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
-	return "普攻 %d–%d（护甲前）· 命中制造%d层破绽\n剑法 %d–%d（无视护甲）· 每层破绽追加4 · 消耗%d真气\n回春散恢复%d气血 · 所有行动均消耗1行动点" % [normal.x, normal.y, exposure, cloud.x, cloud.y, qi_cost, healing_amount(player)]
+	return "普攻 %d–%d（护甲前）· 命中制造%d层破绽\n剑法 %d–%d（无视护甲）· 每层破绽追加4 · 消耗%d真气\n运气护体获得%d护体并恢复3真气 · 回春散恢复%d气血" % [normal.x, normal.y, exposure, cloud.x, cloud.y, qi_cost, hero_guard_amount(player), healing_amount(player)]
 
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
 	if int(battle.ap) <= 0:
@@ -58,6 +61,8 @@ static func player_action(battle: Dictionary, player: Dictionary, action: String
 			return _frost_guard(battle, player)
 		"heal":
 			return _use_healing_powder(battle, player)
+		"brace":
+			return _hero_brace(battle, player)
 		_:
 			return _failure("未知战斗行动：%s" % action)
 
@@ -159,6 +164,20 @@ static func _use_healing_powder(battle: Dictionary, player: Dictionary) -> Dicti
 	_clear_effect(battle)
 	return {"ok": true, "battle": battle, "damage": 0, "healed": int(player.hp) - before, "error": ""}
 
+static func _hero_brace(battle: Dictionary, player: Dictionary) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) != "hero":
+		return _failure("运气护体只能由沈羽施展。")
+	var guard := hero_guard_amount(player)
+	battle.hero_guard = guard
+	var restored := mini(20, int(player.get("qi", 0)) + 3) - int(player.get("qi", 0))
+	player.qi = int(player.get("qi", 0)) + restored
+	battle.ap = int(battle.ap) - 1
+	battle.result = "沈羽运气护体，获得%d点护体并恢复%d点真气。" % [guard, restored]
+	_clear_effect(battle)
+	battle.skill_flash = true
+	battle.skill_name = "运 气 护 体"
+	return _success(battle, 0)
+
 static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var total_hurt := 0
 	var special_notes: PackedStringArray = []
@@ -180,11 +199,14 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 			var sweep_damage := int(enemy.attack) + 2 + _roll_bonus(rng)
 			var sweep_hits := 0
 			if RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.player_x), int(battle.player_y))):
-				hero_hp = maxi(0, hero_hp - sweep_damage)
-				total_hurt += sweep_damage
+				var hero_blocked := mini(sweep_damage, maxi(0, int(battle.get("hero_guard", 0))))
+				var hero_hurt := sweep_damage - hero_blocked
+				battle.hero_guard = maxi(0, int(battle.get("hero_guard", 0)) - hero_blocked)
+				hero_hp = maxi(0, hero_hp - hero_hurt)
+				total_hurt += hero_hurt
 				sweep_hits += 1
-				effects.append(_damage_effect(Vector2i(int(battle.player_x), int(battle.player_y)), sweep_damage))
-				events.append(_hit_event(str(enemy.name), "沈羽", Vector2i(int(battle.player_x), int(battle.player_y)), sweep_damage, 0, "heavy"))
+				effects.append(_damage_effect(Vector2i(int(battle.player_x), int(battle.player_y)), hero_hurt, hero_blocked))
+				events.append(_hit_event(str(enemy.name), "沈羽", Vector2i(int(battle.player_x), int(battle.player_y)), hero_hurt, hero_blocked, "heavy"))
 			if battle.has("ally") and int(battle.ally.hp) > 0 and RULES.in_boss_sweep_range(enemy, Vector2i(int(battle.ally.x), int(battle.ally.y))):
 				var ally_hurt := sweep_damage
 				var blocked := mini(ally_hurt, int(battle.ally.guard))
@@ -221,9 +243,12 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				effects.append(_damage_effect(target, hurt, blocked))
 				events.append(_hit_event(str(enemy.name), str(battle.ally.name), target, hurt, blocked, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
 			else:
+				var hero_blocked := mini(hurt, maxi(0, int(battle.get("hero_guard", 0))))
+				hurt -= hero_blocked
+				battle.hero_guard = maxi(0, int(battle.get("hero_guard", 0)) - hero_blocked)
 				hero_hp = maxi(0, hero_hp - hurt)
-				effects.append(_damage_effect(target, hurt))
-				events.append(_hit_event(str(enemy.name), "沈羽", target, hurt, 0, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
+				effects.append(_damage_effect(target, hurt, hero_blocked))
+				events.append(_hit_event(str(enemy.name), "沈羽", target, hurt, hero_blocked, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
 			total_hurt += hurt
 		else:
 			var path := RULES.find_path(battle, enemy_position, target, true)
