@@ -5,6 +5,7 @@ const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const SPARRING_RULES := preload("res://scripts/progression/sparring_rules.gd")
 
 signal cell_selected(x: int, y: int)
 signal mode_selected(mode: String)
@@ -117,6 +118,8 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	var active_max_hp: int = int(battle.ally.max_hp) if active_name == "林清霜" else int(player.max_hp)
 	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if active_name == "林清霜" else "真气 %d/20 · 护体 %d" % [player.qi, int(battle.get("hero_guard", 0))]
 	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.ap, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
+	if str(battle.get("battle_id", "")) == "qingyun_spar":
+		status.text += "\n演武课题：%s · 兵器方向：%s" % [battle.get("name", "青云切磋"), SPARRING_RULES.discipline_name(str(battle.get("discipline", "swordsmanship")))]
 	status.add_theme_font_size_override("font_size", 17)
 	status.add_theme_color_override("font_color", Color("#f2dfb3"))
 	side_box.add_child(status)

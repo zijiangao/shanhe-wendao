@@ -153,6 +153,8 @@ The demo is written separately to `build/windows-demo/ShanheWendaoDemo.exe` with
 
 The Qingyun training menu also offers a repeatable, nonlethal sparring battle. It spends one week, returns to Qingyun after a lightweight reward choice, and never advances the main quest or triggers the demo boundary.
 
+Run `res://tests/test_qingyun_spar_view.gd` without `--headless` to capture `qingyun_spar_preview.png` at 1280×720 and verify that the shipping battle UI shows the rotating lesson and chosen weapon focus.
+
 To visually review the second first-battle tutorial page from the shipping UI, run the full build with `--capture-tactical-tutorial`. It writes `tactical_tutorial_preview.png` to the Godot user-data folder and exits non-zero if the expected tutorial page was not active.
 
 ## Capture Steam store screenshots
