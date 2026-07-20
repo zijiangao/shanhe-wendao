@@ -26,6 +26,7 @@ const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const COMBAT_FEEDBACK := preload("res://scripts/battle/combat_feedback.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const SPARRING_RULES := preload("res://scripts/progression/sparring_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
@@ -843,7 +844,7 @@ func _location_action_requested(action_id: String) -> void:
 			choice_event = "training"
 			choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
 			choice_options = TRAINING_RULES.options(GameState.data)
-			choice_options.append(["实战切磋 · 青云演武场", "短战练习走位、护体与回气；奖励较轻，可反复参加。", "qingyun_spar"])
+			choice_options.append(["实战切磋 · 青云演武场", "短战练习走位、护体与回气；%s。" % SPARRING_RULES.record_text(GameState.data.get("sparring_record", {})), "qingyun_spar"])
 			screen = "choice"
 			_rebuild()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
@@ -1376,7 +1377,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.48.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.49.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2395,6 +2396,8 @@ func _show_victory() -> void:
 	if last_rewards.is_empty() or not pending.is_empty():
 		last_rewards = REWARD_RULES.base_for(reward_battle_id)
 		last_rewards.turns = int(pending.get("turns", last_rewards.get("turns", 0)))
+		last_rewards.grade = str(pending.get("grade", ""))
+		last_rewards.new_best = bool(pending.get("new_best", false))
 	var art := TextureRect.new()
 	art.texture = _battle_texture(last_battle_id)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -2423,6 +2426,13 @@ func _show_victory() -> void:
 	story.add_theme_font_size_override("font_size", 18)
 	story.add_theme_color_override("font_color", Color("#eee5d3"))
 	panel.add_child(story)
+	if not str(last_rewards.get("grade", "")).is_empty():
+		var grade := Label.new()
+		grade.text = "演武评价  %s%s" % [last_rewards.grade, " · 新纪录" if bool(last_rewards.get("new_best", false)) else ""]
+		grade.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		grade.add_theme_font_size_override("font_size", 26)
+		grade.add_theme_color_override("font_color", Color("#dfbf74"))
+		panel.add_child(grade)
 	var rewards := Label.new()
 	rewards.text = "战斗回合    %d\n修为获得    +%d\n银两获得    +%d\n声望提升    +%d\n重要物品    %s" % [last_rewards.get("turns", 0), last_rewards.get("xp", 22), last_rewards.get("silver", 15), last_rewards.get("renown", 4), last_rewards.get("item", "玄铁令")]
 	rewards.add_theme_font_size_override("font_size", 20)

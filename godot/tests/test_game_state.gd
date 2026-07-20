@@ -106,6 +106,7 @@ func _initialize() -> void:
 	state.finish_battle(true)
 	assert(str(state.data.quest_stage) == spar_stage and "玄铁令" not in state.data.items and "villain_revealed" not in state.data.flags, "Optional sparring must not advance or contaminate the main story.")
 	assert(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 4, "Sparring should grant its lighter base reward and save the choice.")
+	assert(str(state.data.pending_reward.grade) == "S" and state.data.pending_reward.new_best and int(state.data.sparring_record.best_turns) == 1, "A sparring victory should persist its grade and first personal best.")
 	assert(state.claim_pending_reward("fellowship") and int(state.data.faction_relations.qingyun) == 2, "Sparring should add the selected reward to the starting Qingyun relationship.")
 
 	state.new_game()
@@ -137,9 +138,11 @@ func _initialize() -> void:
 	old_save.erase("tutorial")
 	old_save.erase("battle_retry")
 	old_save.erase("pending_reward")
+	old_save.erase("sparring_record")
 	assert(state.import_data(old_save), "Saves without onboarding fields should migrate.")
 	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("battle_tactics") and state.data.tutorial.has("battle_defense"), "Migration should add every current tutorial progress field.")
 	assert(typeof(state.data.pending_reward) == TYPE_DICTIONARY and state.data.pending_reward.is_empty(), "Older saves should gain an empty pending reward safely.")
+	assert(typeof(state.data.sparring_record) == TYPE_DICTIONARY and int(state.data.sparring_record.attempts) == 0, "Older saves should gain an empty sparring record safely.")
 
 	state.new_game()
 	state.data.energy = 3

@@ -38,7 +38,8 @@ $tests = @(
     "test_cue_synth.gd",
     "test_steam_service.gd",
     "test_demo_policy.gd",
-	"test_qingyun_spar.gd"
+	"test_qingyun_spar.gd",
+	"test_sparring_rules.gd"
 )
 
 foreach ($test in $tests) {

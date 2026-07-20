@@ -6,6 +6,7 @@ const ENCOUNTER_RULES := preload("res://scripts/battle/encounter_rules.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const TRAINING_EVENT_RULES := preload("res://scripts/progression/training_event_rules.gd")
+const SPARRING_RULES := preload("res://scripts/progression/sparring_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
@@ -14,7 +15,7 @@ signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 9
+const SAVE_VERSION := 10
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -43,6 +44,7 @@ func new_game() -> void:
 		"herbalism": 0,
 		"mining": 0,
 		"training_records": TRAINING_RULES.empty_records(),
+		"sparring_record": SPARRING_RULES.empty_record(),
 		"skills": ["cloud"],
 		"items": ["金疮药", "青锋剑"],
 		"materials": {"herbs": 0, "ore": 0},
@@ -315,6 +317,11 @@ func finish_battle(victory: bool) -> void:
 		data.renown += int(base_reward.renown)
 		data.silver += int(base_reward.silver)
 		data.pending_reward = {"battle_id": battle_id, "turns": battle_turns}
+		if battle_id == "qingyun_spar":
+			var spar_result := SPARRING_RULES.record_victory(data.get("sparring_record", {}), battle_turns)
+			data.sparring_record = spar_result.record
+			data.pending_reward.grade = spar_result.grade
+			data.pending_reward.new_best = spar_result.new_best
 		if battle_id == "wuku_finale":
 			if "武库钥印" not in data.items:
 				data.items.append("武库钥印")
@@ -452,6 +459,7 @@ func _migrate_and_validate() -> void:
 	if typeof(data.get("mineralogy", {})) != TYPE_DICTIONARY:
 		data.mineralogy = {}
 	data.training_records = TRAINING_RULES.normalize_records(data.get("training_records", {}))
+	data.sparring_record = SPARRING_RULES.normalize_record(data.get("sparring_record", {}))
 	if typeof(data.consumables) != TYPE_DICTIONARY:
 		data.consumables = {"healing_powder": 0}
 	# Convert 0.27/0.28 herb items into the dedicated material inventory.
