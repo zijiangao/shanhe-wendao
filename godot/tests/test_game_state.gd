@@ -141,7 +141,7 @@ func _initialize() -> void:
 	old_save.erase("pending_reward")
 	old_save.erase("sparring_record")
 	assert(state.import_data(old_save), "Saves without onboarding fields should migrate.")
-	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("battle_tactics") and state.data.tutorial.has("battle_defense"), "Migration should add every current tutorial progress field.")
+	assert(typeof(state.data.tutorial) == TYPE_DICTIONARY and state.data.tutorial.has("sparring") and state.data.tutorial.has("battle_tactics") and state.data.tutorial.has("battle_defense"), "Migration should add every current tutorial progress field.")
 	assert(typeof(state.data.pending_reward) == TYPE_DICTIONARY and state.data.pending_reward.is_empty(), "Older saves should gain an empty pending reward safely.")
 	assert(typeof(state.data.sparring_record) == TYPE_DICTIONARY and int(state.data.sparring_record.attempts) == 0, "Older saves should gain an empty sparring record safely.")
 

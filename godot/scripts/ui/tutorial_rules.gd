@@ -1,7 +1,7 @@
 class_name TutorialRules
 extends RefCounted
 
-const STEPS := ["map", "location", "battle", "battle_tactics", "battle_defense"]
+const STEPS := ["map", "location", "sparring", "battle", "battle_tactics", "battle_defense"]
 
 static func step_for(screen: String, state: Dictionary) -> String:
 	var seen: Dictionary = state.get("tutorial", {})
@@ -9,6 +9,9 @@ static func step_for(screen: String, state: Dictionary) -> String:
 		return "map"
 	if screen == "location" and str(state.get("location", "")) == "qingyun" and not bool(seen.get("location", false)):
 		return "location"
+	var battle: Dictionary = state.get("battle", {}) if typeof(state.get("battle", {})) == TYPE_DICTIONARY else {}
+	if screen == "battle" and str(battle.get("battle_id", "")) == "qingyun_spar" and not bool(seen.get("sparring", false)):
+		return "sparring"
 	if screen == "battle" and not bool(seen.get("battle", false)):
 		return "battle"
 	if screen == "battle" and not bool(seen.get("battle_tactics", false)):
@@ -34,6 +37,11 @@ static func content(step: String, objective: String) -> Dictionary:
 				"title": "战棋入门",
 				"body": "每回合共有2点行动点。\n\n1. 选择“移动”后点击蓝色格位。\n2. 选择攻击或武学，再点击高亮敌人。\n3. 留意“敌方预判”，行动完后结束回合。\n\n战败后可从战斗开始处重试。"
 			}
+		"sparring":
+			return {
+				"title": "青 云 演 武 · 以 战 代 练",
+				"body": "演武课题每周轮换，战败不会损失银两。\n\n· 3回合内胜出为S，5回合内为A，7回合内为B，其后为C。\n· S/A/B评价会追加4/2/1点修为；C级没有表现修为。\n· 本次选择的剑法或刀法必定提升，S级提升2点，其余提升1点。\n· 最快回合与胜出次数会永久记录；可在修炼菜单查看个人最佳。"
+			}
 		"battle_tactics":
 			return {
 				"title": "看懂敌人 · 制造破绽",
@@ -54,4 +62,4 @@ static func mark_seen(state: Dictionary, step: String) -> void:
 	state.tutorial[step] = true
 
 static func reset(state: Dictionary) -> void:
-	state.tutorial = {"map": false, "location": false, "battle": false, "battle_tactics": false, "battle_defense": false}
+	state.tutorial = {"map": false, "location": false, "sparring": false, "battle": false, "battle_tactics": false, "battle_defense": false}
