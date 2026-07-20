@@ -85,6 +85,8 @@ Capture a live martial-skill impact frame after changing combat presentation:
 
 & $godot --path $project --script res://tests/test_achievements_view.gd
 
+& $godot --path $project --script res://tests/test_defense_tutorial_view.gd
+
 & $godot --path $project --script res://tests/test_controls_view.gd
 ```
 
