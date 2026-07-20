@@ -34,6 +34,12 @@ static func grade_for(turns: int) -> String:
 static func bonus_xp_for_grade(grade: String) -> int:
 	return {"S": 4, "A": 2, "B": 1}.get(grade, 0)
 
+static func skill_gain_for_grade(grade: String) -> int:
+	return 2 if grade == "S" else 1
+
+static func discipline_name(discipline: String) -> String:
+	return "刀法" if discipline == "bladesmanship" else "剑法"
+
 static func record_victory(record_value: Variant, turns: int) -> Dictionary:
 	var record := normalize_record(record_value)
 	var safe_turns := maxi(1, turns)

@@ -221,13 +221,15 @@ func start_blackreed_battle() -> bool:
 	state_changed.emit()
 	return true
 
-func start_qingyun_spar_battle() -> bool:
+func start_qingyun_spar_battle(discipline: String = "swordsmanship") -> bool:
+	if discipline not in ["swordsmanship", "bladesmanship"]:
+		return false
 	var rotation := SPARRING_RULES.rotation_for(int(data.week))
 	if not spend_week():
 		return false
 	data.qi = 20
 	data.battle = {
-		"battle_id": "qingyun_spar", "rotation_id": rotation.id, "name": "青云门 · %s" % rotation.name, "width": 8, "height": 6,
+		"battle_id": "qingyun_spar", "rotation_id": rotation.id, "discipline": discipline, "name": "青云门 · %s" % rotation.name, "width": 8, "height": 6,
 		"player_x": 1, "player_y": 3, "ap": 2, "active_unit": "hero", "hero_guard": 0, "turn": 1,
 		"objective": {"type": "eliminate"},
 		"result": rotation.result,
@@ -307,6 +309,7 @@ func finish_battle(victory: bool) -> void:
 	var battle_id: String = str(data.battle.get("battle_id", "blackreed"))
 	var battle_difficulty: String = str(data.battle.get("difficulty", "standard"))
 	var battle_turns: int = int(data.battle.get("turn", 1))
+	var spar_discipline: String = str(data.battle.get("discipline", "swordsmanship"))
 	data.battle = {}
 	if victory:
 		data.battle_retry = {}
@@ -319,8 +322,12 @@ func finish_battle(victory: bool) -> void:
 			var spar_result := SPARRING_RULES.record_victory(data.get("sparring_record", {}), battle_turns)
 			data.sparring_record = spar_result.record
 			data.xp += int(spar_result.bonus_xp)
+			var skill_gain := SPARRING_RULES.skill_gain_for_grade(str(spar_result.grade))
+			data[spar_discipline] = int(data.get(spar_discipline, 0)) + skill_gain
 			data.pending_reward.grade = spar_result.grade
 			data.pending_reward.performance_xp = spar_result.bonus_xp
+			data.pending_reward.discipline = spar_discipline
+			data.pending_reward.skill_gain = skill_gain
 			data.pending_reward.new_best = spar_result.new_best
 		if battle_id == "wuku_finale":
 			if "武库钥印" not in data.items:

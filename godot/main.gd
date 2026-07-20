@@ -1023,16 +1023,26 @@ func _show_choice() -> void:
 func _resolve_choice(route: String) -> void:
 	if choice_event == "training":
 		if route == "qingyun_spar":
-			choice_event = ""
-			if not GameState.start_qingyun_spar_battle():
-				_toast(_time_action_failure_message())
-				return
-			battle_mode = "move"
-			screen = "battle"
-			SaveManager.save_auto()
+			choice_event = "spar_focus"
+			choice_prompt = "选择本次实战切磋的兵器方向"
+			choice_options = [
+				["以剑应战", "切磋评价将提升剑法专精。", "swordsmanship"],
+				["以刀应战", "切磋评价将提升刀法专精。", "bladesmanship"]
+			]
+			screen = "choice"
 			_rebuild()
 			return
 		_start_training(route)
+		return
+	elif choice_event == "spar_focus":
+		choice_event = ""
+		if not GameState.start_qingyun_spar_battle(route):
+				_toast(_time_action_failure_message())
+				return
+		battle_mode = "move"
+		screen = "battle"
+		SaveManager.save_auto()
+		_rebuild()
 		return
 	elif choice_event == "workshop":
 		if not GameState.craft(route):
@@ -1378,7 +1388,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.51.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.52.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2399,6 +2409,8 @@ func _show_victory() -> void:
 		last_rewards.turns = int(pending.get("turns", last_rewards.get("turns", 0)))
 		last_rewards.grade = str(pending.get("grade", ""))
 		last_rewards.performance_xp = int(pending.get("performance_xp", 0))
+		last_rewards.discipline = str(pending.get("discipline", ""))
+		last_rewards.skill_gain = int(pending.get("skill_gain", 0))
 		last_rewards.xp = int(last_rewards.xp) + int(last_rewards.performance_xp)
 		last_rewards.new_best = bool(pending.get("new_best", false))
 	var art := TextureRect.new()
@@ -2431,7 +2443,7 @@ func _show_victory() -> void:
 	panel.add_child(story)
 	if not str(last_rewards.get("grade", "")).is_empty():
 		var grade := Label.new()
-		grade.text = "演武评价  %s · 表现修为 +%d%s" % [last_rewards.grade, last_rewards.get("performance_xp", 0), " · 新纪录" if bool(last_rewards.get("new_best", false)) else ""]
+		grade.text = "演武评价  %s · 表现修为 +%d · %s +%d%s" % [last_rewards.grade, last_rewards.get("performance_xp", 0), SPARRING_RULES.discipline_name(str(last_rewards.get("discipline", "swordsmanship"))), last_rewards.get("skill_gain", 0), " · 新纪录" if bool(last_rewards.get("new_best", false)) else ""]
 		grade.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		grade.add_theme_font_size_override("font_size", 26)
 		grade.add_theme_color_override("font_color", Color("#dfbf74"))
