@@ -146,10 +146,10 @@ func _verify_training_flow() -> void:
 
 func _verify_crafting_flow() -> void:
 	GameState.new_game()
-	GameState.data.materials = {"herbs": 2, "ore": 5}
+	GameState.data.materials = {"herbs": 2, "ore": 7}
 	var medicine_ok := GameState.craft("healing_powder")
 	var stone_ok := GameState.craft("thunder_stone")
-	var forge_ok := GameState.craft("temper_blade")
+	var forge_ok := GameState.craft("forged_iron_blade")
 	var battle_ok := GameState.start_blackreed_battle()
 	GameState.data.battle.enemies[0].x = 4
 	GameState.data.battle.enemies[0].y = 3
@@ -159,7 +159,7 @@ func _verify_crafting_flow() -> void:
 	var valid := medicine_ok and stone_ok and forge_ok and battle_ok and bool(stone_outcome.get("ok", false)) and bool(heal_outcome.get("ok", false))
 	valid = valid and int(GameState.data.hp) == 32 and int(GameState.data.consumables.healing_powder) == 0
 	valid = valid and int(GameState.data.consumables.thunder_stone) == 0 and int(GameState.data.battle.enemies[0].armor) == 1
-	valid = valid and int(GameState.data.forge_level) == 1 and int(GameState.data.materials.herbs) == 0 and int(GameState.data.materials.ore) == 0
+	valid = valid and str(GameState.data.equipped_weapon) == "forged_iron_blade" and int(GameState.data.materials.herbs) == 0 and int(GameState.data.materials.ore) == 0
 	print("Crafting flow verification passed." if valid else "Crafting flow verification failed.")
 	get_tree().quit(0 if valid else 16)
 
@@ -1661,7 +1661,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.80.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.81.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1963,9 +1963,13 @@ func _show_character() -> void:
 	info.add_child(item_title)
 	var items := Label.new()
 	var weapon_id := str(GameState.data.get("equipped_weapon", ""))
-	var weapon_text := "赤手" if weapon_id == "" else "%s（攻击+%d）" % [str(SHOP_RULES.WEAPONS.get(weapon_id, {}).get("title", "")), SHOP_RULES.weapon_attack_bonus(GameState.data)]
+	var weapon_entry: Dictionary = SHOP_RULES.WEAPONS.get(weapon_id, CRAFTING_RULES.RECIPES.get(weapon_id, {}))
+	var weapon_title: String = str(weapon_entry.get("item_name", weapon_entry.get("title", "")))
+	var weapon_text := "赤手" if weapon_id == "" else "%s（攻击+%d）" % [weapon_title, SHOP_RULES.weapon_attack_bonus(GameState.data)]
 	var armor_id := str(GameState.data.get("equipped_armor", ""))
-	var armor_text := "无护具" if armor_id == "" else "%s（防御+%d）" % [str(SHOP_RULES.ARMORS.get(armor_id, {}).get("title", "")), SHOP_RULES.armor_defense_bonus(GameState.data)]
+	var armor_entry: Dictionary = SHOP_RULES.ARMORS.get(armor_id, CRAFTING_RULES.RECIPES.get(armor_id, {}))
+	var armor_title: String = str(armor_entry.get("item_name", armor_entry.get("title", "")))
+	var armor_text := "无护具" if armor_id == "" else "%s（防御+%d）" % [armor_title, SHOP_RULES.armor_defense_bonus(GameState.data)]
 	items.text = "已装备：%s · %s\n淬炼层数：%d/3（额外攻击 +%d，随手法生效，与是否佩剑无关）\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [weapon_text, armor_text, GameState.data.forge_level, GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
 	items.add_theme_font_size_override("font_size", 17)
 	items.add_theme_color_override("font_color", Color("#f4eee2"))
@@ -2078,8 +2082,10 @@ func _backpack_equipment_row(category: String, id: String, equipped: bool) -> Pa
 	var bonus_key := "attack_bonus" if category == "weapon" else "defense_bonus"
 	var bonus_label := "攻击" if category == "weapon" else "防御"
 	var item: Dictionary = catalog.get(id, {})
+	if item.is_empty() and id != "":
+		item = CRAFTING_RULES.RECIPES.get(id, {})
 	var fallback_name := "赤手" if category == "weapon" else "无护具"
-	var name_text := str(item.get("title", fallback_name)) if id != "" else fallback_name
+	var name_text := str(item.get("item_name", item.get("title", fallback_name))) if id != "" else fallback_name
 	var primary := ("【当前装备】" + name_text) if equipped else name_text
 	var secondary := "%s +%d" % [bonus_label, int(item.get(bonus_key, 0))] if id != "" else "尚未购置"
 	var panel_color := Color("#294438") if equipped else Color("#4b514d")

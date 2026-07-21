@@ -7,6 +7,7 @@ func _capture() -> void:
 	var main_scene: Control = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main_scene)
 	await process_frame
+	var game_state: Node = root.get_node("GameState")
 	main_scene.get_window().size = Vector2i(1280, 720)
 	main_scene.screen = "character"
 	main_scene._rebuild()
@@ -20,7 +21,6 @@ func _capture() -> void:
 		scroll.scroll_vertical = 9999
 	for frame in range(3):
 		await process_frame
-	await RenderingServer.frame_post_draw
 
 	# The trailing mastery label is the content that was silently clipped
 	# outside the 1280x720 viewport before the info panel became scrollable.
@@ -32,6 +32,7 @@ func _capture() -> void:
 		if "每使用3次" in str((label as Label).text):
 			mastery_label = label
 			break
+	var mastery_label_found := mastery_label != null
 	var reachable := false
 	if scroll != null and mastery_label != null:
 		var visible_rect := scroll.get_global_rect()
@@ -47,11 +48,21 @@ func _capture() -> void:
 	var shows_qingfeng_as_equipped := labels.any(func(l): return "已装备：青锋剑" in str((l as Label).text))
 	var shows_tempering_separately := labels.any(func(l): return "淬炼层数" in str((l as Label).text))
 
-	var output_path := "user://character_preview.png"
-	var result := main_scene.get_viewport().get_texture().get_image().save_png(output_path)
-	var valid := result == OK and has_scroll and mastery_label != null and reachable
+	var valid := has_scroll and mastery_label_found and reachable
 	valid = valid and shows_bare_default and not shows_qingfeng_as_equipped and shows_tempering_separately
-	print("Character preview saved to: %s" % ProjectSettings.globalize_path(output_path))
+
+	# A workshop-crafted weapon (an id that was never in ShopRules.WEAPONS at
+	# all) must still show its real title here, not a blank name -- this is
+	# the exact lookup the character sheet shares with the backpack row.
+	game_state.data.owned_weapons = ["forged_iron_blade"]
+	game_state.data.equipped_weapon = "forged_iron_blade"
+	main_scene._rebuild()
+	for frame in range(3):
+		await process_frame
+	var crafted_labels: Array = main_scene.find_children("*", "Label", true, false)
+	var shows_crafted_weapon := crafted_labels.any(func(l): return "已装备：自铸铁刃" in str((l as Label).text))
+	valid = valid and shows_crafted_weapon
+
 	if not valid:
-		push_error("Character screen regression: has_scroll=%s mastery_label_found=%s reachable=%s shows_bare_default=%s shows_qingfeng_as_equipped=%s shows_tempering_separately=%s" % [has_scroll, mastery_label != null, reachable, shows_bare_default, shows_qingfeng_as_equipped, shows_tempering_separately])
+		push_error("Character screen regression: has_scroll=%s mastery_label_found=%s reachable=%s shows_bare_default=%s shows_qingfeng_as_equipped=%s shows_tempering_separately=%s shows_crafted_weapon=%s" % [has_scroll, mastery_label_found, reachable, shows_bare_default, shows_qingfeng_as_equipped, shows_tempering_separately, shows_crafted_weapon])
 	quit(0 if valid else 11)

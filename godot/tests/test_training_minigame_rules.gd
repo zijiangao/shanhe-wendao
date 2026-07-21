@@ -12,7 +12,7 @@ func _init() -> void:
 	assert(RULES.gathering_bonus(5) == 0 and RULES.gathering_bonus(6) == 1 and RULES.gathering_bonus(10) == 2, "Gathering yield bonuses should unlock only at mastery milestones.")
 	assert(RULES.cloud_qi_cost(9) == 8 and RULES.cloud_qi_cost(10) == 6, "Sword mastery should reduce Flowing Cloud Sword's qi cost only at level ten.")
 	assert(RULES.attack_exposure_gain(9) == 1 and RULES.attack_exposure_gain(10) == 2, "Blade mastery should double normal-attack exposure at level ten.")
-	assert(RULES.medicine_mastery_bonus(10) == 5 and RULES.tempering_silver_discount(10) == 3, "Gathering mastery should expose stable medicine and forging perks.")
+	assert(RULES.medicine_mastery_bonus(10) == 5 and RULES.craft_ore_discount(10) == 3, "Gathering mastery should expose stable medicine and forging perks.")
 	var ranked_options := RULES.options({"week": 2, "swordsmanship": 3, "mining": 10})
 	assert("熟手 3级" in str(ranked_options[0][1]) and "已达大成" in str(ranked_options[3][1]), "Training choices should explain current rank and next milestone.")
 	assert("本周专精" not in str(ranked_options[0][1]) and "本周专精 · 额外修为 +3" in str(ranked_options[1][1]), "Only the rotating weekly focus should advertise its cultivation bonus.")

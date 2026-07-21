@@ -131,10 +131,23 @@ func _capture() -> void:
 		# button happened to be first in the tree (weapon or armor row).
 		equip_switch_ok = str(game_state.data.equipped_weapon) != weapon_ids[0] or str(game_state.data.equipped_armor) != armor_ids[0]
 
+	# A workshop-crafted weapon (an id never in SHOP_RULES.WEAPONS at all) must
+	# show its bare item name here, not the workshop action-button label
+	# ("打造 · 自铸铁刃") that CraftingRules.RECIPES.title is actually meant for.
+	game_state.data.owned_weapons.append("forged_iron_blade")
+	game_state.data.equipped_weapon = "forged_iron_blade"
+	main_scene._rebuild()
+	for frame in range(3):
+		await process_frame
+	var crafted_labels: Array = main_scene.find_children("*", "Label", true, false)
+	var crafted_weapon_shown := crafted_labels.any(func(l): return "【当前装备】自铸铁刃" in str((l as Label).text))
+	var crafted_weapon_not_showing_verb := not crafted_labels.any(func(l): return "打造" in str((l as Label).text))
+
 	var valid := bare_ok and has_scroll and trailing_label_found and reachable
 	valid = valid and equipped_weapon_shown and equipped_armor_shown and other_weapon_shown
 	valid = valid and equip_button_count > 0 and equip_switch_ok
 	valid = valid and stone_fist_shown and night_blade_shown and active_internal_shown and bumped_internal_shown and active_lightness_shown and bumped_lightness_shown and wuxue_equip_ok
+	valid = valid and crafted_weapon_shown and crafted_weapon_not_showing_verb
 	if not valid:
-		push_error("Backpack screen regression: trailing_label_found=%s bare_ok=%s has_scroll=%s reachable=%s equipped_weapon_shown=%s equipped_armor_shown=%s other_weapon_shown=%s equip_button_count=%s equip_switch_ok=%s stone_fist_shown=%s night_blade_shown=%s active_internal_shown=%s bumped_internal_shown=%s active_lightness_shown=%s bumped_lightness_shown=%s wuxue_equip_ok=%s" % [trailing_label_found, bare_ok, has_scroll, reachable, equipped_weapon_shown, equipped_armor_shown, other_weapon_shown, equip_button_count, equip_switch_ok, stone_fist_shown, night_blade_shown, active_internal_shown, bumped_internal_shown, active_lightness_shown, bumped_lightness_shown, wuxue_equip_ok])
+		push_error("Backpack screen regression: trailing_label_found=%s bare_ok=%s has_scroll=%s reachable=%s equipped_weapon_shown=%s equipped_armor_shown=%s other_weapon_shown=%s equip_button_count=%s equip_switch_ok=%s stone_fist_shown=%s night_blade_shown=%s active_internal_shown=%s bumped_internal_shown=%s active_lightness_shown=%s bumped_lightness_shown=%s wuxue_equip_ok=%s crafted_weapon_shown=%s crafted_weapon_not_showing_verb=%s" % [trailing_label_found, bare_ok, has_scroll, reachable, equipped_weapon_shown, equipped_armor_shown, other_weapon_shown, equip_button_count, equip_switch_ok, stone_fist_shown, night_blade_shown, active_internal_shown, bumped_internal_shown, active_lightness_shown, bumped_lightness_shown, wuxue_equip_ok, crafted_weapon_shown, crafted_weapon_not_showing_verb])
 	quit(0 if valid else 20)

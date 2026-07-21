@@ -27,6 +27,21 @@ func _initialize() -> void:
 	assert(not RULES.sell_weapon(state, "iron_sword"), "Selling a weapon that is no longer owned must fail.")
 	assert(str(state.equipped_weapon) == "" and "dragon_etched_sword" in Array(state.owned_weapons), "Selling the unequipped iron sword must not disturb the still-equipped dragon sword.")
 
+	# Workshop-crafted gear (a separate CraftingRules.RECIPES catalog, acquired
+	# with materials instead of silver) shares the exact same owned/equipped
+	# fields and must resolve its bonus and equip like any market weapon,
+	# even though its id was never in ShopRules.WEAPONS at all.
+	var smith := _state()
+	smith.owned_weapons.append("forged_iron_blade")
+	smith.equipped_weapon = "forged_iron_blade"
+	assert(int(RULES.weapon_attack_bonus(smith)) == 2, "A crafted weapon's attack bonus should resolve via the CraftingRules fallback lookup.")
+	smith.owned_weapons.append("iron_sword")
+	assert(RULES.equip_weapon(smith, "iron_sword"), "Switching away from a crafted weapon to an owned market weapon should still work.")
+	assert(RULES.equip_weapon(smith, "forged_iron_blade"), "Switching back to an owned crafted weapon must succeed even though it is absent from ShopRules.WEAPONS.")
+	assert(not RULES.equip_weapon(smith, "twin_edge_saber"), "Equipping a crafted weapon id that was never actually owned must still fail.")
+	var market_weapon_options: Array = RULES.options_weapons(smith)
+	assert(market_weapon_options.filter(func(o): return str(o[2]).ends_with("forged_iron_blade")).is_empty(), "A crafted weapon must never appear in 西市's own buy/sell list -- it was never sold there.")
+
 	# Armor mirrors the weapon flow exactly.
 	var armored := _state()
 	armored.silver = 500

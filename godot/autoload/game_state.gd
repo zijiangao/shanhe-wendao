@@ -218,7 +218,7 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 func craft(recipe_id: String) -> bool:
 	if not CRAFTING_RULES.apply(data, recipe_id):
 		return false
-	var milestone: String = str({"healing_powder": "crafted_healing_powder", "thunder_stone": "crafted_thunder_stone", "temper_blade": "tempered_blade"}.get(recipe_id, ""))
+	var milestone: String = str({"healing_powder": "crafted_healing_powder", "thunder_stone": "crafted_thunder_stone", "forged_iron_blade": "tempered_blade", "twin_edge_saber": "tempered_blade"}.get(recipe_id, ""))
 	if not milestone.is_empty() and milestone not in data.flags:
 		data.flags.append(milestone)
 	add_log("青云工坊完成：%s。" % str(CRAFTING_RULES.RECIPES[recipe_id].title))
@@ -594,10 +594,10 @@ func _migrate_and_validate() -> void:
 	data.forge_level = clampi(int(data.get("forge_level", 0)), 0, CRAFTING_RULES.MAX_FORGE_LEVEL)
 	if typeof(data.get("owned_weapons", [])) != TYPE_ARRAY:
 		data.owned_weapons = []
-	data.owned_weapons = Array(data.owned_weapons).filter(func(id): return SHOP_RULES.WEAPONS.has(str(id)))
+	data.owned_weapons = Array(data.owned_weapons).filter(func(id): return SHOP_RULES.WEAPONS.has(str(id)) or CRAFTING_RULES.RECIPES.get(str(id), {}).has("attack_bonus"))
 	if typeof(data.get("owned_armors", [])) != TYPE_ARRAY:
 		data.owned_armors = []
-	data.owned_armors = Array(data.owned_armors).filter(func(id): return SHOP_RULES.ARMORS.has(str(id)))
+	data.owned_armors = Array(data.owned_armors).filter(func(id): return SHOP_RULES.ARMORS.has(str(id)) or CRAFTING_RULES.RECIPES.get(str(id), {}).has("defense_bonus"))
 	if str(data.get("equipped_weapon", "")) not in data.owned_weapons:
 		data.equipped_weapon = ""
 	if str(data.get("equipped_armor", "")) not in data.owned_armors:

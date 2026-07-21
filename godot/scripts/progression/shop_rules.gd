@@ -1,6 +1,7 @@
 class_name ShopRules
 extends RefCounted
 
+const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const SELL_BACK_RATE := 0.5
 
 const WEAPONS := {
@@ -22,13 +23,22 @@ const GOODS := {
 	"thunder_stone": {"title": "霹雳石", "buy_price": 18, "sell_price": 7},
 }
 
+## Falls back to CraftingRules' workshop-exclusive gear (a separate catalog,
+## acquired with materials instead of silver) whenever the equipped id isn't
+## one of 西市's own WEAPONS/ARMORS -- equip/battle code only ever deals in a
+## bare id string, so it must resolve its bonus regardless of which catalog
+## (market or workshop) it actually came from.
 static func weapon_attack_bonus(state: Dictionary) -> int:
 	var id := str(state.get("equipped_weapon", ""))
-	return int(WEAPONS.get(id, {}).get("attack_bonus", 0))
+	if WEAPONS.has(id):
+		return int(WEAPONS[id].attack_bonus)
+	return int(CRAFTING_RULES.RECIPES.get(id, {}).get("attack_bonus", 0))
 
 static func armor_defense_bonus(state: Dictionary) -> int:
 	var id := str(state.get("equipped_armor", ""))
-	return int(ARMORS.get(id, {}).get("defense_bonus", 0))
+	if ARMORS.has(id):
+		return int(ARMORS[id].defense_bonus)
+	return int(CRAFTING_RULES.RECIPES.get(id, {}).get("defense_bonus", 0))
 
 static func weapon_sell_price(id: String) -> int:
 	return int(floor(float(WEAPONS.get(id, {}).get("price", 0)) * SELL_BACK_RATE))
@@ -95,14 +105,19 @@ static func buy_armor(state: Dictionary, id: String) -> bool:
 	state.equipped_armor = id
 	return true
 
+## Ownership alone is authoritative here -- owned_weapons/owned_armors can
+## only ever be populated by buy_weapon()/buy_armor() (validated against
+## WEAPONS/ARMORS) or CraftingRules.apply() (validated against its own
+## catalog), so re-checking WEAPONS/ARMORS membership here would incorrectly
+## reject a legitimately owned workshop-crafted item.
 static func equip_weapon(state: Dictionary, id: String) -> bool:
-	if not WEAPONS.has(id) or id not in Array(state.get("owned_weapons", [])):
+	if id not in Array(state.get("owned_weapons", [])):
 		return false
 	state.equipped_weapon = id
 	return true
 
 static func equip_armor(state: Dictionary, id: String) -> bool:
-	if not ARMORS.has(id) or id not in Array(state.get("owned_armors", [])):
+	if id not in Array(state.get("owned_armors", [])):
 		return false
 	state.equipped_armor = id
 	return true

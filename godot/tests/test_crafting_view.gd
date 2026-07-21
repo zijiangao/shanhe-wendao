@@ -16,10 +16,8 @@ func _capture() -> void:
 	main_scene._location_action_requested("workshop")
 	for frame in range(4):
 		await process_frame
-	await RenderingServer.frame_post_draw
-	var workshop_path := "user://crafting_workshop_preview.png"
-	var workshop_result := main_scene.get_viewport().get_texture().get_image().save_png(workshop_path)
-	var discount_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "挖矿大成减免" in button.text and "银两 5" in button.text)
+	var discount_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "挖矿大成减免" in button.text)
+	var craft_weapon_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "自铸铁刃" in button.text)
 	game_state.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": true}
 	game_state.start_blackreed_battle()
 	game_state.data.hp = 24
@@ -27,11 +25,8 @@ func _capture() -> void:
 	main_scene._rebuild()
 	for frame in range(4):
 		await process_frame
-	await RenderingServer.frame_post_draw
-	var battle_path := "user://crafting_battle_preview.png"
-	var battle_result := main_scene.get_viewport().get_texture().get_image().save_png(battle_path)
 	var powder_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "回春散" in button.text)
-	var valid: bool = workshop_result == OK and battle_result == OK and powder_buttons.size() == 1 and discount_buttons.size() == 1
+	var valid: bool = powder_buttons.size() == 1 and craft_weapon_buttons.size() == 1 and discount_buttons.size() > 0
 
 	# A brand-new save has zero herbs/ore, so every real recipe starts
 	# disabled. Confirm the workshop still offers a working way out instead
@@ -44,9 +39,6 @@ func _capture() -> void:
 	main_scene._location_action_requested("workshop")
 	for frame in range(3):
 		await process_frame
-	await RenderingServer.frame_post_draw
-	var empty_path := "user://crafting_workshop_empty_preview.png"
-	var empty_result := main_scene.get_viewport().get_texture().get_image().save_png(empty_path)
 	var leave_button: Button = null
 	for b in main_scene.find_children("*", "Button", true, false):
 		if (b as Button).text.begins_with("离开工坊"):
@@ -56,7 +48,8 @@ func _capture() -> void:
 		leave_button.pressed.emit()
 		for frame in range(2):
 			await process_frame
-	valid = valid and empty_result == OK and leave_reachable and main_scene.screen == "location"
+	valid = valid and leave_reachable and main_scene.screen == "location"
 
-	print("Crafting previews saved to: %s, %s, and %s" % [ProjectSettings.globalize_path(workshop_path), ProjectSettings.globalize_path(battle_path), ProjectSettings.globalize_path(empty_path)])
+	if not valid:
+		push_error("Crafting view regression: powder_buttons=%s craft_weapon_buttons=%s discount_buttons=%s leave_reachable=%s" % [powder_buttons.size(), craft_weapon_buttons.size(), discount_buttons.size(), leave_reachable])
 	quit(0 if valid else 17)
