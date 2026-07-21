@@ -25,16 +25,31 @@ func _initialize() -> void:
 	assert(RULES.effective_cost(master, "temper_blade").silver == 5 and RULES.can_craft(master, "temper_blade"), "Mining mastery should reduce the tempering silver cost from eight to five.")
 	assert("挖矿大成减免" in str(RULES.options(master)[2][1]), "The workshop choice should disclose the mastery discount before crafting.")
 	assert(RULES.apply(master, "temper_blade") and int(master.silver) == 0, "The discounted cost should be charged exactly once.")
-	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "forge_level": 0, "mining": 0}
+	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "forge_level": 0, "mining": 0, "insight": 0}
 	var broke_options: Array = RULES.options(broke)
-	assert(broke_options.size() == 4, "A fresh recruit with no materials should still see a fourth way out of the workshop.")
-	for option in broke_options.slice(0, 3):
+	assert(broke_options.size() == 5, "A fresh recruit with no materials should still see a fifth way out of the workshop.")
+	for option in broke_options.slice(0, 4):
 		assert(bool(option[3]), "Every real recipe should be disabled when nothing is affordable.")
-	var leave_option: Array = broke_options[3]
+	var leave_option: Array = broke_options[4]
 	assert(str(leave_option[2]) == "leave", "The escape option must be the fixed 'leave' id, not a recipe.")
 	assert(leave_option.size() <= 3 or not bool(leave_option[3]), "Leaving the workshop must never be disabled, even with zero materials.")
+
+	# 悟性丹 (insight pill): unlike tempering, there is no level cap -- it can
+	# be crafted repeatedly for as long as the player can afford it, mirroring
+	# how attribute training itself has no ceiling.
+	var scholar := _state()
+	scholar.materials.herbs = 3
+	scholar.silver = 15
+	scholar.insight = 4
+	assert(RULES.can_craft(scholar, "insight_pill"), "Three herbs and fifteen silver should afford an insight pill.")
+	assert(RULES.apply(scholar, "insight_pill"), "A well-stocked hero should be able to craft an insight pill.")
+	assert(int(scholar.materials.herbs) == 0 and int(scholar.silver) == 0 and int(scholar.insight) == 5, "Crafting an insight pill should consume its full cost and immediately raise insight by one.")
+	assert(not RULES.can_craft(scholar, "insight_pill"), "Crafting again immediately should be blocked by lack of materials, not a level cap.")
+	scholar.materials.herbs = 3
+	scholar.silver = 15
+	assert(RULES.apply(scholar, "insight_pill") and int(scholar.insight) == 6, "Insight pills should be repeatable without limit, unlike weapon tempering.")
 	print("Crafting rules tests passed.")
 	quit()
 
 func _state() -> Dictionary:
-	return {"materials": {"herbs": 3, "ore": 5}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 20, "forge_level": 0, "mining": 0}
+	return {"materials": {"herbs": 3, "ore": 5}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 20, "forge_level": 0, "mining": 0, "insight": 4}
