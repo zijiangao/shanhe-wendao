@@ -5,7 +5,10 @@ const RULES := preload("res://scripts/battle/battle_rules.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
+const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const BLADE_QI_COST := 6
+const STONE_FIST_QI_COST := 5
+const NIGHT_BLADE_QI_COST := 9
 
 static func is_victory(battle: Dictionary) -> bool:
 	if str(battle.get("objective", {}).get("type", "eliminate")) == "survive":
@@ -26,23 +29,31 @@ static func objective_text(battle: Dictionary) -> String:
 	return "击败所有敌人"
 
 static func normal_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player)
+	var base := int(player.get("strength", 0)) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
 	return Vector2i(base, base + 2)
 
 static func cloud_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3
+	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3
 	return Vector2i(base, base + 3)
 
 static func blade_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player)
+	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
 	return Vector2i(base, base + 3)
 
 static func blade_armor_break(player: Dictionary) -> int:
 	return 2 if int(player.get("bladesmanship", 0)) >= 6 else 1
 
+static func stone_fist_damage_range(player: Dictionary) -> Vector2i:
+	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
+	return Vector2i(base, base + 2)
+
+static func night_blade_hit_range(player: Dictionary) -> Vector2i:
+	var base := int(player.get("strength", 0)) / 2 + 4 + SHOP_RULES.weapon_attack_bonus(player) / 2 + WUXUE_RULES.internal_damage_bonus(player) / 2
+	return Vector2i(base, base + 2)
+
 static func healing_amount(player: Dictionary) -> int:
 	var herbalism := int(player.get("herbalism", 0))
-	return 12 + herbalism / 2 + TRAINING_RULES.medicine_mastery_bonus(herbalism)
+	return 12 + herbalism / 2 + TRAINING_RULES.medicine_mastery_bonus(herbalism) + WUXUE_RULES.internal_healing_bonus(player)
 
 static func hero_guard_amount(player: Dictionary) -> int:
 	return 6 + int(player.get("constitution", 0)) / 2
@@ -57,6 +68,16 @@ static func hero_action_help(player: Dictionary) -> String:
 	var armor := SHOP_RULES.armor_defense_bonus(player)
 	if armor > 0:
 		text += "\n随身护甲：每次受创减免%d点" % armor
+	var equipped_moves: Array = player.get("equipped_moves", [])
+	if "stone_splitting_fist" in equipped_moves:
+		var stone := stone_fist_damage_range(player)
+		text += "\n裂石拳 %d–%d（相邻，无视护甲）· %d真气" % [stone.x, stone.y, STONE_FIST_QI_COST]
+	if "night_triple_blade" in equipped_moves:
+		var night := night_blade_hit_range(player)
+		text += "\n暗夜三刀 · 相邻连击3次，每次 %d–%d（护甲前）· %d真气" % [night.x, night.y, NIGHT_BLADE_QI_COST]
+	var move_bonus := WUXUE_RULES.lightness_move_bonus(player)
+	if move_bonus > 0:
+		text += "\n轻功身法：移动范围 +%d" % move_bonus
 	return text
 
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
@@ -64,7 +85,7 @@ static func player_action(battle: Dictionary, player: Dictionary, action: String
 		return _failure("行动点已用尽，请结束回合。")
 	match action:
 		"move":
-			return _move(battle, target)
+			return _move(battle, player, target)
 		"attack":
 			return _attack(battle, player, target, rng)
 		"skill":
@@ -81,11 +102,19 @@ static func player_action(battle: Dictionary, player: Dictionary, action: String
 			return _use_thunder_stone(battle, player, target, rng)
 		"brace":
 			return _hero_brace(battle, player)
+		"stone_splitting_fist":
+			return _stone_splitting_fist(battle, player, target, rng)
+		"night_triple_blade":
+			return _night_triple_blade(battle, player, target, rng)
 		_:
 			return _failure("未知战斗行动：%s" % action)
 
-static func _move(battle: Dictionary, target: Vector2i) -> Dictionary:
-	if not RULES.can_move_to(battle, target):
+static func _move(battle: Dictionary, player: Dictionary, target: Vector2i) -> Dictionary:
+	# 轻功 is the hero's own personal skill -- must not extend 林清霜's move
+	# range on her own turns, mirroring how _attack() already keeps the
+	# ally's damage formula entirely separate from the hero's equipment/qi.
+	var lightness_bonus := 0 if str(battle.get("active_unit", "hero")) == "ally" else WUXUE_RULES.lightness_move_bonus(player)
+	if not RULES.can_move_to(battle, target, lightness_bonus):
 		return _failure("只能移动到两格内的空地。")
 	var active_name := _active_name(battle)
 	RULES.set_active_position(battle, target)
@@ -98,7 +127,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	if not RULES.can_attack_cell(battle, target, false, int(player.qi)):
 		return _failure("普通攻击只能命中相邻敌人。")
 	var enemy_index := RULES.enemy_at(battle, target)
-	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player)
+	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
 	var armor := RULES.enemy_armor(battle.enemies[enemy_index])
 	var damage := maxi(1, base_damage + _roll_bonus(rng) - armor)
 	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
@@ -122,7 +151,7 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	var enemy_index := RULES.enemy_at(battle, target)
 	var exposure := RULES.enemy_exposure(battle.enemies[enemy_index])
 	var exposure_bonus := exposure * 4
-	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
+	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + int(player.get("forge_level", 0)) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
 	player.qi = int(player.qi) - qi_cost
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
 	battle.enemies[enemy_index].exposure = 0
@@ -155,6 +184,46 @@ static func _blade_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	battle.skill_flash = true
 	battle.skill_name = "断 岳 刀 法"
 	return _success(battle, damage)
+
+static func _stone_splitting_fist(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) == "ally":
+		return _failure("林清霜不会裂石拳。")
+	if "stone_splitting_fist" not in Array(player.get("equipped_moves", [])):
+		return _failure("尚未装备裂石拳，请先在背包中装备。")
+	if int(player.get("qi", 0)) < STONE_FIST_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
+		return _failure("裂石拳需要%d点真气，并只能攻击相邻敌人。" % STONE_FIST_QI_COST)
+	var enemy_index := RULES.enemy_at(battle, target)
+	var damage_range := stone_fist_damage_range(player)
+	var damage := maxi(1, damage_range.x + _roll_range(rng, 0, damage_range.y - damage_range.x))
+	player.qi = int(player.qi) - STONE_FIST_QI_COST
+	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
+	battle.ap = int(battle.ap) - 1
+	battle.result = "裂石拳内力贯穿，无视护甲对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
+	battle.skill_flash = true
+	battle.skill_name = "裂 石 拳"
+	return _success(battle, damage)
+
+static func _night_triple_blade(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) == "ally":
+		return _failure("林清霜不会暗夜三刀。")
+	if "night_triple_blade" not in Array(player.get("equipped_moves", [])):
+		return _failure("尚未装备暗夜三刀，请先在背包中装备。")
+	if int(player.get("qi", 0)) < NIGHT_BLADE_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
+		return _failure("暗夜三刀需要%d点真气，并只能攻击相邻敌人。" % NIGHT_BLADE_QI_COST)
+	var enemy_index := RULES.enemy_at(battle, target)
+	var hit_range := night_blade_hit_range(player)
+	var total_damage := 0
+	for hit in range(3):
+		var armor := RULES.enemy_armor(battle.enemies[enemy_index])
+		var hit_damage := maxi(1, hit_range.x + _roll_range(rng, 0, hit_range.y - hit_range.x) - armor)
+		total_damage += hit_damage
+		_apply_enemy_damage(battle, enemy_index, target, hit_damage, "skill")
+	player.qi = int(player.qi) - NIGHT_BLADE_QI_COST
+	battle.ap = int(battle.ap) - 1
+	battle.result = "暗夜三刀连斩三次，对%s共造成%d点伤害！" % [battle.enemies[enemy_index].name, total_damage]
+	battle.skill_flash = true
+	battle.skill_name = "暗 夜 三 刀"
+	return _success(battle, total_damage)
 
 static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if not RULES.can_frost_dash(battle, target):

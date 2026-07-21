@@ -9,6 +9,7 @@ const TRAINING_EVENT_RULES := preload("res://scripts/progression/training_event_
 const SPARRING_RULES := preload("res://scripts/progression/sparring_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
+const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 
@@ -57,6 +58,12 @@ func new_game() -> void:
 		"equipped_armor": "",
 		"owned_weapons": [],
 		"owned_armors": [],
+		"learned_moves": [],
+		"learned_internal": [],
+		"learned_lightness": [],
+		"equipped_moves": [],
+		"equipped_internal": "",
+		"equipped_lightness": "",
 		"flags": [],
 		"quest_stage": "meet_master",
 		"investigations": [],
@@ -81,7 +88,8 @@ func new_game() -> void:
 func power() -> int:
 	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
 	var equipment_power := int(data.get("forge_level", 0)) * 2 + SHOP_RULES.weapon_attack_bonus(data) + SHOP_RULES.armor_defense_bonus(data)
-	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2 + equipment_power)
+	var wuxue_power := Array(data.get("equipped_moves", [])).size() * 3 + WUXUE_RULES.internal_damage_bonus(data) + WUXUE_RULES.internal_healing_bonus(data) / 2 + WUXUE_RULES.lightness_move_bonus(data) * 2
+	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2 + equipment_power + wuxue_power)
 
 func weeks_left() -> int:
 	return maxi(0, FINAL_WEEK - int(data.week))
@@ -566,6 +574,24 @@ func _migrate_and_validate() -> void:
 		data.equipped_weapon = ""
 	if str(data.get("equipped_armor", "")) not in data.owned_armors:
 		data.equipped_armor = ""
+	if typeof(data.get("learned_moves", [])) != TYPE_ARRAY:
+		data.learned_moves = []
+	data.learned_moves = Array(data.learned_moves).filter(func(id): return WUXUE_RULES.MOVES.has(str(id)))
+	if typeof(data.get("learned_internal", [])) != TYPE_ARRAY:
+		data.learned_internal = []
+	data.learned_internal = Array(data.learned_internal).filter(func(id): return WUXUE_RULES.INTERNAL.has(str(id)))
+	if typeof(data.get("learned_lightness", [])) != TYPE_ARRAY:
+		data.learned_lightness = []
+	data.learned_lightness = Array(data.learned_lightness).filter(func(id): return WUXUE_RULES.LIGHTNESS.has(str(id)))
+	if typeof(data.get("equipped_moves", [])) != TYPE_ARRAY:
+		data.equipped_moves = []
+	data.equipped_moves = Array(data.equipped_moves).filter(func(id): return str(id) in data.learned_moves)
+	if data.equipped_moves.size() > WUXUE_RULES.MAX_EQUIPPED_MOVES:
+		data.equipped_moves = data.equipped_moves.slice(0, WUXUE_RULES.MAX_EQUIPPED_MOVES)
+	if str(data.get("equipped_internal", "")) not in data.learned_internal:
+		data.equipped_internal = ""
+	if str(data.get("equipped_lightness", "")) not in data.learned_lightness:
+		data.equipped_lightness = ""
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
 	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:

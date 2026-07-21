@@ -1,6 +1,7 @@
 extends SceneTree
 
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
+const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 
 func _initialize() -> void:
 	var state = load("res://autoload/game_state.gd").new()
@@ -174,6 +175,43 @@ func _initialize() -> void:
 	var power_before := int(state.power())
 	assert(SHOP_RULES.buy_weapon(state.data, "dragon_etched_sword") and SHOP_RULES.buy_armor(state.data, "cold_jade_armor"), "A well-funded fresh save should be able to gear up at the shop.")
 	assert(int(state.power()) == power_before + 6, "Equipping the top-tier sword (+3 attack) and armor (+3 defense) should raise reported combat power by exactly six.")
+
+	var pre_wuxue_save: Dictionary = state.data.duplicate(true)
+	pre_wuxue_save.erase("learned_moves")
+	pre_wuxue_save.erase("equipped_moves")
+	pre_wuxue_save.erase("learned_internal")
+	pre_wuxue_save.erase("equipped_internal")
+	pre_wuxue_save.erase("learned_lightness")
+	pre_wuxue_save.erase("equipped_lightness")
+	assert(state.import_data(pre_wuxue_save), "Saves from before the wuxue system should still migrate.")
+	assert(state.data.learned_moves.is_empty() and state.data.equipped_moves.is_empty(), "A save with no wuxue fields should default to no moves learned or equipped.")
+	assert(str(state.data.equipped_internal) == "" and str(state.data.equipped_lightness) == "", "A save with no wuxue fields should default to no internal art or lightness skill equipped.")
+
+	var corrupted_wuxue_save: Dictionary = state.data.duplicate(true)
+	corrupted_wuxue_save.learned_moves = ["stone_splitting_fist", "a_deleted_move_id"]
+	corrupted_wuxue_save.equipped_moves = ["stone_splitting_fist", "night_triple_blade", "a_deleted_move_id"]
+	corrupted_wuxue_save.learned_internal = "not even an array"
+	corrupted_wuxue_save.equipped_internal = "purple_mist_art"
+	corrupted_wuxue_save.learned_lightness = ["ripple_steps"]
+	corrupted_wuxue_save.equipped_lightness = "wind_walk"
+	assert(state.import_data(corrupted_wuxue_save), "A save with stale or malformed wuxue data must still load.")
+	assert(state.data.learned_moves == ["stone_splitting_fist"], "An unrecognized move id must be dropped from the learned list on migration.")
+	assert(state.data.equipped_moves == ["stone_splitting_fist"], "equipped_moves must drop any id that is not (or no longer) actually learned.")
+	assert(typeof(state.data.learned_internal) == TYPE_ARRAY and state.data.learned_internal.is_empty(), "A non-array learned_internal field must be repaired to an empty list.")
+	assert(str(state.data.equipped_internal) == "", "An internal art that is not actually learned (post-repair) must be cleared rather than trusted.")
+	assert(str(state.data.equipped_lightness) == "", "A lightness skill that was never learned must be cleared, even if it names a real catalog id.")
+
+	var oversized_moves_save: Dictionary = state.data.duplicate(true)
+	oversized_moves_save.learned_moves = ["stone_splitting_fist", "night_triple_blade"]
+	oversized_moves_save.equipped_moves = ["stone_splitting_fist", "night_triple_blade", "stone_splitting_fist"]
+	assert(state.import_data(oversized_moves_save), "A save whose equipped_moves list somehow grew past the slot cap must still load.")
+	assert(Array(state.data.equipped_moves).size() == WUXUE_RULES.MAX_EQUIPPED_MOVES, "equipped_moves must be clamped to the two-slot cap on migration, however it got oversized.")
+
+	state.new_game()
+	state.data.silver = 1000
+	var wuxue_power_before := int(state.power())
+	assert(WUXUE_RULES.learn_move(state.data, "stone_splitting_fist") and WUXUE_RULES.learn_internal(state.data, "purple_mist_art") and WUXUE_RULES.learn_lightness(state.data, "ripple_steps"), "A well-funded fresh save should be able to learn one manual of each kind.")
+	assert(int(state.power()) == wuxue_power_before + 7, "One equipped move (+3), Purple Mist Art's damage bonus (+2), and Ripple Steps' move bonus doubled (+2) should raise power by exactly seven.")
 
 	state.new_game()
 	state.data.energy = 3

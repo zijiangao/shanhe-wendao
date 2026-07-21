@@ -14,6 +14,9 @@ func _initialize() -> void:
 	_test_specialty_mastery_perks()
 	_test_armor_and_exposure_combo()
 	_test_equipped_gear_bonuses()
+	_test_wuxue_moves_require_equip()
+	_test_wuxue_move_damage()
+	_test_wuxue_internal_and_lightness_bonuses()
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
 	_test_ranged_enemy_attack_and_cover()
@@ -351,6 +354,154 @@ func _test_equipped_gear_bonuses() -> void:
 	implicit_battle.enemies[0].y = 1
 	var implicit_outcome: Dictionary = ENGINE.enemy_turn(implicit_battle, 20, _seeded_rng())
 	assert(int(implicit_outcome.hero_hp) == int(unarmored_outcome.hero_hp), "Calling enemy_turn with only three positional arguments must default armor to zero.")
+
+func _test_wuxue_moves_require_equip() -> void:
+	var battle := _fixture()
+	battle.erase("ally")
+	battle.active_unit = "hero"
+	battle.ap = 2
+	battle.enemies[0].x = 2
+	battle.enemies[0].y = 1
+	var unequipped := _player_fixture()
+	var stone_attempt: Dictionary = ENGINE.player_action(battle, unequipped, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(stone_attempt.ok) and int(battle.ap) == 2, "Using an unequipped move must fail without consuming an action point.")
+	var blade_attempt: Dictionary = ENGINE.player_action(battle, unequipped, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(blade_attempt.ok), "Night Triple Blade should also require its move be equipped first.")
+
+	var ally_battle := _fixture()
+	ally_battle.active_unit = "ally"
+	ally_battle.ap = 2
+	ally_battle.enemies[0].x = 1
+	ally_battle.enemies[0].y = 3
+	var equipped_player := _player_fixture()
+	equipped_player.equipped_moves = ["stone_splitting_fist", "night_triple_blade"]
+	var ally_attempt: Dictionary = ENGINE.player_action(ally_battle, equipped_player, "stone_splitting_fist", Vector2i(1, 3), _seeded_rng())
+	assert(not bool(ally_attempt.ok), "林清霜 cannot use the hero's equipped moves on her own turn.")
+
+func _test_wuxue_move_damage() -> void:
+	var stone_battle := _fixture()
+	stone_battle.erase("ally")
+	stone_battle.active_unit = "hero"
+	stone_battle.ap = 2
+	stone_battle.enemies[0].x = 2
+	stone_battle.enemies[0].y = 1
+	stone_battle.enemies[0].hp = 100
+	stone_battle.enemies[0].max_hp = 100
+	stone_battle.enemies[0].armor = 50
+	var stone_player := _player_fixture()
+	stone_player.equipped_moves = ["stone_splitting_fist"]
+	stone_player.qi = 20
+	var stone_result: Dictionary = ENGINE.player_action(stone_battle, stone_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	var expected_stone := ENGINE.stone_fist_damage_range(stone_player)
+	assert(bool(stone_result.ok) and int(stone_player.qi) == 15, "A legal Stone Splitting Fist should hit and consume five qi.")
+	assert(int(stone_result.damage) >= expected_stone.x and int(stone_result.damage) <= expected_stone.y, "Stone Splitting Fist damage should land within its expected range.")
+	assert(int(stone_battle.enemies[0].hp) == 100 - int(stone_result.damage), "A heavily-armored enemy should take the exact same damage as an unarmored one -- Stone Splitting Fist ignores armor entirely.")
+
+	var low_qi_player := _player_fixture()
+	low_qi_player.equipped_moves = ["stone_splitting_fist"]
+	low_qi_player.qi = 4
+	var low_qi_battle := _fixture()
+	low_qi_battle.erase("ally")
+	low_qi_battle.active_unit = "hero"
+	low_qi_battle.ap = 2
+	low_qi_battle.enemies[0].x = 2
+	low_qi_battle.enemies[0].y = 1
+	var starved_attempt: Dictionary = ENGINE.player_action(low_qi_battle, low_qi_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(starved_attempt.ok) and int(low_qi_player.qi) == 4, "Four qi should be insufficient for Stone Splitting Fist's five-qi cost, and a failed use must not spend any.")
+
+	var blade_battle := _fixture()
+	blade_battle.erase("ally")
+	blade_battle.active_unit = "hero"
+	blade_battle.ap = 2
+	blade_battle.enemies[0].x = 2
+	blade_battle.enemies[0].y = 1
+	blade_battle.enemies[0].hp = 200
+	blade_battle.enemies[0].max_hp = 200
+	blade_battle.enemies[0].armor = 0
+	var blade_player := _player_fixture()
+	blade_player.equipped_moves = ["night_triple_blade"]
+	blade_player.qi = 20
+	var blade_result: Dictionary = ENGINE.player_action(blade_battle, blade_player, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
+	assert(bool(blade_result.ok) and int(blade_player.qi) == 11, "A legal Night Triple Blade should hit and consume nine qi.")
+	var hit_range := ENGINE.night_blade_hit_range(blade_player)
+	assert(int(blade_result.damage) >= hit_range.x * 3 and int(blade_result.damage) <= hit_range.y * 3, "Three unarmored hits should sum within three times the per-hit range.")
+
+	var armored_blade_battle := _fixture()
+	armored_blade_battle.erase("ally")
+	armored_blade_battle.active_unit = "hero"
+	armored_blade_battle.ap = 2
+	armored_blade_battle.enemies[0].x = 2
+	armored_blade_battle.enemies[0].y = 1
+	armored_blade_battle.enemies[0].hp = 200
+	armored_blade_battle.enemies[0].max_hp = 200
+	armored_blade_battle.enemies[0].armor = 2
+	var armored_blade_player := _player_fixture()
+	armored_blade_player.equipped_moves = ["night_triple_blade"]
+	armored_blade_player.qi = 20
+	var armored_blade_result: Dictionary = ENGINE.player_action(armored_blade_battle, armored_blade_player, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
+	assert(int(armored_blade_result.damage) < int(blade_result.damage), "Unlike Stone Splitting Fist, Night Triple Blade should subtract the enemy's armor from every one of its three hits.")
+
+func _test_wuxue_internal_and_lightness_bonuses() -> void:
+	var plain_battle := _fixture()
+	plain_battle.erase("ally")
+	plain_battle.active_unit = "hero"
+	plain_battle.ap = 2
+	plain_battle.enemies[0].x = 2
+	plain_battle.enemies[0].y = 1
+	plain_battle.enemies[0].hp = 100
+	var plain_player := _player_fixture()
+	var plain_result: Dictionary = ENGINE.player_action(plain_battle, plain_player, "attack", Vector2i(2, 1), _seeded_rng())
+
+	var trained_battle := _fixture()
+	trained_battle.erase("ally")
+	trained_battle.active_unit = "hero"
+	trained_battle.ap = 2
+	trained_battle.enemies[0].x = 2
+	trained_battle.enemies[0].y = 1
+	trained_battle.enemies[0].hp = 100
+	var trained_player := _player_fixture()
+	trained_player.equipped_internal = "purple_mist_art"
+	var trained_result: Dictionary = ENGINE.player_action(trained_battle, trained_player, "attack", Vector2i(2, 1), _seeded_rng())
+	assert(bool(plain_result.ok) and bool(trained_result.ok), "Both attacks must land to compare their damage.")
+	assert(int(trained_result.damage) == int(plain_result.damage) + 2, "The equipped Purple Mist Art should add its flat two-point damage bonus to a normal attack.")
+
+	var healer := _player_fixture()
+	healer.equipped_internal = "five_elements_art"
+	assert(ENGINE.healing_amount(healer) == ENGINE.healing_amount(_player_fixture()) + 5, "Five Elements Art should add its five-point healing bonus.")
+
+	# 轻功 extends the hero's own move range by exactly its bonus, without
+	# touching the two-argument can_move_to() call every other test in this
+	# file already relies on.
+	var far_battle := _fixture()
+	far_battle.erase("ally")
+	far_battle.active_unit = "hero"
+	far_battle.ap = 2
+	far_battle.player_x = 0
+	far_battle.player_y = 0
+	var grounded_player := _player_fixture()
+	var grounded_move: Dictionary = ENGINE.player_action(far_battle, grounded_player, "move", Vector2i(3, 0), _seeded_rng())
+	assert(not bool(grounded_move.ok), "Four steps away should be out of reach without any lightness skill.")
+
+	var winged_battle := _fixture()
+	winged_battle.erase("ally")
+	winged_battle.active_unit = "hero"
+	winged_battle.ap = 2
+	winged_battle.player_x = 0
+	winged_battle.player_y = 0
+	var winged_player := _player_fixture()
+	winged_player.equipped_lightness = "ripple_steps"
+	var winged_move: Dictionary = ENGINE.player_action(winged_battle, winged_player, "move", Vector2i(3, 0), _seeded_rng())
+	assert(bool(winged_move.ok) and Vector2i(int(winged_battle.player_x), int(winged_battle.player_y)) == Vector2i(3, 0), "Ripple Steps' +1 move bonus should reach the same cell that was out of range unequipped.")
+
+	var ally_far_battle := _fixture()
+	ally_far_battle.active_unit = "ally"
+	ally_far_battle.ap = 2
+	ally_far_battle.ally.x = 0
+	ally_far_battle.ally.y = 0
+	var ally_winged_player := _player_fixture()
+	ally_winged_player.equipped_lightness = "wind_walk"
+	var ally_move: Dictionary = ENGINE.player_action(ally_far_battle, ally_winged_player, "move", Vector2i(3, 0), _seeded_rng())
+	assert(not bool(ally_move.ok), "The hero's own lightness skill must never extend 林清霜's movement range on her turn.")
 
 func _test_invalid_action_preserves_resources() -> void:
 	var battle := _fixture()

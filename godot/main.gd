@@ -31,6 +31,7 @@ const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
+const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 const CREDITS_PATH := "res://data/credits.json"
@@ -776,17 +777,16 @@ func _focus_first_content_control() -> void:
 
 func _show_map() -> void:
 	_clear_content()
-	# Luoyang's West Market (shop + backpack economy) is meant to be usable
-	# from the very start of a playthrough, not gated behind story progress
-	# like the other locations -- deliberately does NOT use
-	# _luoyang_unlocked(), which still gates the quest-journal chapter text
-	# ladder in _show_quests() and must keep meaning "the main story has
-	# reached Luoyang," a separate concern from map reachability.
-	var places: Array[String] = ["qingyun", "blackreed", "luoyang"]
-	if _huashan_unlocked():
-		places.append("huashan")
-	if _emei_unlocked():
-		places.append("emei")
+	# Every location is reachable on the map from turn one -- the economy
+	# (shop/backpack) and now the 武学 manual pavilion are meant to be usable
+	# throughout a playthrough, not gated behind story progress. Deliberately
+	# does NOT use _luoyang_unlocked()/_huashan_unlocked()/_emei_unlocked(),
+	# which still gate the quest-journal chapter-text ladder in
+	# _show_quests() and must keep meaning "the main story has reached this
+	# location," a separate concern from map reachability. Each location's
+	# own story-specific hotspots keep their existing per-action quest_stage
+	# gates, so visiting early can't sequence-break the main story.
+	var places: Array[String] = ["qingyun", "blackreed", "luoyang", "huashan", "emei"]
 	var view: WorldMapView = WORLD_MAP_VIEW.instantiate()
 	content.add_child(view)
 	view.setup(MAP_TEXTURE, GameState.data, _quest_objective(), places)
@@ -891,8 +891,16 @@ func _show_market() -> void:
 		["武器坊", "购置/更换随身兵刃，永久提升攻击。", "weapons"],
 		["护具坊", "购置/更换护身甲胄，永久减免受创。", "armor"],
 		["杂货铺", "买卖药材、矿石、回春散与霹雳石。", "goods"],
+		["秘籍阁", "习练招式、内功与轻功。", "manuals"],
 		["离开西市", "不消耗行动点，返回舆图。", "leave"]
 	]
+	screen = "choice"
+	_rebuild()
+
+func _show_market_manuals() -> void:
+	choice_event = "market_manuals"
+	choice_prompt = "秘籍阁 · 银两 %d" % int(GameState.data.silver)
+	choice_options = _with_item_icons(WUXUE_RULES.options_manuals(GameState.data))
 	screen = "choice"
 	_rebuild()
 
@@ -920,7 +928,10 @@ func _with_item_icons(options: Array) -> Array:
 	var enriched := []
 	for option in options:
 		var item_id := str(option[2])
-		for prefix in ["buy_", "equip_", "sell_"]:
+		# Longer, category-specific prefixes must be checked before the
+		# shorter generic ones below -- "equip_move_x" begins with "equip_"
+		# too, and stripping only that would leave "move_x" instead of "x".
+		for prefix in ["learn_move_", "equip_move_", "unequip_move_", "learn_internal_", "equip_internal_", "unequip_internal_", "learn_lightness_", "equip_lightness_", "unequip_lightness_", "buy_", "equip_", "sell_"]:
 			if item_id.begins_with(prefix):
 				item_id = item_id.trim_prefix(prefix)
 				break
@@ -1160,6 +1171,7 @@ func _resolve_choice(route: String) -> void:
 			"weapons": _show_market_weapons(); return
 			"armor": _show_market_armor(); return
 			"goods": _show_market_goods(); return
+			"manuals": _show_market_manuals(); return
 	elif choice_event == "market_weapons":
 		if route == "leave":
 			_show_market()
@@ -1211,6 +1223,36 @@ func _resolve_choice(route: String) -> void:
 		_toast("杂货铺交易完成。")
 		SaveManager.save_auto()
 		_show_market_goods()
+		return
+	elif choice_event == "market_manuals":
+		if route == "leave":
+			_show_market()
+			return
+		var ok := false
+		if route.begins_with("learn_move_"):
+			ok = WUXUE_RULES.learn_move(GameState.data, route.trim_prefix("learn_move_"))
+		elif route.begins_with("equip_move_"):
+			ok = WUXUE_RULES.equip_move(GameState.data, route.trim_prefix("equip_move_"))
+		elif route.begins_with("unequip_move_"):
+			ok = WUXUE_RULES.unequip_move(GameState.data, route.trim_prefix("unequip_move_"))
+		elif route.begins_with("learn_internal_"):
+			ok = WUXUE_RULES.learn_internal(GameState.data, route.trim_prefix("learn_internal_"))
+		elif route.begins_with("equip_internal_"):
+			ok = WUXUE_RULES.equip_internal(GameState.data, route.trim_prefix("equip_internal_"))
+		elif route.begins_with("unequip_internal_"):
+			ok = WUXUE_RULES.unequip_internal(GameState.data, route.trim_prefix("unequip_internal_"))
+		elif route.begins_with("learn_lightness_"):
+			ok = WUXUE_RULES.learn_lightness(GameState.data, route.trim_prefix("learn_lightness_"))
+		elif route.begins_with("equip_lightness_"):
+			ok = WUXUE_RULES.equip_lightness(GameState.data, route.trim_prefix("equip_lightness_"))
+		elif route.begins_with("unequip_lightness_"):
+			ok = WUXUE_RULES.unequip_lightness(GameState.data, route.trim_prefix("unequip_lightness_"))
+		if not ok:
+			_toast("银两不足，槽位已满，或这门武学尚未习得。")
+			return
+		_toast("秘籍阁交易完成。")
+		SaveManager.save_auto()
+		_show_market_manuals()
 		return
 	elif choice_event == "workshop":
 		if route != "leave":
@@ -1583,7 +1625,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.73.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.74.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1856,7 +1898,22 @@ func _show_character() -> void:
 	skill_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(skill_title)
 	var skill_card := Label.new()
+	var wuxue_lines: Array[String] = []
+	for move_id in Array(GameState.data.get("equipped_moves", [])):
+		var move_item: Dictionary = WUXUE_RULES.MOVES.get(str(move_id), {})
+		if not move_item.is_empty():
+			wuxue_lines.append("%s · %s" % [str(move_item.title), str(move_item.description)])
+	var internal_id := str(GameState.data.get("equipped_internal", ""))
+	if WUXUE_RULES.INTERNAL.has(internal_id):
+		var internal_item: Dictionary = WUXUE_RULES.INTERNAL[internal_id]
+		wuxue_lines.append("%s · %s" % [str(internal_item.title), str(internal_item.description)])
+	var lightness_id := str(GameState.data.get("equipped_lightness", ""))
+	if WUXUE_RULES.LIGHTNESS.has(lightness_id):
+		var lightness_item: Dictionary = WUXUE_RULES.LIGHTNESS[lightness_id]
+		wuxue_lines.append("%s · %s" % [str(lightness_item.title), str(lightness_item.description)])
 	skill_card.text = "流云剑法 · 直线三格 · %d真气：无视护甲并引爆破绽。\n断岳刀法 · 相邻重击 · %d真气：永久破甲并制造2层破绽；刀法精通后破甲翻倍。" % [TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)), BATTLE_ENGINE.BLADE_QI_COST]
+	if not wuxue_lines.is_empty():
+		skill_card.text += "\n" + "\n".join(wuxue_lines)
 	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_card.add_theme_font_size_override("font_size", 17)
 	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))
@@ -1937,6 +1994,30 @@ func _show_backpack() -> void:
 		for id in unequipped_armors:
 			list.add_child(_backpack_equipment_row("armor", str(id), false))
 
+	var equipped_moves: Array = GameState.data.get("equipped_moves", [])
+	var equipped_internal := str(GameState.data.get("equipped_internal", ""))
+	var equipped_lightness := str(GameState.data.get("equipped_lightness", ""))
+	if not equipped_moves.is_empty() or equipped_internal != "" or equipped_lightness != "":
+		list.add_child(_backpack_section_title("已修炼武学"))
+		for id in equipped_moves:
+			list.add_child(_backpack_wuxue_row("move", str(id), true))
+		if equipped_internal != "":
+			list.add_child(_backpack_wuxue_row("internal", equipped_internal, true))
+		if equipped_lightness != "":
+			list.add_child(_backpack_wuxue_row("lightness", equipped_lightness, true))
+
+	var unequipped_moves: Array = Array(GameState.data.get("learned_moves", [])).filter(func(id): return str(id) not in equipped_moves)
+	var unequipped_internal: Array = Array(GameState.data.get("learned_internal", [])).filter(func(id): return str(id) != equipped_internal)
+	var unequipped_lightness: Array = Array(GameState.data.get("learned_lightness", [])).filter(func(id): return str(id) != equipped_lightness)
+	if not unequipped_moves.is_empty() or not unequipped_internal.is_empty() or not unequipped_lightness.is_empty():
+		list.add_child(_backpack_section_title("其余已习武学"))
+		for id in unequipped_moves:
+			list.add_child(_backpack_wuxue_row("move", str(id), false))
+		for id in unequipped_internal:
+			list.add_child(_backpack_wuxue_row("internal", str(id), false))
+		for id in unequipped_lightness:
+			list.add_child(_backpack_wuxue_row("lightness", str(id), false))
+
 	list.add_child(_backpack_section_title("材料与药品"))
 	for good_id in ["herbs", "ore", "healing_powder", "thunder_stone"]:
 		list.add_child(_backpack_goods_row(good_id))
@@ -1979,6 +2060,39 @@ func _equip_from_backpack(category: String, id: String) -> void:
 	var ok := SHOP_RULES.equip_weapon(GameState.data, id) if category == "weapon" else SHOP_RULES.equip_armor(GameState.data, id)
 	if not ok:
 		_toast("这件装备不在你的行囊中。")
+		return
+	SaveManager.save_auto()
+	_show_backpack()
+
+## category is "move" (up to WUXUE_RULES.MAX_EQUIPPED_MOVES equipped at once),
+## "internal", or "lightness" (each single-slot, like weapon/armor).
+func _backpack_wuxue_row(category: String, id: String, equipped: bool) -> PanelContainer:
+	var catalog: Dictionary = WUXUE_RULES.MOVES if category == "move" else (WUXUE_RULES.INTERNAL if category == "internal" else WUXUE_RULES.LIGHTNESS)
+	var item: Dictionary = catalog.get(id, {})
+	var name_text := str(item.get("title", id))
+	var primary := ("【当前装备】" + name_text) if equipped else name_text
+	var secondary := str(item.get("description", ""))
+	var panel_color := Color("#294438") if equipped else Color("#4b514d")
+	var text_color := Color("#f2dfb3") if equipped else Color("#dbe0d9")
+	var action_button: Button = null
+	if not equipped:
+		var slot_full := category == "move" and Array(GameState.data.get("equipped_moves", [])).size() >= WUXUE_RULES.MAX_EQUIPPED_MOVES
+		action_button = UI_THEME.action_button("槽位已满" if slot_full else "装备", Color("#294438"))
+		action_button.disabled = slot_full
+		action_button.custom_minimum_size = Vector2(96, 44)
+		action_button.add_theme_font_size_override("font_size", 16)
+		if not slot_full:
+			action_button.pressed.connect(_equip_wuxue_from_backpack.bind(category, id))
+	return _backpack_row(UI_THEME.item_icon(id), primary, secondary, panel_color, text_color, action_button)
+
+func _equip_wuxue_from_backpack(category: String, id: String) -> void:
+	var ok := false
+	match category:
+		"move": ok = WUXUE_RULES.equip_move(GameState.data, id)
+		"internal": ok = WUXUE_RULES.equip_internal(GameState.data, id)
+		_: ok = WUXUE_RULES.equip_lightness(GameState.data, id)
+	if not ok:
+		_toast("无法装备这门武学。")
 		return
 	SaveManager.save_auto()
 	_show_backpack()
@@ -2316,12 +2430,19 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 			var data := {"x": x, "y": y, "text": "·", "disabled": false, "token": -1, "color": "#1d2b25bb" if battle_mode != "inspect" else "#294438dd"}
 			var cell := Vector2i(x, y)
 			var boss_danger: bool = BATTLE_RULES.is_boss_sweep_cell(battle, cell)
-			var move_valid: bool = battle_mode == "move" and BATTLE_RULES.can_move_to(battle, cell)
+			# 轻功 only extends the hero's own move range, never 林清霜's, so
+			# this must match the same active_unit guard BattleEngine._move()
+			# uses -- otherwise a cell could highlight as reachable during
+			# her turn and then fail when actually clicked, or vice versa.
+			var lightness_bonus := 0 if str(battle.get("active_unit", "hero")) == "ally" else WUXUE_RULES.lightness_move_bonus(GameState.data)
+			var move_valid: bool = battle_mode == "move" and BATTLE_RULES.can_move_to(battle, cell, lightness_bonus)
 			var attack_valid: bool = battle_mode == "attack" and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, cell, true, int(GameState.data.qi), TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)))
 			var blade_valid: bool = battle_mode == "blade_skill" and int(GameState.data.qi) >= BATTLE_ENGINE.BLADE_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var thunder_valid: bool = battle_mode == "thunder_stone" and int(GameState.data.consumables.get("thunder_stone", 0)) > 0 and BATTLE_RULES.can_attack_cell(battle, cell, true, 1, 0)
 			var frost_valid: bool = battle_mode == "frost_dash" and BATTLE_RULES.can_frost_dash(battle, cell)
+			var stone_fist_valid: bool = battle_mode == "stone_splitting_fist" and int(GameState.data.qi) >= BATTLE_ENGINE.STONE_FIST_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
+			var night_blade_valid: bool = battle_mode == "night_triple_blade" and int(GameState.data.qi) >= BATTLE_ENGINE.NIGHT_BLADE_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			if move_valid:
 				data.color = "#28678aee"
 			elif attack_valid:
@@ -2334,6 +2455,10 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				data.color = "#8a6a36ee"
 			elif frost_valid:
 				data.color = "#668fbbee"
+			elif stone_fist_valid:
+				data.color = "#6a4f9dee"
+			elif night_blade_valid:
+				data.color = "#3c3c5aee"
 			elif boss_danger:
 				data.color = "#8f2f24ee"
 			if BATTLE_RULES.is_blocked(battle, cell):

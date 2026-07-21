@@ -53,11 +53,11 @@ static func is_blocked(battle: Dictionary, cell: Vector2i) -> bool:
 static func is_occupied(battle: Dictionary, cell: Vector2i) -> bool:
 	return enemy_at(battle, cell) >= 0 or is_ally_at(battle, cell) or Vector2i(int(battle.player_x), int(battle.player_y)) == cell
 
-static func can_move_to(battle: Dictionary, cell: Vector2i) -> bool:
+static func can_move_to(battle: Dictionary, cell: Vector2i, bonus_range: int = 0) -> bool:
 	if is_blocked(battle, cell) or is_occupied(battle, cell):
 		return false
 	var path := find_path(battle, active_position(battle), cell, false)
-	return path.size() >= 2 and path.size() <= 3
+	return path.size() >= 2 and path.size() <= 3 + bonus_range
 
 static func can_attack_cell(battle: Dictionary, cell: Vector2i, skill: bool, hero_qi: int, skill_qi_cost: int = 8) -> bool:
 	if enemy_at(battle, cell) < 0:
