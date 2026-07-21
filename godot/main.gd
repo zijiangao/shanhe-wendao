@@ -830,12 +830,16 @@ func _show_location() -> void:
 
 func _location_actions(location_id: String) -> Array:
 	if location_id == "qingyun":
-		var weekly_focus_name := TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week)))
+		var weekly_focus := TRAINING_RULES.weekly_focus(int(GameState.data.week))
+		var weekly_focus_name := TRAINING_RULES.discipline_short_name(weekly_focus)
+		var train_text := "演武场 · 本周%s" % weekly_focus_name if weekly_focus in ["swordsmanship", "bladesmanship"] else "演武场 · 剑法与刀法"
+		var gathering_text := "后山 · 本周%s" % weekly_focus_name if weekly_focus in ["herbalism", "mining"] else "后山 · 采药与挖矿"
 		return [
 			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
-			{"id": "train", "text": "演武场 · 本周%s" % weekly_focus_name, "x": 420, "y": 205},
+			{"id": "train", "text": train_text, "x": 420, "y": 205},
 			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
 			{"id": "workshop", "text": "工坊 · 炼药与锻造", "x": 710, "y": 330},
+			{"id": "gathering", "text": gathering_text, "x": 150, "y": 350},
 			{"id": "map", "text": "山门 · 返回舆图", "x": 910, "y": 420}
 		]
 	if location_id == "blackreed":
@@ -890,6 +894,14 @@ func _show_wuxue_training() -> void:
 	choice_event = "wuxue_training"
 	choice_prompt = "武学修炼 · 消耗一周，免费但缓慢 · 悟性 %d，每次额外经验 +%d" % [int(GameState.data.insight), WUXUE_RULES.insight_xp_bonus(GameState.data)]
 	choice_options = WUXUE_RULES.options_training(GameState.data)
+	screen = "choice"
+	_rebuild()
+
+func _show_gathering_menu() -> void:
+	choice_event = "gathering"
+	choice_prompt = "选择本周的采集方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
+	choice_options = TRAINING_RULES.gathering_options(GameState.data)
+	choice_options.append(["暂不采集", "不消耗行动点，返回青云门。", "leave"])
 	screen = "choice"
 	_rebuild()
 
@@ -971,6 +983,11 @@ func _location_action_requested(action_id: String) -> void:
 				_toast(_time_action_failure_message())
 				return
 			_show_training_menu()
+		"gathering":
+			if GameState.deadline_reached() or int(GameState.data.energy) <= 0:
+				_toast(_time_action_failure_message())
+				return
+			_show_gathering_menu()
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
 		"workshop":
 			choice_event = "workshop"
@@ -1162,6 +1179,10 @@ func _resolve_choice(route: String) -> void:
 		if route == "wuxue_training":
 			_show_wuxue_training()
 			return
+		if route != "leave":
+			_start_training(route)
+			return
+	elif choice_event == "gathering":
 		if route != "leave":
 			_start_training(route)
 			return
@@ -1661,7 +1682,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.81.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.82.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

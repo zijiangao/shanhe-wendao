@@ -3,7 +3,12 @@ extends SceneTree
 const RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 
 func _init() -> void:
-	assert(RULES.options().size() == 4, "Training should offer four distinct specialties.")
+	assert(RULES.options().size() == 2, "演武场 should offer only the two combat specialties now that gathering has its own menu.")
+	assert(RULES.gathering_options().size() == 2, "后山 should offer exactly the two gathering specialties.")
+	assert(RULES.options().any(func(o): return str(o[2]) == "swordsmanship") and RULES.options().any(func(o): return str(o[2]) == "bladesmanship"), "演武场 must still cover both combat disciplines.")
+	assert(RULES.gathering_options().any(func(o): return str(o[2]) == "herbalism") and RULES.gathering_options().any(func(o): return str(o[2]) == "mining"), "后山 must cover both gathering disciplines.")
+	assert(not RULES.options().any(func(o): return str(o[2]) == "herbalism" or str(o[2]) == "mining"), "演武场 must no longer offer herbalism or mining directly.")
+	assert(not RULES.gathering_options().any(func(o): return str(o[2]) == "swordsmanship" or str(o[2]) == "bladesmanship"), "后山 must not offer the combat disciplines.")
 	assert(RULES.weekly_focus(1) == "swordsmanship" and RULES.weekly_focus(4) == "mining" and RULES.weekly_focus(5) == "swordsmanship", "Weekly training focus should rotate deterministically across all disciplines.")
 	assert(RULES.discipline_short_name("herbalism") == "采药", "Weekly-focus labels should reuse the shipping discipline names.")
 	assert(RULES.specialty_rank_name(0) == "初学" and RULES.specialty_rank_name(3) == "熟手", "Early specialty thresholds should have stable names.")
@@ -14,7 +19,8 @@ func _init() -> void:
 	assert(RULES.attack_exposure_gain(9) == 1 and RULES.attack_exposure_gain(10) == 2, "Blade mastery should double normal-attack exposure at level ten.")
 	assert(RULES.medicine_mastery_bonus(10) == 5 and RULES.craft_ore_discount(10) == 3, "Gathering mastery should expose stable medicine and forging perks.")
 	var ranked_options := RULES.options({"week": 2, "swordsmanship": 3, "mining": 10})
-	assert("熟手 3级" in str(ranked_options[0][1]) and "已达大成" in str(ranked_options[3][1]), "Training choices should explain current rank and next milestone.")
+	var ranked_gathering := RULES.gathering_options({"week": 2, "swordsmanship": 3, "mining": 10})
+	assert("熟手 3级" in str(ranked_options[0][1]) and "已达大成" in str(ranked_gathering[1][1]), "Training choices should explain current rank and next milestone.")
 	assert("本周专精" not in str(ranked_options[0][1]) and "本周专精 · 额外修为 +3" in str(ranked_options[1][1]), "Only the rotating weekly focus should advertise its cultivation bonus.")
 	assert(RULES.MAX_TOTAL_SCORE == 315, "The displayed maximum must match three perfect rounds plus capped streak bonuses.")
 	assert(RULES.score_round(true, 500) == 100, "Fast correct reactions should earn full points.")

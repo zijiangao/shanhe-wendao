@@ -28,6 +28,9 @@ func _capture() -> void:
 			leave_button = b
 	var leave_reachable := leave_button != null and not leave_button.disabled
 	var menu_valid: bool = main_scene.screen == "choice" and main_scene.choice_event == "training" and leave_reachable
+	# 采药/挖矿 were split out into their own 后山 hotspot -- confirm neither
+	# leaks into 演武场's own option list.
+	var no_gathering_in_training := not main_scene.find_children("*", "Button", true, false).any(func(b): return "采药" in (b as Button).text or "挖矿" in (b as Button).text)
 
 	# 武学修炼 must stay disabled with no manuals learned yet -- it would
 	# otherwise open a sub-menu with nothing but a "返回" row in it.
@@ -112,7 +115,30 @@ func _capture() -> void:
 			await process_frame
 		leave_works = main_scene.screen == "location"
 
+	# 采药/挖矿 were split out of 演武场 into their own 后山 hotspot -- confirm
+	# neither combat discipline leaks into it, neither gathering discipline
+	# leaks back into 演武场, and 后山's own leave button still works.
+	main_scene._location_action_requested("gathering")
+	for frame in range(3):
+		await process_frame
+	var gathering_menu_open: bool = main_scene.screen == "choice" and main_scene.choice_event == "gathering"
+	var gathering_buttons: Array = main_scene.find_children("*", "Button", true, false)
+	var has_herbalism_button := gathering_buttons.any(func(b): return "采药" in (b as Button).text)
+	var has_mining_button := gathering_buttons.any(func(b): return "挖矿" in (b as Button).text)
+	var no_combat_in_gathering := not gathering_buttons.any(func(b): return "剑法" in (b as Button).text or "刀法" in (b as Button).text)
+	var gathering_leave_button: Button = null
+	for b in gathering_buttons:
+		if (b as Button).text.begins_with("暂不采集"):
+			gathering_leave_button = b
+	var gathering_leave_works := false
+	if gathering_leave_button != null and not gathering_leave_button.disabled:
+		gathering_leave_button.pressed.emit()
+		for frame in range(2):
+			await process_frame
+		gathering_leave_works = main_scene.screen == "location"
+
 	var valid: bool = menu_valid and wuxue_disabled_when_unlearned and wuxue_enabled_when_learned and wuxue_menu_open and wuxue_training_ok and wuxue_training_back_ok and spar_focus_valid and leave_works
+	valid = valid and no_gathering_in_training and gathering_menu_open and has_herbalism_button and has_mining_button and no_combat_in_gathering and gathering_leave_works
 	if not valid:
-		push_error("Training menu regression: menu_valid=%s wuxue_disabled_when_unlearned=%s wuxue_enabled_when_learned=%s wuxue_menu_open=%s wuxue_training_ok=%s wuxue_training_back_ok=%s spar_focus_valid=%s leave_works=%s" % [menu_valid, wuxue_disabled_when_unlearned, wuxue_enabled_when_learned, wuxue_menu_open, wuxue_training_ok, wuxue_training_back_ok, spar_focus_valid, leave_works])
+		push_error("Training menu regression: menu_valid=%s wuxue_disabled_when_unlearned=%s wuxue_enabled_when_learned=%s wuxue_menu_open=%s wuxue_training_ok=%s wuxue_training_back_ok=%s spar_focus_valid=%s leave_works=%s no_gathering_in_training=%s gathering_menu_open=%s has_herbalism_button=%s has_mining_button=%s no_combat_in_gathering=%s gathering_leave_works=%s" % [menu_valid, wuxue_disabled_when_unlearned, wuxue_enabled_when_learned, wuxue_menu_open, wuxue_training_ok, wuxue_training_back_ok, spar_focus_valid, leave_works, no_gathering_in_training, gathering_menu_open, has_herbalism_button, has_mining_button, no_combat_in_gathering, gathering_leave_works])
 	quit(0 if valid else 18)

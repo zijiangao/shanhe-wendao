@@ -130,16 +130,26 @@ static func records_text(records: Variant) -> String:
 		entries.append("%s %s·%d（%d次）" % [entry[1], grade(int(record.best_score)) if int(record.attempts) > 0 else "—", int(record.best_score), int(record.attempts)])
 	return " · ".join(entries)
 
+## 演武场 (combat technique training) covers only swordsmanship/bladesmanship
+## now -- herbalism/mining were split out to 后山 (gathering_options()) since
+## gathering materials is thematically distinct from martial-arts practice,
+## even though both still share the exact same minigame/specialty machinery.
 static func options(state: Dictionary = {}) -> Array:
+	return _discipline_options(state, ["swordsmanship", "bladesmanship"])
+
+static func gathering_options(state: Dictionary = {}) -> Array:
+	return _discipline_options(state, ["herbalism", "mining"])
+
+static func _discipline_options(state: Dictionary, disciplines: Array) -> Array:
+	var titles := {"swordsmanship": "剑法 · 听风辨势", "bladesmanship": "刀法 · 破阵斩隙", "herbalism": "采药 · 寻香识草", "mining": "挖矿 · 听音寻脉"}
 	var result: Array = []
 	var focus := weekly_focus(int(state.get("week", 1)))
-	for entry in [["swordsmanship", "剑法 · 听风辨势"], ["bladesmanship", "刀法 · 破阵斩隙"], ["herbalism", "采药 · 寻香识草"], ["mining", "挖矿 · 听音寻脉"]]:
-		var discipline := str(entry[0])
+	for discipline in disciplines:
 		var level := maxi(0, int(state.get(discipline, 0)))
 		var next_level := next_specialty_level(level)
 		var progress := "已达大成" if next_level < 0 else "距下境界 %d级" % (next_level - level)
 		var focus_text := "【本周专精 · 额外修为 +%d】\n" % WEEKLY_FOCUS_XP_BONUS if discipline == focus else ""
-		result.append([str(entry[1]), "%s%s %d级 · %s · %s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, progress, perk_text(discipline, level)], discipline])
+		result.append([str(titles[discipline]), "%s%s %d级 · %s · %s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, progress, perk_text(discipline, level)], discipline])
 	return result
 
 static func score_round(correct: bool, elapsed_ms: int) -> int:
