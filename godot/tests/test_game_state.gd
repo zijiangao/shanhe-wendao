@@ -224,6 +224,17 @@ func _initialize() -> void:
 	assert(typeof(state.data.internal_levels) == TYPE_DICTIONARY and state.data.internal_levels.is_empty(), "A non-dictionary internal_levels field must be repaired to an empty dictionary.")
 	assert(int(state.data.lightness_levels.get("ripple_steps", 1)) == 1, "A negative level must be clamped up to the level-1 floor, not trusted outright.")
 
+	var pre_training_save: Dictionary = state.data.duplicate(true)
+	pre_training_save.erase("wuxue_xp")
+	assert(state.import_data(pre_training_save), "Saves from before wuxue training (修炼) existed must still migrate.")
+	assert(state.data.wuxue_xp.is_empty(), "A save with no wuxue_xp field should default to no accumulated training progress.")
+
+	var corrupted_training_save: Dictionary = state.data.duplicate(true)
+	corrupted_training_save.wuxue_xp = {"stone_splitting_fist": -5, "a_deleted_move_id": 20}
+	assert(state.import_data(corrupted_training_save), "A save with negative or orphaned training xp must still load.")
+	assert(int(state.data.wuxue_xp.get("stone_splitting_fist", 0)) == 0, "Negative training xp must be clamped up to zero, not trusted outright.")
+	assert(not state.data.wuxue_xp.has("a_deleted_move_id"), "Training xp for a move that isn't (or is no longer) actually learned must be dropped.")
+
 	state.new_game()
 	state.data.silver = 1000
 	var wuxue_power_before := int(state.power())
@@ -233,6 +244,28 @@ func _initialize() -> void:
 	var power_before_leveling := int(state.power())
 	assert(WUXUE_RULES.upgrade_move(state.data, "stone_splitting_fist"), "A well-funded hero should be able to level up a learned, equipped move.")
 	assert(int(state.power()) == power_before_leveling + 1, "Leveling an equipped move from 1 to 2 should raise power by its one-point-per-level damage bonus.")
+
+	# 修炼 (training): free but spends a week/energy, unlike the instant
+	# silver-based upgrade above -- both feed the same underlying level.
+	state.new_game()
+	state.data.energy = 3
+	state.data.silver = 1000
+	assert(not state.can_train_wuxue("move", "stone_splitting_fist"), "A move that hasn't been learned yet must not be trainable.")
+	assert(WUXUE_RULES.learn_move(state.data, "stone_splitting_fist"), "Learning the move should succeed with enough silver.")
+	var week_before_training := int(state.data.week)
+	var energy_before_training := int(state.data.energy)
+	var train_result: Dictionary = state.train_wuxue("move", "stone_splitting_fist", 15)
+	assert(bool(train_result.ok) and not bool(train_result.leveled_up), "A modest, explicit xp roll should train successfully without leveling up yet.")
+	assert(int(state.data.week) == week_before_training + 1 and int(state.data.energy) == energy_before_training - 1, "Training a wuxue skill must spend exactly one week and one energy, the same as any other training action.")
+	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15, "The explicit xp roll should be recorded exactly, not re-randomized inside GameState.")
+
+	state.data.energy = 0
+	assert(not bool(state.train_wuxue("move", "stone_splitting_fist", 15).get("ok", false)), "Training must require energy like every other training action.")
+	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15, "A training attempt blocked by insufficient energy must not grant xp or spend the week it never actually took.")
+
+	state.data.energy = 3
+	assert(not bool(state.train_wuxue("move", "night_triple_blade", 15).get("ok", false)), "Training a move that was never learned must be rejected before any week is spent.")
+	assert(int(state.data.energy) == 3, "Rejecting an invalid training target must not waste a week's energy on nothing.")
 
 	state.new_game()
 	state.data.energy = 3

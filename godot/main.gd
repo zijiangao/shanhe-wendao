@@ -880,7 +880,16 @@ func _show_training_menu() -> void:
 	choice_options = TRAINING_RULES.options(GameState.data)
 	var spar_rotation := SPARRING_RULES.rotation_for(int(GameState.data.week))
 	choice_options.append(["实战切磋 · %s" % spar_rotation.name, "%s；%s。" % [spar_rotation.focus, SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))], "qingyun_spar"])
+	var has_learned_wuxue: bool = not Array(GameState.data.get("learned_moves", [])).is_empty() or not Array(GameState.data.get("learned_internal", [])).is_empty() or not Array(GameState.data.get("learned_lightness", [])).is_empty()
+	choice_options.append(["武学修炼", "消耗一周潜心温习已习得的招式/内功/轻功，获得经验；经验满即可提升等级，免费但比秘籍阁的银两升级慢。" if has_learned_wuxue else "尚未习得任何招式/内功/轻功，请先到洛阳西市秘籍阁学习。", "wuxue_training", not has_learned_wuxue])
 	choice_options.append(["暂不修炼", "不消耗行动点，返回青云门。", "leave"])
+	screen = "choice"
+	_rebuild()
+
+func _show_wuxue_training() -> void:
+	choice_event = "wuxue_training"
+	choice_prompt = "武学修炼 · 消耗一周，免费但缓慢"
+	choice_options = WUXUE_RULES.options_training(GameState.data)
 	screen = "choice"
 	_rebuild()
 
@@ -1150,9 +1159,30 @@ func _resolve_choice(route: String) -> void:
 			screen = "choice"
 			_rebuild()
 			return
+		if route == "wuxue_training":
+			_show_wuxue_training()
+			return
 		if route != "leave":
 			_start_training(route)
 			return
+	elif choice_event == "wuxue_training":
+		if route == "leave":
+			_show_training_menu()
+			return
+		var train_result := {}
+		if route.begins_with("train_move_"):
+			train_result = GameState.train_wuxue("move", route.trim_prefix("train_move_"))
+		elif route.begins_with("train_internal_"):
+			train_result = GameState.train_wuxue("internal", route.trim_prefix("train_internal_"))
+		elif route.begins_with("train_lightness_"):
+			train_result = GameState.train_wuxue("lightness", route.trim_prefix("train_lightness_"))
+		if not bool(train_result.get("ok", false)):
+			_toast("行动点不足，或这门武学已大成，无需再练。")
+			return
+		_toast("武学境界更进一层！" if bool(train_result.get("leveled_up", false)) else "潜心温习，颇有所得。")
+		SaveManager.save_auto()
+		_show_wuxue_training()
+		return
 	elif choice_event == "spar_focus":
 		if route == "leave":
 			_show_training_menu()
@@ -1631,7 +1661,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.76.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.77.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

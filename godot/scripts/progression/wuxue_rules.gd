@@ -4,6 +4,8 @@ extends RefCounted
 const MAX_EQUIPPED_MOVES := 2
 const MAX_LEVEL := 10
 const LIGHTNESS_LEVEL_DIVISOR := 3
+const TRAIN_XP_MIN := 8
+const TRAIN_XP_MAX := 15
 
 const MOVES := {
 	"stone_splitting_fist": {"title": "裂石拳", "description": "内力贯拳，无视护甲。", "price": 150, "qi_cost": 5, "upgrade_base": 30, "level_damage_bonus": 1},
@@ -59,6 +61,67 @@ static func lightness_move_bonus(state: Dictionary) -> int:
 
 static func upgrade_cost(catalog: Dictionary, id: String, current_level: int) -> int:
 	return int(catalog[id].upgrade_base) * (current_level + 1)
+
+## 修炼 (free but slow, spends a week in the sect) and 升级 (instant, costs
+## silver at 秘籍阁) both feed the same level -- this is a deliberate second
+## path to the same progression, not a duplicate system.
+static func xp_needed(level: int) -> int:
+	return 20 * (level + 1)
+
+static func wuxue_xp(state: Dictionary, id: String) -> int:
+	return maxi(0, int(Dictionary(state.get("wuxue_xp", {})).get(id, 0)))
+
+static func train_move(state: Dictionary, id: String, xp_gain: int) -> Dictionary:
+	if not MOVES.has(id) or id not in Array(state.get("learned_moves", [])):
+		return {"ok": false}
+	if move_level(state, id) >= MAX_LEVEL:
+		return {"ok": false, "already_maxed": true}
+	return _train(state, "move_levels", id, xp_gain, move_level(state, id))
+
+static func train_internal(state: Dictionary, id: String, xp_gain: int) -> Dictionary:
+	if not INTERNAL.has(id) or id not in Array(state.get("learned_internal", [])):
+		return {"ok": false}
+	if internal_level(state, id) >= MAX_LEVEL:
+		return {"ok": false, "already_maxed": true}
+	return _train(state, "internal_levels", id, xp_gain, internal_level(state, id))
+
+static func train_lightness(state: Dictionary, id: String, xp_gain: int) -> Dictionary:
+	if not LIGHTNESS.has(id) or id not in Array(state.get("learned_lightness", [])):
+		return {"ok": false}
+	if lightness_level(state, id) >= MAX_LEVEL:
+		return {"ok": false, "already_maxed": true}
+	return _train(state, "lightness_levels", id, xp_gain, lightness_level(state, id))
+
+static func _train(state: Dictionary, level_key: String, id: String, xp_gain: int, level: int) -> Dictionary:
+	if not state.has("wuxue_xp") or typeof(state.wuxue_xp) != TYPE_DICTIONARY:
+		state.wuxue_xp = {}
+	var xp := wuxue_xp(state, id) + maxi(0, xp_gain)
+	var leveled_up := false
+	while level < MAX_LEVEL and xp >= xp_needed(level):
+		xp -= xp_needed(level)
+		level += 1
+		leveled_up = true
+	if not state.has(level_key) or typeof(state[level_key]) != TYPE_DICTIONARY:
+		state[level_key] = {}
+	state[level_key][id] = level
+	state.wuxue_xp[id] = 0 if level >= MAX_LEVEL else xp
+	return {"ok": true, "leveled_up": leveled_up, "new_level": level, "xp": int(state.wuxue_xp[id]), "xp_needed": xp_needed(level) if level < MAX_LEVEL else 0}
+
+static func options_training(state: Dictionary) -> Array:
+	var options := []
+	for id in Array(state.get("learned_moves", [])):
+		options.append(_training_row(state, str(MOVES[id].title), str(MOVES[id].description), move_level(state, id), id, "train_move_%s" % id))
+	for id in Array(state.get("learned_internal", [])):
+		options.append(_training_row(state, str(INTERNAL[id].title), str(INTERNAL[id].description), internal_level(state, id), id, "train_internal_%s" % id))
+	for id in Array(state.get("learned_lightness", [])):
+		options.append(_training_row(state, str(LIGHTNESS[id].title), str(LIGHTNESS[id].description), lightness_level(state, id), id, "train_lightness_%s" % id))
+	options.append(["返回", "不消耗行动点，返回修炼选择。", "leave"])
+	return options
+
+static func _training_row(state: Dictionary, title: String, description: String, level: int, id: String, route: String) -> Array:
+	if level >= MAX_LEVEL:
+		return ["修炼 · %s · 已大成" % title, "%s（已修炼至第10层，无需再练）" % description, route, true]
+	return ["修炼 · %s Lv.%d（%d/%d 经验）" % [title, level, wuxue_xp(state, id), xp_needed(level)], description, route, false]
 
 static func options_manuals(state: Dictionary) -> Array:
 	var options := []

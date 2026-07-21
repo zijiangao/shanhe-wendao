@@ -67,6 +67,7 @@ func new_game() -> void:
 		"move_levels": {},
 		"internal_levels": {},
 		"lightness_levels": {},
+		"wuxue_xp": {},
 		"flags": [],
 		"quest_stage": "meet_master",
 		"investigations": [],
@@ -139,6 +140,26 @@ func train(focus: String = "strength") -> bool:
 		return false
 	add_log({"strength": "你锻体一周，臂力与修为提升。", "insight": "你参悟一周，悟性与修为提升。", "constitution": "你筑基一周，根骨、气血与修为提升。"}[focus])
 	return true
+
+func can_train_wuxue(category: String, id: String) -> bool:
+	match category:
+		"move": return WUXUE_RULES.MOVES.has(id) and id in Array(data.get("learned_moves", [])) and WUXUE_RULES.move_level(data, id) < WUXUE_RULES.MAX_LEVEL
+		"internal": return WUXUE_RULES.INTERNAL.has(id) and id in Array(data.get("learned_internal", [])) and WUXUE_RULES.internal_level(data, id) < WUXUE_RULES.MAX_LEVEL
+		"lightness": return WUXUE_RULES.LIGHTNESS.has(id) and id in Array(data.get("learned_lightness", [])) and WUXUE_RULES.lightness_level(data, id) < WUXUE_RULES.MAX_LEVEL
+	return false
+
+func train_wuxue(category: String, id: String, xp_roll: int = -1) -> Dictionary:
+	if not can_train_wuxue(category, id) or not spend_week():
+		return {"ok": false}
+	var xp_gain := xp_roll if xp_roll >= 0 else randi_range(WUXUE_RULES.TRAIN_XP_MIN, WUXUE_RULES.TRAIN_XP_MAX)
+	var result: Dictionary
+	match category:
+		"move": result = WUXUE_RULES.train_move(data, id, xp_gain)
+		"internal": result = WUXUE_RULES.train_internal(data, id, xp_gain)
+		_: result = WUXUE_RULES.train_lightness(data, id, xp_gain)
+	if bool(result.get("ok", false)):
+		add_log("你潜心温习武学，境界更进一层！" if bool(result.get("leveled_up", false)) else "你潜心温习武学，颇有所得。")
+	return result
 
 func complete_training(discipline: String, score: int, event_roll: int = -1, best_streak: int = 0) -> Dictionary:
 	var safe_score := clampi(score, 0, TRAINING_RULES.MAX_TOTAL_SCORE)
@@ -607,6 +628,14 @@ func _migrate_and_validate() -> void:
 	if typeof(data.get("lightness_levels", {})) != TYPE_DICTIONARY:
 		data.lightness_levels = {}
 	data.lightness_levels = _clamped_levels(data.lightness_levels, data.learned_lightness)
+	if typeof(data.get("wuxue_xp", {})) != TYPE_DICTIONARY:
+		data.wuxue_xp = {}
+	var all_learned_wuxue := Array(data.learned_moves) + Array(data.learned_internal) + Array(data.learned_lightness)
+	var cleaned_xp := {}
+	for id in data.wuxue_xp:
+		if str(id) in all_learned_wuxue:
+			cleaned_xp[str(id)] = maxi(0, int(data.wuxue_xp[id]))
+	data.wuxue_xp = cleaned_xp
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
 	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:

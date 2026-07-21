@@ -97,6 +97,48 @@ func _initialize() -> void:
 	var maxed_row := maxed_options.filter(func(o): return str(o[2]) == "upgrade_move_stone_splitting_fist")
 	assert(maxed_row.size() == 1 and bool(maxed_row[0][3]) and "已满级" in str(maxed_row[0][0]), "A level-10 move's upgrade row should read as maxed and stay disabled.")
 
+	# Training (修炼): a free but slow second path to the same levels as the
+	# silver-based upgrade above. xp_needed(level) = 20*(level+1), so level 1
+	# needs 40 xp to reach level 2.
+	var training_state := _state()
+	training_state.silver = 1000
+	RULES.learn_move(training_state, "stone_splitting_fist")
+	assert(not RULES.train_move(training_state, "night_triple_blade", 10).get("ok", false), "Training a move that hasn't been learned must fail.")
+	var partial: Dictionary = RULES.train_move(training_state, "stone_splitting_fist", 15)
+	assert(bool(partial.ok) and not bool(partial.leveled_up) and RULES.move_level(training_state, "stone_splitting_fist") == 1 and RULES.wuxue_xp(training_state, "stone_splitting_fist") == 15, "15 of the needed 40 xp should accumulate without leveling up yet.")
+	var to_level_up: Dictionary = RULES.train_move(training_state, "stone_splitting_fist", 30)
+	assert(bool(to_level_up.ok) and bool(to_level_up.leveled_up) and RULES.move_level(training_state, "stone_splitting_fist") == 2, "15+30=45 xp should cross the 40-xp threshold and advance to level 2.")
+	assert(RULES.wuxue_xp(training_state, "stone_splitting_fist") == 5, "Leftover xp (45-40=5) should carry over into the new level rather than being discarded.")
+
+	# A single huge training gain should be able to roll over multiple levels
+	# in one session, not just the next one.
+	var overflow_state := _state()
+	overflow_state.silver = 1000
+	RULES.learn_move(overflow_state, "night_triple_blade")
+	var overflow: Dictionary = RULES.train_move(overflow_state, "night_triple_blade", 5000)
+	assert(bool(overflow.leveled_up) and RULES.move_level(overflow_state, "night_triple_blade") == RULES.MAX_LEVEL, "An enormous xp gain should roll over every level at once, capping at level 10 rather than overshooting.")
+	assert(RULES.wuxue_xp(overflow_state, "night_triple_blade") == 0, "Reaching the level cap should not leave leftover xp sitting unusable.")
+	assert(not RULES.train_move(overflow_state, "night_triple_blade", 10).get("ok", false), "Training a move already at the level cap must be rejected.")
+
+	# Internal arts and lightness skills train identically.
+	var internal_training := _state()
+	internal_training.silver = 1000
+	RULES.learn_internal(internal_training, "purple_mist_art")
+	assert(bool(RULES.train_internal(internal_training, "purple_mist_art", 40).get("leveled_up", false)) and RULES.internal_level(internal_training, "purple_mist_art") == 2, "Internal art training should level up the same way moves do.")
+	var lightness_training := _state()
+	lightness_training.silver = 1000
+	RULES.learn_lightness(lightness_training, "ripple_steps")
+	assert(bool(RULES.train_lightness(lightness_training, "ripple_steps", 40).get("leveled_up", false)) and RULES.lightness_level(lightness_training, "ripple_steps") == 2, "Lightness skill training should level up the same way moves do.")
+
+	# The training sub-menu must show real progress and read as "已大成" once
+	# a listed entry is maxed, rather than silently offering a no-op action.
+	var training_options: Array = RULES.options_training(training_state)
+	var stone_fist_row := training_options.filter(func(o): return str(o[2]) == "train_move_stone_splitting_fist")
+	assert(stone_fist_row.size() == 1 and not bool(stone_fist_row[0][3]) and "5/60" in str(stone_fist_row[0][0]), "A mid-progress move's training row should show its current xp over the level-2 threshold (20*3=60) and stay enabled.")
+	var maxed_training_options: Array = RULES.options_training(overflow_state)
+	var maxed_training_row := maxed_training_options.filter(func(o): return str(o[2]) == "train_move_night_triple_blade")
+	assert(maxed_training_row.size() == 1 and bool(maxed_training_row[0][3]) and "已大成" in str(maxed_training_row[0][0]), "A level-10 move's training row should read as maxed and stay disabled.")
+
 	# options_manuals must reflect affordability and current learn/equip state for the choice-menu UI.
 	var poor := _state()
 	var poor_options: Array = RULES.options_manuals(poor)
