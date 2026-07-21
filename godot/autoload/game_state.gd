@@ -34,7 +34,7 @@ func new_game() -> void:
 		"hp": 45,
 		"max_hp": 45,
 		"qi": 20,
-		"silver": 30,
+		"silver": 10000,
 		"renown": 0,
 		"xp": 0,
 		"strength": 4,

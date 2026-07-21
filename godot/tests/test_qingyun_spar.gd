@@ -24,7 +24,7 @@ func _initialize() -> void:
 	valid = _check(not state.start_qingyun_spar_battle("invalid"), "Unknown weapon disciplines should be rejected before spending time.") and valid
 	valid = _check(state.start_qingyun_spar_battle(), "A second sparring match should remain available.") and valid
 	state.finish_battle(false)
-	valid = _check(int(state.data.hp) == int(state.data.max_hp) and int(state.data.silver) == 30, "A nonlethal sparring defeat should heal the hero without a silver penalty.") and valid
+	valid = _check(int(state.data.hp) == int(state.data.max_hp) and int(state.data.silver) == 10000, "A nonlethal sparring defeat should heal the hero without a silver penalty.") and valid
 
 	print("Qingyun sparring tests passed." if valid else "Qingyun sparring tests failed.")
 	quit(0 if valid else 1)

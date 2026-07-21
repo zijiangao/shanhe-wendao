@@ -62,7 +62,7 @@ func _initialize() -> void:
 	var mining_training: Dictionary = state.complete_training("mining", 300, 0)
 	assert(int(state.data.materials.ore) == 5 and int(state.data.mineralogy.get("ironstone", 0)) == 1, "Mining should commit normal ore, encounter ore, and a score-eligible mineral discovery together.")
 	assert(str(mining_training.mineral_discovery.name) == "青铁石" and bool(mining_training.mineral_discovery.first_discovery), "The mining result should expose its newly recorded mineral.")
-	assert(int(mining_training.mineral_discovery.silver) == 2 and int(state.data.silver) == 44, "A first mineral appraisal should add its one-time silver bonus to normal mining income.")
+	assert(int(mining_training.mineral_discovery.silver) == 2 and int(state.data.silver) == 10014, "A first mineral appraisal should add its one-time silver bonus to normal mining income.")
 	state.data.materials.herbs = 2
 	assert(state.craft("healing_powder") and int(state.data.consumables.healing_powder) == 1, "GameState should expose medicine crafting through the saved inventory.")
 	assert("crafted_healing_powder" in state.data.flags, "Medicine crafting must persist its Steam milestone.")
