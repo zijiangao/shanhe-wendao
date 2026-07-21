@@ -254,14 +254,15 @@ func _initialize() -> void:
 	assert(WUXUE_RULES.learn_move(state.data, "stone_splitting_fist"), "Learning the move should succeed with enough silver.")
 	var week_before_training := int(state.data.week)
 	var energy_before_training := int(state.data.energy)
+	var insight_bonus := int(WUXUE_RULES.insight_xp_bonus(state.data))
 	var train_result: Dictionary = state.train_wuxue("move", "stone_splitting_fist", 15)
 	assert(bool(train_result.ok) and not bool(train_result.leveled_up), "A modest, explicit xp roll should train successfully without leveling up yet.")
 	assert(int(state.data.week) == week_before_training + 1 and int(state.data.energy) == energy_before_training - 1, "Training a wuxue skill must spend exactly one week and one energy, the same as any other training action.")
-	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15, "The explicit xp roll should be recorded exactly, not re-randomized inside GameState.")
+	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15 + insight_bonus, "The recorded xp should be the explicit roll plus the hero's insight-based training bonus, not the raw roll alone.")
 
 	state.data.energy = 0
 	assert(not bool(state.train_wuxue("move", "stone_splitting_fist", 15).get("ok", false)), "Training must require energy like every other training action.")
-	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15, "A training attempt blocked by insufficient energy must not grant xp or spend the week it never actually took.")
+	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15 + insight_bonus, "A training attempt blocked by insufficient energy must not grant xp or spend the week it never actually took.")
 
 	state.data.energy = 3
 	assert(not bool(state.train_wuxue("move", "night_triple_blade", 15).get("ok", false)), "Training a move that was never learned must be rejected before any week is spent.")

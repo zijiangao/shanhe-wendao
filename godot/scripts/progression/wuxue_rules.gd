@@ -68,6 +68,12 @@ static func upgrade_cost(catalog: Dictionary, id: String, current_level: int) ->
 static func xp_needed(level: int) -> int:
 	return 20 * (level + 1)
 
+## Mirrors Flowing Cloud Sword's existing "every 2 points of insight" scaling
+## (battle_engine.gd's cloud_damage_range()) -- a sharper mind learns wuxue
+## faster from the same week of practice, on top of the base random roll.
+static func insight_xp_bonus(state: Dictionary) -> int:
+	return int(state.get("insight", 0)) / 2
+
 static func wuxue_xp(state: Dictionary, id: String) -> int:
 	return maxi(0, int(Dictionary(state.get("wuxue_xp", {})).get(id, 0)))
 

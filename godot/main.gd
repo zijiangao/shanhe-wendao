@@ -888,7 +888,7 @@ func _show_training_menu() -> void:
 
 func _show_wuxue_training() -> void:
 	choice_event = "wuxue_training"
-	choice_prompt = "武学修炼 · 消耗一周，免费但缓慢"
+	choice_prompt = "武学修炼 · 消耗一周，免费但缓慢 · 悟性 %d，每次额外经验 +%d" % [int(GameState.data.insight), WUXUE_RULES.insight_xp_bonus(GameState.data)]
 	choice_options = WUXUE_RULES.options_training(GameState.data)
 	screen = "choice"
 	_rebuild()
@@ -1661,7 +1661,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.77.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.78.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

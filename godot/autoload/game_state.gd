@@ -151,7 +151,8 @@ func can_train_wuxue(category: String, id: String) -> bool:
 func train_wuxue(category: String, id: String, xp_roll: int = -1) -> Dictionary:
 	if not can_train_wuxue(category, id) or not spend_week():
 		return {"ok": false}
-	var xp_gain := xp_roll if xp_roll >= 0 else randi_range(WUXUE_RULES.TRAIN_XP_MIN, WUXUE_RULES.TRAIN_XP_MAX)
+	var base_xp := xp_roll if xp_roll >= 0 else randi_range(WUXUE_RULES.TRAIN_XP_MIN, WUXUE_RULES.TRAIN_XP_MAX)
+	var xp_gain := base_xp + WUXUE_RULES.insight_xp_bonus(data)
 	var result: Dictionary
 	match category:
 		"move": result = WUXUE_RULES.train_move(data, id, xp_gain)

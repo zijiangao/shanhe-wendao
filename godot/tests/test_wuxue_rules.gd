@@ -139,6 +139,12 @@ func _initialize() -> void:
 	var maxed_training_row := maxed_training_options.filter(func(o): return str(o[2]) == "train_move_night_triple_blade")
 	assert(maxed_training_row.size() == 1 and bool(maxed_training_row[0][3]) and "已大成" in str(maxed_training_row[0][0]), "A level-10 move's training row should read as maxed and stay disabled.")
 
+	# 修炼's xp gain scales with 悟性 (insight), mirroring Flowing Cloud Sword's
+	# existing "every 2 points of insight" convention.
+	assert(RULES.insight_xp_bonus({"insight": 0}) == 0, "Zero insight should grant no training xp bonus.")
+	assert(RULES.insight_xp_bonus({"insight": 4}) == 2, "The starting insight of 4 should grant a +2 training xp bonus.")
+	assert(RULES.insight_xp_bonus({"insight": 7}) == 3, "Insight should round down to the nearest whole bonus point, not round up.")
+
 	# options_manuals must reflect affordability and current learn/equip state for the choice-menu UI.
 	var poor := _state()
 	var poor_options: Array = RULES.options_manuals(poor)
