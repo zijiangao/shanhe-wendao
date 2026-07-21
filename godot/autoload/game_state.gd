@@ -64,6 +64,9 @@ func new_game() -> void:
 		"equipped_moves": [],
 		"equipped_internal": "",
 		"equipped_lightness": "",
+		"move_levels": {},
+		"internal_levels": {},
+		"lightness_levels": {},
 		"flags": [],
 		"quest_stage": "meet_master",
 		"investigations": [],
@@ -88,7 +91,10 @@ func new_game() -> void:
 func power() -> int:
 	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
 	var equipment_power := int(data.get("forge_level", 0)) * 2 + SHOP_RULES.weapon_attack_bonus(data) + SHOP_RULES.armor_defense_bonus(data)
-	var wuxue_power := Array(data.get("equipped_moves", [])).size() * 3 + WUXUE_RULES.internal_damage_bonus(data) + WUXUE_RULES.internal_healing_bonus(data) / 2 + WUXUE_RULES.lightness_move_bonus(data) * 2
+	var equipped_move_power := 0
+	for move_id in Array(data.get("equipped_moves", [])):
+		equipped_move_power += 3 + WUXUE_RULES.move_damage_bonus(data, str(move_id))
+	var wuxue_power := equipped_move_power + WUXUE_RULES.internal_damage_bonus(data) + WUXUE_RULES.internal_healing_bonus(data) / 2 + WUXUE_RULES.lightness_move_bonus(data) * 2
 	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2 + equipment_power + wuxue_power)
 
 func weeks_left() -> int:
@@ -592,6 +598,15 @@ func _migrate_and_validate() -> void:
 		data.equipped_internal = ""
 	if str(data.get("equipped_lightness", "")) not in data.learned_lightness:
 		data.equipped_lightness = ""
+	if typeof(data.get("move_levels", {})) != TYPE_DICTIONARY:
+		data.move_levels = {}
+	data.move_levels = _clamped_levels(data.move_levels, data.learned_moves)
+	if typeof(data.get("internal_levels", {})) != TYPE_DICTIONARY:
+		data.internal_levels = {}
+	data.internal_levels = _clamped_levels(data.internal_levels, data.learned_internal)
+	if typeof(data.get("lightness_levels", {})) != TYPE_DICTIONARY:
+		data.lightness_levels = {}
+	data.lightness_levels = _clamped_levels(data.lightness_levels, data.learned_lightness)
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
 	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:
@@ -600,6 +615,13 @@ func _migrate_and_validate() -> void:
 		data.location = "qingyun"
 	if not data.battle.is_empty() and data.battle_retry.is_empty():
 		capture_battle_checkpoint()
+
+func _clamped_levels(levels: Dictionary, learned: Array) -> Dictionary:
+	var cleaned := {}
+	for id in levels:
+		if str(id) in learned:
+			cleaned[str(id)] = clampi(int(levels[id]), 1, WUXUE_RULES.MAX_LEVEL)
+	return cleaned
 
 func _valid_battle(value: Variant) -> bool:
 	if typeof(value) != TYPE_DICTIONARY:

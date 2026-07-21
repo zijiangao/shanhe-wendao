@@ -1,6 +1,7 @@
 extends SceneTree
 
 const ENGINE := preload("res://scripts/battle/battle_engine.gd")
+const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 
 func _initialize() -> void:
 	_test_victory_detection()
@@ -17,6 +18,7 @@ func _initialize() -> void:
 	_test_wuxue_moves_require_equip()
 	_test_wuxue_move_damage()
 	_test_wuxue_internal_and_lightness_bonuses()
+	_test_wuxue_leveling()
 	_test_invalid_action_preserves_resources()
 	_test_complete_battle_simulation()
 	_test_ranged_enemy_attack_and_cover()
@@ -502,6 +504,89 @@ func _test_wuxue_internal_and_lightness_bonuses() -> void:
 	ally_winged_player.equipped_lightness = "wind_walk"
 	var ally_move: Dictionary = ENGINE.player_action(ally_far_battle, ally_winged_player, "move", Vector2i(3, 0), _seeded_rng())
 	assert(not bool(ally_move.ok), "The hero's own lightness skill must never extend 林清霜's movement range on her turn.")
+
+func _test_wuxue_leveling() -> void:
+	# A freshly equipped move (level 1) should deal the same damage as before
+	# leveling existed -- the level-up bonus must be strictly additive on top
+	# of the level-1 baseline, never a retroactive change to unleveled play.
+	var level1_battle := _fixture()
+	level1_battle.erase("ally")
+	level1_battle.active_unit = "hero"
+	level1_battle.ap = 2
+	level1_battle.enemies[0].x = 2
+	level1_battle.enemies[0].y = 1
+	level1_battle.enemies[0].hp = 100
+	level1_battle.enemies[0].armor = 50
+	var level1_player := _player_fixture()
+	level1_player.equipped_moves = ["stone_splitting_fist"]
+	level1_player.qi = 20
+	var level1_result: Dictionary = ENGINE.player_action(level1_battle, level1_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	assert(bool(level1_result.ok), "A level-1 Stone Splitting Fist should still land normally.")
+
+	var level10_battle := _fixture()
+	level10_battle.erase("ally")
+	level10_battle.active_unit = "hero"
+	level10_battle.ap = 2
+	level10_battle.enemies[0].x = 2
+	level10_battle.enemies[0].y = 1
+	level10_battle.enemies[0].hp = 100
+	level10_battle.enemies[0].armor = 50
+	var level10_player := _player_fixture()
+	level10_player.equipped_moves = ["stone_splitting_fist"]
+	level10_player.qi = 20
+	level10_player.move_levels = {"stone_splitting_fist": WUXUE_RULES.MAX_LEVEL}
+	var level10_result: Dictionary = ENGINE.player_action(level10_battle, level10_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	assert(bool(level10_result.ok) and int(level10_result.damage) == int(level1_result.damage) + 9, "A maxed-out (level 10) Stone Splitting Fist should deal exactly nine more damage than the level-1 baseline, one point per level above 1, still ignoring armor.")
+
+	# Internal art leveling should compound with its base bonus, and stack
+	# with the un-leveled weapon/forge bonuses exactly like the base case did.
+	var plain_battle := _fixture()
+	plain_battle.erase("ally")
+	plain_battle.active_unit = "hero"
+	plain_battle.ap = 2
+	plain_battle.enemies[0].x = 2
+	plain_battle.enemies[0].y = 1
+	plain_battle.enemies[0].hp = 100
+	var plain_player := _player_fixture()
+	var plain_result: Dictionary = ENGINE.player_action(plain_battle, plain_player, "attack", Vector2i(2, 1), _seeded_rng())
+
+	var leveled_internal_battle := _fixture()
+	leveled_internal_battle.erase("ally")
+	leveled_internal_battle.active_unit = "hero"
+	leveled_internal_battle.ap = 2
+	leveled_internal_battle.enemies[0].x = 2
+	leveled_internal_battle.enemies[0].y = 1
+	leveled_internal_battle.enemies[0].hp = 100
+	var leveled_internal_player := _player_fixture()
+	leveled_internal_player.equipped_internal = "purple_mist_art"
+	leveled_internal_player.internal_levels = {"purple_mist_art": 5}
+	var leveled_internal_result: Dictionary = ENGINE.player_action(leveled_internal_battle, leveled_internal_player, "attack", Vector2i(2, 1), _seeded_rng())
+	assert(int(leveled_internal_result.damage) == int(plain_result.damage) + 2 + 4, "Level 5 Purple Mist Art should add its base +2 plus four more levels' worth of bonus (one per level above 1) to a normal attack.")
+
+	# Lightness leveling ticks its move-range bonus once every three levels;
+	# level 4 must add exactly one extra tile over the un-leveled base.
+	var grounded_lightness_battle := _fixture()
+	grounded_lightness_battle.erase("ally")
+	grounded_lightness_battle.active_unit = "hero"
+	grounded_lightness_battle.ap = 2
+	grounded_lightness_battle.player_x = 0
+	grounded_lightness_battle.player_y = 0
+	var base_lightness_player := _player_fixture()
+	base_lightness_player.equipped_lightness = "ripple_steps"
+	var base_lightness_move: Dictionary = ENGINE.player_action(grounded_lightness_battle, base_lightness_player, "move", Vector2i(4, 0), _seeded_rng())
+	assert(not bool(base_lightness_move.ok), "Five steps away should be out of reach for an un-leveled Ripple Steps (base +1 range).")
+
+	var leveled_lightness_battle := _fixture()
+	leveled_lightness_battle.erase("ally")
+	leveled_lightness_battle.active_unit = "hero"
+	leveled_lightness_battle.ap = 2
+	leveled_lightness_battle.player_x = 0
+	leveled_lightness_battle.player_y = 0
+	var leveled_lightness_player := _player_fixture()
+	leveled_lightness_player.equipped_lightness = "ripple_steps"
+	leveled_lightness_player.lightness_levels = {"ripple_steps": 4}
+	var leveled_lightness_move: Dictionary = ENGINE.player_action(leveled_lightness_battle, leveled_lightness_player, "move", Vector2i(4, 0), _seeded_rng())
+	assert(bool(leveled_lightness_move.ok), "Level 4 Ripple Steps' extra range tick should reach the same cell that was out of range at level 1.")
 
 func _test_invalid_action_preserves_resources() -> void:
 	var battle := _fixture()

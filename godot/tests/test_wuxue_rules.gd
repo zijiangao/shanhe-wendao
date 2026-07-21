@@ -51,6 +51,52 @@ func _initialize() -> void:
 	assert(int(RULES.lightness_move_bonus(lightness_state)) == 1, "Switching lightness skills should switch the active bonus.")
 	assert(not RULES.equip_lightness(lightness_state, "unknown_id"), "Equipping an unrecognized lightness id must fail.")
 
+	# Leveling: moves cap at level 10, cost escalates per level, and the
+	# per-level damage bonus only applies above the baseline level 1.
+	var leveling_state := _state()
+	leveling_state.silver = 5000
+	RULES.learn_move(leveling_state, "stone_splitting_fist")
+	assert(RULES.move_level(leveling_state, "stone_splitting_fist") == 1 and RULES.move_damage_bonus(leveling_state, "stone_splitting_fist") == 0, "A freshly learned move should start at level 1 with no level-up bonus yet.")
+	assert(not RULES.upgrade_move(leveling_state, "night_triple_blade"), "Upgrading a move that hasn't been learned must fail.")
+	var silver_before_upgrade := int(leveling_state.silver)
+	assert(RULES.upgrade_move(leveling_state, "stone_splitting_fist"), "A well-funded hero should be able to upgrade a learned move.")
+	assert(int(leveling_state.silver) == silver_before_upgrade - 60 and RULES.move_level(leveling_state, "stone_splitting_fist") == 2, "The first level-up should cost base(30) times the target level(2) and advance the level by one.")
+	assert(RULES.move_damage_bonus(leveling_state, "stone_splitting_fist") == 1, "Level 2 should grant exactly one level's worth of bonus damage above the level-1 baseline.")
+	for _i in range(8):
+		assert(RULES.upgrade_move(leveling_state, "stone_splitting_fist"), "Nine total upgrades should reach the level cap from a well-funded state.")
+	assert(RULES.move_level(leveling_state, "stone_splitting_fist") == RULES.MAX_LEVEL and RULES.move_damage_bonus(leveling_state, "stone_splitting_fist") == 9, "Reaching level 10 should grant nine level-ups' worth of bonus damage.")
+	assert(not RULES.upgrade_move(leveling_state, "stone_splitting_fist"), "A move already at the level cap must not be upgradable further.")
+
+	var poor_leveler := _state()
+	poor_leveler.silver = 100
+	RULES.learn_move(poor_leveler, "night_triple_blade")
+	poor_leveler.silver = 10
+	assert(not RULES.upgrade_move(poor_leveler, "night_triple_blade"), "Ten silver should be unaffordable for any move's first level-up.")
+	assert(int(poor_leveler.silver) == 10 and RULES.move_level(poor_leveler, "night_triple_blade") == 1, "A failed level-up must not touch silver or the level.")
+
+	# Internal arts and lightness skills level the same way; lightness's move
+	# bonus only ticks up every three levels rather than every single one, to
+	# keep the maximum move-range bonus sane on a small tactical board.
+	var internal_leveling := _state()
+	internal_leveling.silver = 5000
+	RULES.learn_internal(internal_leveling, "purple_mist_art")
+	assert(RULES.upgrade_internal(internal_leveling, "purple_mist_art"), "A learned internal art should be upgradable.")
+	assert(int(RULES.internal_damage_bonus(internal_leveling)) == 3, "Purple Mist Art's damage bonus should rise from its base 2 to 3 after one level-up.")
+
+	var lightness_leveling := _state()
+	lightness_leveling.silver = 5000
+	RULES.learn_lightness(lightness_leveling, "ripple_steps")
+	assert(int(RULES.lightness_move_bonus(lightness_leveling)) == 1, "Ripple Steps should start at its base move bonus of 1.")
+	for _i in range(3):
+		assert(RULES.upgrade_lightness(lightness_leveling, "ripple_steps"), "Three affordable level-ups should succeed.")
+	assert(RULES.lightness_level(lightness_leveling, "ripple_steps") == 4 and int(RULES.lightness_move_bonus(lightness_leveling)) == 2, "Every third level should add exactly one extra point of move range.")
+
+	# A maxed-out entry's options row must read as full and stay disabled
+	# rather than silently offering (and charging for) an impossible upgrade.
+	var maxed_options: Array = RULES.options_manuals(leveling_state)
+	var maxed_row := maxed_options.filter(func(o): return str(o[2]) == "upgrade_move_stone_splitting_fist")
+	assert(maxed_row.size() == 1 and bool(maxed_row[0][3]) and "已满级" in str(maxed_row[0][0]), "A level-10 move's upgrade row should read as maxed and stay disabled.")
+
 	# options_manuals must reflect affordability and current learn/equip state for the choice-menu UI.
 	var poor := _state()
 	var poor_options: Array = RULES.options_manuals(poor)

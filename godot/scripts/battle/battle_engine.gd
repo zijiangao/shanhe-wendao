@@ -44,11 +44,11 @@ static func blade_armor_break(player: Dictionary) -> int:
 	return 2 if int(player.get("bladesmanship", 0)) >= 6 else 1
 
 static func stone_fist_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
+	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "stone_splitting_fist")
 	return Vector2i(base, base + 2)
 
 static func night_blade_hit_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) / 2 + 4 + SHOP_RULES.weapon_attack_bonus(player) / 2 + WUXUE_RULES.internal_damage_bonus(player) / 2
+	var base := int(player.get("strength", 0)) / 2 + 4 + SHOP_RULES.weapon_attack_bonus(player) / 2 + WUXUE_RULES.internal_damage_bonus(player) / 2 + WUXUE_RULES.move_damage_bonus(player, "night_triple_blade")
 	return Vector2i(base, base + 2)
 
 static func healing_amount(player: Dictionary) -> int:

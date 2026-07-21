@@ -44,6 +44,16 @@ func _capture() -> void:
 	var stone_fist_unequip_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return "卸下 · 裂石拳" in b.text)
 	var learn_ok: bool = "stone_splitting_fist" in Array(game_state.data.learned_moves) and "stone_splitting_fist" in Array(game_state.data.equipped_moves) and int(game_state.data.silver) == 850 and stone_fist_unequip_buttons.size() == 1 and main_scene.screen == "choice" and str(main_scene.choice_event) == "market_manuals"
 
+	# A learned move should also offer a direct "升级" (level-up) row, spending
+	# silver in place to raise its level rather than requiring a separate
+	# training minigame -- this is the actual leveling UI the player uses.
+	var stone_fist_upgrade_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return "升级 · 裂石拳" in b.text)
+	var upgrade_button_ok: bool = stone_fist_upgrade_buttons.size() == 1 and not (stone_fist_upgrade_buttons[0] as Button).disabled
+	(stone_fist_upgrade_buttons[0] as Button).pressed.emit()
+	for frame in range(2):
+		await process_frame
+	var upgrade_ok: bool = int(game_state.data.move_levels.get("stone_splitting_fist", 1)) == 2 and int(game_state.data.silver) == 790
+
 	# Learning a second internal art must replace the first, exactly like
 	# weapons/armor auto-equip -- unlike moves, internal arts have no capacity
 	# concept, so there should never be an "already equipped, can't learn more"
@@ -71,7 +81,7 @@ func _capture() -> void:
 			await process_frame
 		back_ok = str(main_scene.choice_event) == "market" and main_scene.screen == "choice"
 
-	var valid: bool = top_prompt_ok and poor_gating_ok and rich_afford_ok and learn_ok and replace_ok and back_ok
+	var valid: bool = top_prompt_ok and poor_gating_ok and rich_afford_ok and learn_ok and upgrade_button_ok and upgrade_ok and replace_ok and back_ok
 	if not valid:
-		push_error("Manuals screen regression: top_prompt_ok=%s poor_gating_ok=%s rich_afford_ok=%s learn_ok=%s replace_ok=%s back_ok=%s" % [top_prompt_ok, poor_gating_ok, rich_afford_ok, learn_ok, replace_ok, back_ok])
+		push_error("Manuals screen regression: top_prompt_ok=%s poor_gating_ok=%s rich_afford_ok=%s learn_ok=%s upgrade_button_ok=%s upgrade_ok=%s replace_ok=%s back_ok=%s" % [top_prompt_ok, poor_gating_ok, rich_afford_ok, learn_ok, upgrade_button_ok, upgrade_ok, replace_ok, back_ok])
 	quit(0 if valid else 19)

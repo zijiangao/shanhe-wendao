@@ -207,11 +207,32 @@ func _initialize() -> void:
 	assert(state.import_data(oversized_moves_save), "A save whose equipped_moves list somehow grew past the slot cap must still load.")
 	assert(Array(state.data.equipped_moves).size() == WUXUE_RULES.MAX_EQUIPPED_MOVES, "equipped_moves must be clamped to the two-slot cap on migration, however it got oversized.")
 
+	var pre_leveling_save: Dictionary = state.data.duplicate(true)
+	pre_leveling_save.erase("move_levels")
+	pre_leveling_save.erase("internal_levels")
+	pre_leveling_save.erase("lightness_levels")
+	assert(state.import_data(pre_leveling_save), "Saves from before wuxue leveling existed must still migrate.")
+	assert(state.data.move_levels.is_empty() and state.data.internal_levels.is_empty() and state.data.lightness_levels.is_empty(), "A save with no leveling fields should default to every learned manual sitting at the unleveled baseline.")
+
+	var corrupted_leveling_save: Dictionary = state.data.duplicate(true)
+	corrupted_leveling_save.move_levels = {"stone_splitting_fist": 999, "a_deleted_move_id": 5}
+	corrupted_leveling_save.internal_levels = "not even a dictionary"
+	corrupted_leveling_save.lightness_levels = {"ripple_steps": -3}
+	assert(state.import_data(corrupted_leveling_save), "A save with out-of-range, orphaned, or malformed leveling data must still load.")
+	assert(int(state.data.move_levels.get("stone_splitting_fist", 1)) == WUXUE_RULES.MAX_LEVEL, "An absurdly high level must be clamped down to the level cap, not trusted outright.")
+	assert(not state.data.move_levels.has("a_deleted_move_id"), "A level entry for a move that isn't (or is no longer) actually learned must be dropped.")
+	assert(typeof(state.data.internal_levels) == TYPE_DICTIONARY and state.data.internal_levels.is_empty(), "A non-dictionary internal_levels field must be repaired to an empty dictionary.")
+	assert(int(state.data.lightness_levels.get("ripple_steps", 1)) == 1, "A negative level must be clamped up to the level-1 floor, not trusted outright.")
+
 	state.new_game()
 	state.data.silver = 1000
 	var wuxue_power_before := int(state.power())
 	assert(WUXUE_RULES.learn_move(state.data, "stone_splitting_fist") and WUXUE_RULES.learn_internal(state.data, "purple_mist_art") and WUXUE_RULES.learn_lightness(state.data, "ripple_steps"), "A well-funded fresh save should be able to learn one manual of each kind.")
 	assert(int(state.power()) == wuxue_power_before + 7, "One equipped move (+3), Purple Mist Art's damage bonus (+2), and Ripple Steps' move bonus doubled (+2) should raise power by exactly seven.")
+
+	var power_before_leveling := int(state.power())
+	assert(WUXUE_RULES.upgrade_move(state.data, "stone_splitting_fist"), "A well-funded hero should be able to level up a learned, equipped move.")
+	assert(int(state.power()) == power_before_leveling + 1, "Leveling an equipped move from 1 to 2 should raise power by its one-point-per-level damage bonus.")
 
 	state.new_game()
 	state.data.energy = 3
