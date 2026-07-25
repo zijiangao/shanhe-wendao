@@ -227,7 +227,7 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 func craft(recipe_id: String) -> bool:
 	if not CRAFTING_RULES.apply(data, recipe_id):
 		return false
-	var milestone: String = str({"healing_powder": "crafted_healing_powder", "thunder_stone": "crafted_thunder_stone", "forged_iron_blade": "tempered_blade", "twin_edge_saber": "tempered_blade"}.get(recipe_id, ""))
+	var milestone: String = str({"healing_powder": "crafted_healing_powder", "forged_iron_blade": "tempered_blade", "twin_edge_saber": "tempered_blade"}.get(recipe_id, ""))
 	if not milestone.is_empty() and milestone not in data.flags:
 		data.flags.append(milestone)
 	var building := "炼药坊" if recipe_id in CRAFTING_RULES.ALCHEMY_RECIPES else "锻造坊"

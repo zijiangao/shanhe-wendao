@@ -7,8 +7,7 @@ func _initialize() -> void:
 	assert(RULES.can_craft(state, "healing_powder"), "Two herbs should enable a healing powder recipe.")
 	assert(RULES.apply(state, "healing_powder"), "A valid medicine recipe should apply.")
 	assert(int(state.materials.herbs) == 1 and int(state.consumables.healing_powder) == 1, "Medicine crafting should consume herbs and produce one combat item.")
-	assert(RULES.apply(state, "thunder_stone"), "Two ore should produce one throwable thunder stone.")
-	assert(int(state.materials.ore) == 3 and int(state.consumables.thunder_stone) == 1, "Thunder-stone crafting should consume exactly two ore.")
+	assert(not RULES.can_craft(state, "thunder_stone"), "霹雳石 is no longer a craftable recipe (0.88.0) -- it's still buyable at 西市's 杂货铺, just not forged here.")
 	assert(not RULES.apply(state, "invalid"), "Unknown recipes must never mutate state.")
 
 	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "forge_level": 0, "mining": 0, "strength": 0, "agility": 0, "insight": 0, "constitution": 0, "owned_weapons": [], "owned_armors": [], "herbarium": {}, "mineralogy": {}}
@@ -21,10 +20,10 @@ func _initialize() -> void:
 	assert(alchemy_leave_option.size() <= 3 or not bool(alchemy_leave_option[3]), "Leaving the alchemy building must never be disabled, even with zero materials.")
 
 	var broke_forge: Array = RULES.options_forge(broke)
-	assert(broke_forge.size() == 6, "A fresh recruit with no materials should still see a sixth way out of the forge.")
-	for option in broke_forge.slice(0, 5):
+	assert(broke_forge.size() == 5, "A fresh recruit with no materials should still see a fifth way out of the forge, now that 霹雳石 is gone.")
+	for option in broke_forge.slice(0, 4):
 		assert(bool(option[3]), "Every real forge recipe should be disabled when nothing is affordable.")
-	var forge_leave_option: Array = broke_forge[5]
+	var forge_leave_option: Array = broke_forge[4]
 	assert(str(forge_leave_option[2]) == "leave", "The escape option must be the fixed 'leave' id, not a recipe.")
 	assert(forge_leave_option.size() <= 3 or not bool(forge_leave_option[3]), "Leaving the forge must never be disabled, even with zero materials.")
 

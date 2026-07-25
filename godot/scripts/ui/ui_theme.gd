@@ -116,6 +116,8 @@ static func action_button(text_value: String, color: Color) -> Button:
 	var button := Button.new()
 	button.text = text_value
 	button.custom_minimum_size.y = 52
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.add_theme_font_size_override("font_size", 16)
 	button.add_theme_color_override("font_color", Color("#f5ecd9"))
 	button.add_theme_stylebox_override("normal", _button_stylebox(BUTTON_NORMAL, color))

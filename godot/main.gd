@@ -147,9 +147,12 @@ func _verify_training_flow() -> void:
 
 func _verify_crafting_flow() -> void:
 	GameState.new_game()
-	GameState.data.materials = {"herbs": 2, "ore": 7}
+	GameState.data.materials = {"herbs": 2, "ore": 5}
+	GameState.data.silver = 18
 	var medicine_ok := GameState.craft("healing_powder")
-	var stone_ok := GameState.craft("thunder_stone")
+	# 霹雳石 was removed from 锻造坊's recipe list (0.88.0) -- it's still
+	# purchasable at 西市's 杂货铺, just no longer forged with materials.
+	var stone_ok := SHOP_RULES.buy_good(GameState.data, "thunder_stone")
 	var forge_ok := GameState.craft("forged_iron_blade")
 	var battle_ok := GameState.start_blackreed_battle()
 	GameState.data.battle.enemies[0].x = 4
@@ -160,7 +163,7 @@ func _verify_crafting_flow() -> void:
 	var valid := medicine_ok and stone_ok and forge_ok and battle_ok and bool(stone_outcome.get("ok", false)) and bool(heal_outcome.get("ok", false))
 	valid = valid and int(GameState.data.hp) == 32 and int(GameState.data.consumables.healing_powder) == 0
 	valid = valid and int(GameState.data.consumables.thunder_stone) == 0 and int(GameState.data.battle.enemies[0].armor) == 1
-	valid = valid and str(GameState.data.equipped_weapon) == "forged_iron_blade" and int(GameState.data.materials.herbs) == 0 and int(GameState.data.materials.ore) == 0
+	valid = valid and str(GameState.data.equipped_weapon) == "forged_iron_blade" and int(GameState.data.materials.herbs) == 0 and int(GameState.data.materials.ore) == 0 and int(GameState.data.silver) == 0
 	print("Crafting flow verification passed." if valid else "Crafting flow verification failed.")
 	get_tree().quit(0 if valid else 16)
 
@@ -1710,7 +1713,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.87.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.88.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

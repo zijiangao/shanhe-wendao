@@ -77,7 +77,8 @@ func _initialize() -> void:
 	assert("crafted_healing_powder" in state.data.flags, "Medicine crafting must persist its Steam milestone.")
 	state.data.materials.ore = 7
 	assert(state.craft("forged_iron_blade") and "tempered_blade" in state.data.flags, "Crafting a workshop weapon must persist the same Steam milestone tempering used to.")
-	assert(state.craft("thunder_stone") and int(state.data.consumables.thunder_stone) == 1 and "crafted_thunder_stone" in state.data.flags, "GameState should craft and persist the mining combat item milestone.")
+	assert(not state.craft("thunder_stone"), "霹雳石 is no longer a craftable workshop recipe (0.88.0).")
+	assert(SHOP_RULES.buy_good(state.data, "thunder_stone") and int(state.data.consumables.thunder_stone) == 1, "霹雳石 should still be purchasable at 西市's 杂货铺, just not forged.")
 	var legacy_material_save: Dictionary = state.data.duplicate(true)
 	legacy_material_save.save_version = 6
 	legacy_material_save.erase("materials")

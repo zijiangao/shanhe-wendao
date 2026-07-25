@@ -22,7 +22,8 @@ func _capture() -> void:
 	var powder_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "回春散" in button.text)
 	var no_gear_in_alchemy := not main_scene.find_children("*", "Button", true, false).any(func(b): return "自铸铁刃" in (b as Button).text or "挖矿大成减免" in (b as Button).text)
 
-	# 锻造坊 (forge) offers the ore-based gear/thunder_stone recipes.
+	# 锻造坊 (forge) offers the ore-based gear recipes (霹雳石 was removed
+	# 0.88.0 -- still buyable at 西市's 杂货铺, just not forged here).
 	main_scene.screen = "location"
 	main_scene._rebuild()
 	for frame in range(2):

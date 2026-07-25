@@ -18,11 +18,6 @@ const RECIPES := {
 		"description": "药材 2 · 战斗中消耗1行动点，恢复气血。",
 		"cost": {"herbs": 2, "ore": 0, "silver": 0, "specimens": {}}
 	},
-	"thunder_stone": {
-		"title": "打造 · 霹雳石",
-		"description": "矿石 2 · 战斗中消耗1行动点，直线投掷并削减护甲。",
-		"cost": {"herbs": 0, "ore": 2, "silver": 0, "specimens": {}}
-	},
 	"insight_pill": {
 		"title": "炼制 · 悟性丹",
 		"description": "药材 3 · 云纹叶 1 · 银两 15 · 服下后立即提升1点悟性，可反复炼制。",
@@ -84,7 +79,7 @@ const CRAFTABLE_ARMORS := ["rattan_guard", "layered_iron_armor"]
 ## forge covers every ore-based "打造" recipe -- this mirrors the verb the
 ## recipe titles already used before the split existed, not a new taxonomy.
 const ALCHEMY_RECIPES := ["healing_powder", "insight_pill", "strength_pill", "agility_pill", "constitution_pill"]
-const FORGE_RECIPES := ["thunder_stone", "forged_iron_blade", "twin_edge_saber", "rattan_guard", "layered_iron_armor"]
+const FORGE_RECIPES := ["forged_iron_blade", "twin_edge_saber", "rattan_guard", "layered_iron_armor"]
 
 static func options_alchemy(state: Dictionary) -> Array:
 	var options := [
@@ -98,9 +93,7 @@ static func options_alchemy(state: Dictionary) -> Array:
 	return options
 
 static func options_forge(state: Dictionary) -> Array:
-	var options := [
-		[RECIPES.thunder_stone.title, "%s 当前携带 %d 枚。" % [RECIPES.thunder_stone.description, int(state.get("consumables", {}).get("thunder_stone", 0))], "thunder_stone", not can_craft(state, "thunder_stone")],
-	]
+	var options := []
 	for id in CRAFTABLE_WEAPONS:
 		options.append(_gear_row(state, id, "owned_weapons"))
 	for id in CRAFTABLE_ARMORS:
@@ -210,10 +203,10 @@ static func inventory_text_alchemy(state: Dictionary) -> String:
 	]
 
 ## 锻造坊 only deals in ore -- its prompt line omits herbs/药谱 entirely.
+## No longer mentions 霹雳石 (recipe removed) or 淬炼 (legacy forge_level
+## stat, unrelated to any current recipe) -- 0.88.0.
 static func inventory_text_forge(state: Dictionary) -> String:
-	return "矿石 %d · 银两 %d · 霹雳石 %d · 淬炼 %d/%d\n矿谱：%s" % [
+	return "矿石 %d · 银两 %d\n矿谱：%s" % [
 		int(state.get("materials", {}).get("ore", 0)), int(state.get("silver", 0)),
-		int(state.get("consumables", {}).get("thunder_stone", 0)),
-		int(state.get("forge_level", 0)), MAX_FORGE_LEVEL,
 		MINERALOGY_RULES.collection_text(state.get("mineralogy", {}))
 	]
