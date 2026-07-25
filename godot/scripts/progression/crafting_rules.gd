@@ -114,7 +114,7 @@ static func _gear_row(state: Dictionary, id: String, owned_key: String) -> Array
 		return ["%s · 已打造" % str(item.title), "%s（已拥有，前往背包装备）" % str(item.description), id, true]
 	var cost: Dictionary = effective_cost(state, id)
 	var discount_note := "（挖矿大成减免）" if int(cost.ore) < int(RECIPES[id].cost.ore) else ""
-	return ["%s · 药材%d 矿石%d%s" % [str(item.title), int(cost.herbs), int(cost.ore), discount_note], "%s%s" % [str(item.description), _specimens_note(state, cost.specimens)], id, not can_craft(state, id)]
+	return ["%s · 矿石%d%s" % [str(item.title), int(cost.ore), discount_note], "%s%s" % [str(item.description), _specimens_note(state, cost.specimens)], id, not can_craft(state, id)]
 
 ## Names each still-missing specimen with how many the player currently owns
 ## vs. how many the recipe needs, e.g. " 【尚缺：云纹叶 0/1】" -- empty string
@@ -200,12 +200,20 @@ static func apply(state: Dictionary, recipe_id: String) -> bool:
 			state.equipped_armor = recipe_id
 	return true
 
-static func inventory_text(state: Dictionary) -> String:
-	return "药材 %d · 矿石 %d · 银两 %d · 回春散 %d · 霹雳石 %d · 淬炼 %d/%d · 臂力 %d · 身法 %d · 悟性 %d · 根骨 %d\n药谱：%s\n矿谱：%s" % [
-		int(state.get("materials", {}).get("herbs", 0)), int(state.get("materials", {}).get("ore", 0)),
-		int(state.get("silver", 0)), int(state.get("consumables", {}).get("healing_powder", 0)),
+## 炼药坊 only deals in herbs -- its prompt line omits ore/矿谱 entirely.
+static func inventory_text_alchemy(state: Dictionary) -> String:
+	return "药材 %d · 银两 %d · 回春散 %d · 臂力 %d · 身法 %d · 悟性 %d · 根骨 %d\n药谱：%s" % [
+		int(state.get("materials", {}).get("herbs", 0)), int(state.get("silver", 0)),
+		int(state.get("consumables", {}).get("healing_powder", 0)),
+		int(state.get("strength", 0)), int(state.get("agility", 0)), int(state.get("insight", 0)), int(state.get("constitution", 0)),
+		HERBARIUM_RULES.collection_text(state.get("herbarium", {}))
+	]
+
+## 锻造坊 only deals in ore -- its prompt line omits herbs/药谱 entirely.
+static func inventory_text_forge(state: Dictionary) -> String:
+	return "矿石 %d · 银两 %d · 霹雳石 %d · 淬炼 %d/%d\n矿谱：%s" % [
+		int(state.get("materials", {}).get("ore", 0)), int(state.get("silver", 0)),
 		int(state.get("consumables", {}).get("thunder_stone", 0)),
 		int(state.get("forge_level", 0)), MAX_FORGE_LEVEL,
-		int(state.get("strength", 0)), int(state.get("agility", 0)), int(state.get("insight", 0)), int(state.get("constitution", 0)),
-		HERBARIUM_RULES.collection_text(state.get("herbarium", {})), MINERALOGY_RULES.collection_text(state.get("mineralogy", {}))
+		MINERALOGY_RULES.collection_text(state.get("mineralogy", {}))
 	]

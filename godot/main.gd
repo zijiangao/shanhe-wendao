@@ -1003,13 +1003,13 @@ func _location_action_requested(action_id: String) -> void:
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
 		"workshop":
 			choice_event = "workshop"
-			choice_prompt = "炼药坊 · %s" % CRAFTING_RULES.inventory_text(GameState.data)
+			choice_prompt = "炼药坊 · %s" % CRAFTING_RULES.inventory_text_alchemy(GameState.data)
 			choice_options = CRAFTING_RULES.options_alchemy(GameState.data)
 			screen = "choice"
 			_rebuild()
 		"forge":
 			choice_event = "forge"
-			choice_prompt = "锻造坊 · %s" % CRAFTING_RULES.inventory_text(GameState.data)
+			choice_prompt = "锻造坊 · %s" % CRAFTING_RULES.inventory_text_forge(GameState.data)
 			choice_options = CRAFTING_RULES.options_forge(GameState.data)
 			screen = "choice"
 			_rebuild()
@@ -1710,7 +1710,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.86.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.87.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
