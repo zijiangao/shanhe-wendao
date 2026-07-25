@@ -38,7 +38,7 @@ func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, av
 	location.add_theme_color_override("font_color", Color("#f2dfb3"))
 	side.add_child(location)
 	var objective := Label.new()
-	objective.text = "主线：%s\n\n行动点：%d/3\n气血：%d/%d\n修为：%d\n声望：%d" % [objective_text, state.energy, state.hp, state.max_hp, state.xp, state.renown]
+	objective.text = "主线：%s\n\n本周：%s\n气血：%d/%d\n修为：%d\n声望：%d" % [objective_text, "已行动，可结束本周" if bool(state.get("acted_this_week", false)) else "尚未行动", state.hp, state.max_hp, state.xp, state.renown]
 	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	objective.add_theme_font_size_override("font_size", 18)
 	objective.add_theme_color_override("font_color", Color("#f6f0e4"))
@@ -46,7 +46,7 @@ func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, av
 	var enter := _action_button("进入%s" % PLACE_NAMES.get(str(state.location), "当前地点"), Color("#315746"))
 	enter.pressed.connect(func(): enter_requested.emit())
 	side.add_child(enter)
-	var rest := _action_button("调息一周", Color("#6c604c"))
+	var rest := _action_button("调息", Color("#6c604c"))
 	rest.pressed.connect(func(): rest_requested.emit())
 	side.add_child(rest)
 

@@ -8,24 +8,30 @@ func _initialize() -> void:
 	root.add_child(state)
 	state.new_game()
 
+	# The hero may take exactly one action per week -- spend_action() marks it
+	# taken but does NOT itself advance the week; only the explicit end_week()
+	# (the "结束本周" button) does that. This replaces the old energy pool.
 	state.data.week = state.FINAL_WEEK - 1
-	state.data.energy = 1
-	assert(state.spend_week(), "The final available week should be spendable.")
-	assert(state.data.week == state.FINAL_WEEK, "Spending the final week should reach the deadline.")
+	state.data.acted_this_week = false
+	assert(state.spend_action(), "The final available week should still be actionable.")
+	assert(not state.spend_action(), "A second action in the same week must be rejected.")
+	assert(state.data.week == state.FINAL_WEEK - 1, "spend_action() alone must not advance the week.")
+	assert(state.end_week(), "Ending the final available week should succeed.")
+	assert(state.data.week == state.FINAL_WEEK and not bool(state.data.acted_this_week), "Ending the week should advance it and clear the acted flag.")
 	assert(state.deadline_reached(), "The deadline should be reported at FINAL_WEEK.")
-	assert(not state.spend_week(), "Actions must not spend time beyond the deadline.")
-	assert(not state.rest(), "Rest must not restore energy beyond the deadline.")
+	assert(not state.spend_action(), "Actions must not be takeable beyond the deadline.")
+	assert(not state.end_week(), "The week must not advance beyond the deadline.")
+	assert(not state.rest(), "Rest must not be takeable beyond the deadline.")
 
 	state.data.week = 12
-	state.data.energy = 0
-	assert(not state.spend_week(), "An action requires energy before the deadline.")
-	assert(state.rest(), "Rest should work before the deadline.")
-	assert(state.data.week == 13 and state.data.energy == 3, "Rest should advance one week and restore energy.")
-
-	state.data.week = state.FINAL_WEEK - 1
-	state.data.energy = 1
-	assert(state.spend_week(), "A special story action should be able to spend the final week.")
-	assert(not state.spend_week(), "A special story action must not bypass the deadline.")
+	state.data.acted_this_week = true
+	assert(not state.spend_action(), "A second action in the same week requires ending the week first.")
+	assert(not state.rest(), "Rest is itself an action and must be blocked once the week's action is already spent.")
+	state.data.acted_this_week = false
+	assert(state.rest(), "Rest should work before the deadline when the week's action hasn't been used yet.")
+	assert(bool(state.data.acted_this_week) and state.data.week == 12, "Rest should count as this week's action without advancing the week by itself.")
+	assert(state.end_week(), "Ending the week after resting should succeed.")
+	assert(state.data.week == 13 and not bool(state.data.acted_this_week), "Ending the week should advance it by exactly one and clear the acted flag.")
 
 	var future_save: Dictionary = state.data.duplicate(true)
 	future_save.save_version = state.SAVE_VERSION + 1
@@ -35,10 +41,11 @@ func _initialize() -> void:
 	assert(training.grade == "S" and training.score == 315 and int(state.data.swordsmanship) == 3 and int(state.data.xp) == 15, "An S-grade combo result on its weekly focus should preserve all 315 points and grant the focus bonus.")
 	assert(bool(training.weekly_focus) and int(training.weekly_focus_bonus) == 3, "The matching weekly discipline should expose its bonus in the result card.")
 	assert(training.record.new_best and training.record.best_score == 315 and training.record.best_streak == 3 and state.data.training_records.swordsmanship.attempts == 1, "Training should persist its exact score, streak, and attempt count.")
+	assert(state.end_week(), "Ending the week should free up next week's action for a repeat attempt.")
 	var spent_week := int(state.data.week)
 	var lower_training: Dictionary = state.complete_training("swordsmanship", 180, -1, 1)
 	assert(not lower_training.record.new_best and lower_training.record.best_score == 315 and lower_training.record.attempts == 2, "A lower repeat must preserve the personal best while incrementing attempts.")
-	assert(int(state.data.week) == spent_week + 1, "A recorded repeat must still spend exactly one week.")
+	assert(int(state.data.week) == spent_week and bool(state.data.acted_this_week), "A recorded repeat must still use up its own week's action without advancing the week by itself.")
 	assert(not bool(lower_training.get("weekly_focus", false)), "The weekly focus should rotate after time advances instead of rewarding every repeat.")
 	state.new_game()
 	state.data.herbalism = 5
@@ -57,7 +64,9 @@ func _initialize() -> void:
 	assert(int(state.data.herbarium.get("dewgrass", 0)) == 1 and str(event_training.herb_discovery.name) == "凝露草", "Herbalism training should persist its score-eligible field-guide discovery.")
 	assert(bool(event_training.herb_discovery.first_discovery) and int(event_training.herb_discovery.xp) == 2 and int(state.data.xp) == 14, "A first specimen should grant cultivation exactly once alongside training rewards.")
 	assert("training_s_grade" in state.data.flags and "training_event_seen" in state.data.flags, "Training milestones must persist for Steam achievement restoration.")
-	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Training should spend exactly one week and one energy.")
+	assert(int(state.data.week) == 1 and bool(state.data.acted_this_week), "Training should use up this week's one action without advancing the week by itself.")
+	assert(state.complete_training("mining", 300, 0).is_empty(), "A second training session in the same week must be rejected.")
+	assert(state.end_week() and int(state.data.week) == 2 and not bool(state.data.acted_this_week), "Explicitly ending the week should advance it and free up next week's action.")
 	state.new_game()
 	var mining_training: Dictionary = state.complete_training("mining", 300, 0)
 	assert(int(state.data.materials.ore) == 5 and int(state.data.mineralogy.get("ironstone", 0)) == 1, "Mining should commit normal ore, encounter ore, and a score-eligible mineral discovery together.")
@@ -84,9 +93,9 @@ func _initialize() -> void:
 	assert(typeof(state.data.mineralogy) == TYPE_DICTIONARY and state.data.mineralogy.is_empty(), "Older saves should gain an empty mineral ledger.")
 	assert(state.data.training_records.size() == 4 and state.data.training_records.swordsmanship.attempts == 0, "Older saves should gain normalized empty training records.")
 
-	var damaged_save := {"save_version": 1, "week": -20, "energy": 99, "max_hp": 0, "hp": -5, "location": "nowhere", "log": "invalid", "battle": {"width": 8}}
+	var damaged_save := {"save_version": 1, "week": -20, "acted_this_week": "not a bool", "max_hp": 0, "hp": -5, "location": "nowhere", "log": "invalid", "battle": {"width": 8}}
 	assert(state.import_data(damaged_save), "Older saves should be migrated.")
-	assert(state.data.week == 1 and state.data.energy == 3, "Numeric save values should be clamped.")
+	assert(state.data.week == 1 and state.data.acted_this_week == false, "Numeric save values should be clamped and a malformed acted_this_week should default safely to false.")
 	assert(state.data.max_hp == 1 and state.data.hp == 1, "Health values should be normalized safely.")
 	assert(state.data.location == "qingyun" and state.data.log.is_empty(), "Invalid location and log data should be repaired.")
 	assert(state.data.battle.is_empty(), "Incomplete battle data should be discarded.")
@@ -101,11 +110,10 @@ func _initialize() -> void:
 	assert(not state.data.battle_retry.is_empty(), "An in-progress legacy battle should gain a retry checkpoint.")
 
 	state.new_game()
-	state.data.energy = 3
 	var spar_stage := str(state.data.quest_stage)
 	assert(state.start_qingyun_spar_battle(), "Qingyun sparring should be available as repeatable training.")
 	assert(str(state.data.battle.battle_id) == "qingyun_spar" and state.data.battle.enemies.size() == 2, "Sparring should use its short two-opponent encounter.")
-	assert(int(state.data.week) == 2 and int(state.data.energy) == 2, "Sparring should spend exactly one week and energy.")
+	assert(int(state.data.week) == 1 and bool(state.data.acted_this_week), "Sparring should use up this week's one action without advancing the week by itself.")
 	state.finish_battle(true)
 	assert(str(state.data.quest_stage) == spar_stage and "玄铁令" not in state.data.items and "villain_revealed" not in state.data.flags, "Optional sparring must not advance or contaminate the main story.")
 	assert(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 8, "An S-grade spar should combine its light base reward with the performance bonus.")
@@ -115,7 +123,6 @@ func _initialize() -> void:
 	assert(state.claim_pending_reward("fellowship") and int(state.data.faction_relations.qingyun) == 2, "Sparring should add the selected reward to the starting Qingyun relationship.")
 
 	state.new_game()
-	state.data.energy = 3
 	state.data.investigations = ["archer", "herbs"]
 	assert(state.start_blackreed_battle(), "The first tactical encounter should start.")
 	assert(state.data.battle.enemies.size() == 4 and str(state.data.battle.enemies.back().role) == "duelist", "Encounter preparation should be applied before GameState captures the battle.")
@@ -123,7 +130,7 @@ func _initialize() -> void:
 	state.data.battle.player_x = 2
 	state.capture_battle_checkpoint()
 	var checkpoint_week := int(state.data.week)
-	var checkpoint_energy := int(state.data.energy)
+	var checkpoint_acted := bool(state.data.acted_this_week)
 	var checkpoint_silver := int(state.data.silver)
 	var checkpoint_log: Array = state.data.log.duplicate(true)
 	state.data.skill_mastery.cloud = 99
@@ -132,7 +139,7 @@ func _initialize() -> void:
 	assert(state.data.battle.is_empty(), "A defeat should leave the active battle.")
 	assert(state.retry_last_battle(), "A defeated battle should be retryable from its checkpoint.")
 	assert(int(state.data.battle.player_x) == 2, "Retry should restore the finalized encounter setup.")
-	assert(int(state.data.week) == checkpoint_week and int(state.data.energy) == checkpoint_energy, "Retry must not spend another week or energy point.")
+	assert(int(state.data.week) == checkpoint_week and bool(state.data.acted_this_week) == checkpoint_acted, "Retry must not spend another week or a second action.")
 	assert(int(state.data.silver) == checkpoint_silver, "Retry should restore pre-defeat currency.")
 	assert(int(state.data.skill_mastery.cloud) == 0, "Retry must not allow mastery farming through deliberate defeats.")
 	assert(state.data.log == checkpoint_log, "Retry should remove the abandoned defeat entry from the journal.")
@@ -244,31 +251,29 @@ func _initialize() -> void:
 	assert(WUXUE_RULES.upgrade_move(state.data, "stone_splitting_fist"), "A well-funded hero should be able to level up a learned, equipped move.")
 	assert(int(state.power()) == power_before_leveling + 1, "Leveling an equipped move from 1 to 2 should raise power by its one-point-per-level damage bonus.")
 
-	# 修炼 (training): free but spends a week/energy, unlike the instant
-	# silver-based upgrade above -- both feed the same underlying level.
+	# 修炼 (training): free but spends this week's one action, unlike the
+	# instant silver-based upgrade above -- both feed the same underlying
+	# level. The hero may take exactly one action per week now (no energy
+	# pool); ending the week is a separate, explicit step (end_week()).
 	state.new_game()
-	state.data.energy = 3
 	state.data.silver = 1000
 	assert(not state.can_train_wuxue("move", "stone_splitting_fist"), "A move that hasn't been learned yet must not be trainable.")
 	assert(WUXUE_RULES.learn_move(state.data, "stone_splitting_fist"), "Learning the move should succeed with enough silver.")
 	var week_before_training := int(state.data.week)
-	var energy_before_training := int(state.data.energy)
 	var insight_bonus := int(WUXUE_RULES.insight_xp_bonus(state.data))
 	var train_result: Dictionary = state.train_wuxue("move", "stone_splitting_fist", 15)
 	assert(bool(train_result.ok) and not bool(train_result.leveled_up), "A modest, explicit xp roll should train successfully without leveling up yet.")
-	assert(int(state.data.week) == week_before_training + 1 and int(state.data.energy) == energy_before_training - 1, "Training a wuxue skill must spend exactly one week and one energy, the same as any other training action.")
+	assert(int(state.data.week) == week_before_training and bool(state.data.acted_this_week), "Training a wuxue skill should use up this week's one action without advancing the week by itself.")
 	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15 + insight_bonus, "The recorded xp should be the explicit roll plus the hero's insight-based training bonus, not the raw roll alone.")
 
-	state.data.energy = 0
-	assert(not bool(state.train_wuxue("move", "stone_splitting_fist", 15).get("ok", false)), "Training must require energy like every other training action.")
-	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15 + insight_bonus, "A training attempt blocked by insufficient energy must not grant xp or spend the week it never actually took.")
+	assert(not bool(state.train_wuxue("move", "stone_splitting_fist", 15).get("ok", false)), "A second action in the same week must be rejected, mirroring every other training action.")
+	assert(WUXUE_RULES.wuxue_xp(state.data, "stone_splitting_fist") == 15 + insight_bonus, "A training attempt blocked because the week's action is already spent must not grant additional xp.")
 
-	state.data.energy = 3
-	assert(not bool(state.train_wuxue("move", "night_triple_blade", 15).get("ok", false)), "Training a move that was never learned must be rejected before any week is spent.")
-	assert(int(state.data.energy) == 3, "Rejecting an invalid training target must not waste a week's energy on nothing.")
+	assert(state.end_week(), "Ending the week should free up next week's action.")
+	assert(not bool(state.train_wuxue("move", "night_triple_blade", 15).get("ok", false)), "Training a move that was never learned must be rejected before any action is spent.")
+	assert(not bool(state.data.acted_this_week), "Rejecting an invalid training target must not waste the week's action on nothing.")
 
 	state.new_game()
-	state.data.energy = 3
 	state.data.companions.append("lin_qingshuang")
 	state.data.flags.append("su_trust")
 	assert(state.start_final_battle(), "The final tactical encounter should start from a valid story state.")

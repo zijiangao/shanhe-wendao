@@ -41,6 +41,7 @@ var previous_screen: String = "menu"
 var content: Control
 var status_label: Label
 var toast_label: Label
+var end_week_button: Button
 var battle_mode: String = "move"
 var last_rewards: Dictionary = {}
 var dialogue_event: String = ""
@@ -234,7 +235,7 @@ func _capture_store_screenshots() -> void:
 	_rebuild()
 	await _save_store_capture("blackreed_investigation")
 
-	GameState.data.energy = 3
+	GameState.data.acted_this_week = false
 	GameState.data.investigations = ["archer", "herbs"]
 	GameState.start_blackreed_battle()
 	GameState.data.battle.turn = 3
@@ -256,7 +257,7 @@ func _capture_store_screenshots() -> void:
 	await _save_store_capture("skill_impact")
 
 	GameState.new_game()
-	GameState.data.energy = 3
+	GameState.data.acted_this_week = false
 	GameState.data.location = "huashan"
 	GameState.data.quest_stage = "huashan_trial"
 	GameState.data.companions = ["lin_qingshuang"]
@@ -324,7 +325,7 @@ func _capture_tactical_tutorial() -> void:
 	GameState.new_game()
 	GameState.data.quest_stage = "investigate"
 	GameState.data.location = "blackreed"
-	GameState.data.energy = 3
+	GameState.data.acted_this_week = false
 	GameState.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": false}
 	GameState.start_blackreed_battle()
 	screen = "battle"
@@ -341,7 +342,7 @@ func _capture_tactical_tutorial() -> void:
 func _capture_reward_choice() -> void:
 	get_window().size = Vector2i(1280, 720)
 	GameState.new_game()
-	GameState.data.energy = 3
+	GameState.data.acted_this_week = false
 	GameState.data.investigations = ["secret_route", "archer"]
 	GameState.start_blackreed_battle()
 	GameState.data.battle.turn = 4
@@ -385,7 +386,7 @@ func _verify_battle_presentation() -> void:
 
 func _verify_reward_flow() -> void:
 	GameState.new_game()
-	GameState.data.energy = 3
+	GameState.data.acted_this_week = false
 	GameState.data.investigations = ["secret_route", "archer"]
 	GameState.start_blackreed_battle()
 	GameState.data.battle.turn = 4
@@ -405,7 +406,7 @@ func _verify_combat_feedback() -> void:
 	var heavy := COMBAT_FEEDBACK.profile("heavy")
 	var settings_valid: bool = SettingsManager.defaults().has("screen_shake") and SettingsManager.defaults().has("combat_flashes")
 	GameState.new_game()
-	GameState.data.energy = 3
+	GameState.data.acted_this_week = false
 	GameState.data.investigations = ["secret_route", "archer"]
 	GameState.start_blackreed_battle()
 	GameState.data.battle.turn = 2
@@ -544,6 +545,16 @@ func _build_shell() -> void:
 		dev_button.add_theme_color_override("font_color", Color("#dfbf74"))
 		dev_button.pressed.connect(_switch_screen.bind("dev"))
 		header.add_child(dev_button)
+
+	end_week_button = Button.new()
+	end_week_button.text = "结束本周"
+	end_week_button.flat = true
+	end_week_button.add_theme_font_size_override("font_size", 16)
+	end_week_button.add_theme_color_override("font_color", Color("#dfbf74"))
+	end_week_button.add_theme_color_override("font_hover_color", Color("#ffe9b8"))
+	end_week_button.add_theme_color_override("font_disabled_color", Color("#6c6455"))
+	end_week_button.pressed.connect(_end_week_requested)
+	header.add_child(end_week_button)
 
 	status_label = Label.new()
 	status_label.custom_minimum_size.x = 180
@@ -979,12 +990,12 @@ func _location_action_requested(action_id: String) -> void:
 		"map": screen = "map"; _rebuild()
 		"master": _qingyun_master_event()
 		"train":
-			if GameState.deadline_reached() or int(GameState.data.energy) <= 0:
+			if GameState.deadline_reached() or bool(GameState.data.get("acted_this_week", false)):
 				_toast(_time_action_failure_message())
 				return
 			_show_training_menu()
 		"gathering":
-			if GameState.deadline_reached() or int(GameState.data.energy) <= 0:
+			if GameState.deadline_reached() or bool(GameState.data.get("acted_this_week", false)):
 				_toast(_time_action_failure_message())
 				return
 			_show_gathering_menu()
@@ -1198,7 +1209,7 @@ func _resolve_choice(route: String) -> void:
 		elif route.begins_with("train_lightness_"):
 			train_result = GameState.train_wuxue("lightness", route.trim_prefix("train_lightness_"))
 		if not bool(train_result.get("ok", false)):
-			_toast("行动点不足，或这门武学已大成，无需再练。")
+			_toast("本周已经行动过了，请先结束本周；或这门武学已大成，无需再练。")
 			return
 		_toast("武学境界更进一层！" if bool(train_result.get("leveled_up", false)) else "潜心温习，颇有所得。")
 		SaveManager.save_auto()
@@ -1346,7 +1357,7 @@ func _resolve_choice(route: String) -> void:
 				GameState.add_log("你暗中留下名录残页，准备独自追查厉无咎。")
 		GameState.data.quest_stage = "chapter2_complete"
 	elif choice_event == "emei_entry":
-		if route == "aid" and not GameState.spend_week():
+		if route == "aid" and not GameState.spend_action():
 			_toast(_time_action_failure_message())
 			return
 		GameState.data.emei_entry = route
@@ -1567,7 +1578,7 @@ func _begin_huashan_trial() -> void:
 		_toast("需要先在迎客峰邀请林清霜。")
 		return
 	if not GameState.start_huashan_trial_battle():
-		_toast("行动点不足，请先调息。")
+		_toast("本周已经行动过了，请先结束本周。")
 		return
 	battle_mode = "move"
 	GameState.capture_battle_checkpoint()
@@ -1682,7 +1693,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.82.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.83.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1812,7 +1823,7 @@ func _dev_jump(target: String) -> void:
 			GameState.data.quest_stage = "investigate"
 			GameState.data.location = "blackreed"
 			GameState.data.investigations = ["secret_route", "archer"]
-			GameState.data.energy = 3
+			GameState.data.acted_this_week = false
 			GameState.start_blackreed_battle()
 			return
 		"luoyang":
@@ -3070,12 +3081,27 @@ func _on_achievement_unlocked(_api_name: String, title: String) -> void:
 	_toast("成就解锁 · %s" % title)
 
 func _update_status() -> void:
-	if status_label == null:
+	if status_label != null:
+		status_label.text = "第 %d 周 · %s\n战力 %d" % [GameState.data.week, "期限已至" if GameState.deadline_reached() else "剩余 %d 周" % GameState.weeks_left(), GameState.power()]
+	if end_week_button != null:
+		var acted := bool(GameState.data.get("acted_this_week", false))
+		end_week_button.disabled = GameState.deadline_reached() or not acted
+		end_week_button.tooltip_text = "本周已行动，点击进入下一周。" if acted else "本周尚未行动，选择一件事情去做吧。"
+
+func _end_week_requested() -> void:
+	if NAVIGATION_RULES.blocks_header_navigation(screen):
+		AudioFeedback.play("error")
+		_toast("当前流程不能结束本周，请先按 Esc / 手柄 B 打开暂停菜单。")
 		return
-	status_label.text = "第 %d 周 · %s\n战力 %d" % [GameState.data.week, "期限已至" if GameState.deadline_reached() else "剩余 %d 周" % GameState.weeks_left(), GameState.power()]
+	if not GameState.end_week():
+		_toast("两年之期已至，无法再结束本周。" if GameState.deadline_reached() else "本周还未行动，先去做一件事吧。")
+		return
+	if not SaveManager.save_auto():
+		_toast("已进入下一周，但自动存档失败。")
+	_rebuild()
 
 func _time_action_failure_message() -> String:
-	return "两年之期已至，无法再进行耗时行动。" if GameState.deadline_reached() else "行动点不足，请先调息。"
+	return "两年之期已至，无法再进行耗时行动。" if GameState.deadline_reached() else "本周已经行动过了，请先结束本周。"
 
 func _show_contextual_tutorial() -> void:
 	if store_capture_active:

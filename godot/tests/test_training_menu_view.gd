@@ -54,7 +54,6 @@ func _capture() -> void:
 			wuxue_training_button = b
 	var wuxue_enabled_when_learned := wuxue_training_button != null and not wuxue_training_button.disabled
 	var week_before_wuxue_training := int(game_state.data.week)
-	var energy_before_wuxue_training := int(game_state.data.energy)
 	if wuxue_training_button != null:
 		wuxue_training_button.pressed.emit()
 		for frame in range(2):
@@ -69,7 +68,7 @@ func _capture() -> void:
 		stone_fist_training_button.pressed.emit()
 		for frame in range(2):
 			await process_frame
-		wuxue_training_ok = int(game_state.data.week) == week_before_wuxue_training + 1 and int(game_state.data.energy) == energy_before_wuxue_training - 1 and int(wuxue_rules.wuxue_xp(game_state.data, "stone_splitting_fist")) > 0 and main_scene.screen == "choice" and main_scene.choice_event == "wuxue_training"
+		wuxue_training_ok = int(game_state.data.week) == week_before_wuxue_training and bool(game_state.data.acted_this_week) and int(wuxue_rules.wuxue_xp(game_state.data, "stone_splitting_fist")) > 0 and main_scene.screen == "choice" and main_scene.choice_event == "wuxue_training"
 	var wuxue_training_back_button: Button = null
 	for b in main_scene.find_children("*", "Button", true, false):
 		if (b as Button).text.begins_with("返回"):
@@ -118,6 +117,7 @@ func _capture() -> void:
 	# 采药/挖矿 were split out of 演武场 into their own 后山 hotspot -- confirm
 	# neither combat discipline leaks into it, neither gathering discipline
 	# leaks back into 演武场, and 后山's own leave button still works.
+	game_state.end_week()
 	main_scene._location_action_requested("gathering")
 	for frame in range(3):
 		await process_frame

@@ -228,6 +228,8 @@ The Qingyun training menu also offers a repeatable, nonlethal sparring battle. I
 
 Run `res://tests/test_qingyun_spar_view.gd` without `--headless` to capture `qingyun_spar_preview.png` at 1280×720 and verify that the shipping battle UI shows the rotating lesson and chosen weapon focus.
 
+As of 2026-07-25, the hero may take exactly one time-consuming action per week (travel, training, wuxue practice, gathering, sparring, or any main-quest battle). `GameState.spend_action()` marks `data.acted_this_week = true` and does not advance `data.week` on its own; the player must press the persistent "结束本周" header button, which calls `GameState.end_week()`, to advance to the next week and clear the flag. This replaced the old `energy` pool (3 actions before a forced rest). `rest()` is now itself just another `spend_action()`-gated action rather than a special energy refill. Note this is unrelated to the in-battle "行动点" (2 AP per turn) system, which is unchanged.
+
 To visually review the second first-battle tutorial page from the shipping UI, run the full build with `--capture-tactical-tutorial`. It writes `tactical_tutorial_preview.png` to the Godot user-data folder and exits non-zero if the expected tutorial page was not active.
 
 ## Capture Steam store screenshots

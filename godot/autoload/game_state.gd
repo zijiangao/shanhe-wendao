@@ -30,7 +30,7 @@ func new_game() -> void:
 		"save_version": SAVE_VERSION,
 		"week": 1,
 		"location": "qingyun",
-		"energy": 3,
+		"acted_this_week": false,
 		"hp": 45,
 		"max_hp": 45,
 		"qi": 20,
@@ -104,28 +104,37 @@ func weeks_left() -> int:
 func deadline_reached() -> bool:
 	return int(data.week) >= FINAL_WEEK
 
-func spend_week() -> bool:
-	if deadline_reached() or int(data.energy) <= 0:
+## The hero may take exactly one action per week -- spend_action() marks that
+## action taken but does NOT advance the week on its own; only the player's
+## explicit "结束本周" (end this week) header button calls end_week(). This
+## replaces the old energy pool (3 actions before a forced rest).
+func spend_action() -> bool:
+	if deadline_reached() or bool(data.get("acted_this_week", false)):
 		return false
-	data.energy -= 1
+	data.acted_this_week = true
+	state_changed.emit()
+	return true
+
+func end_week() -> bool:
+	if deadline_reached():
+		return false
 	data.week = mini(FINAL_WEEK, int(data.week) + 1)
+	data.acted_this_week = false
 	state_changed.emit()
 	return true
 
 func rest() -> bool:
-	if deadline_reached():
+	if not spend_action():
 		return false
-	data.energy = 3
 	data.hp = data.max_hp
 	data.qi = 20
-	data.week = mini(FINAL_WEEK, int(data.week) + 1)
-	add_log("你调息一周，恢复全部气血、真气与行动点。")
+	add_log("你调息本周，恢复全部气血与真气。")
 	return true
 
 func travel(destination: String) -> bool:
 	if destination == data.location:
 		return true
-	if not spend_week():
+	if not spend_action():
 		return false
 	data.location = destination
 	add_log("你动身前往%s。" % place_name(destination))
@@ -134,7 +143,7 @@ func travel(destination: String) -> bool:
 func train(focus: String = "strength") -> bool:
 	if focus not in ["strength", "insight", "constitution"]:
 		return false
-	if not spend_week():
+	if not spend_action():
 		return false
 	if not GROWTH_RULES.apply_training(data, focus):
 		return false
@@ -149,7 +158,7 @@ func can_train_wuxue(category: String, id: String) -> bool:
 	return false
 
 func train_wuxue(category: String, id: String, xp_roll: int = -1) -> Dictionary:
-	if not can_train_wuxue(category, id) or not spend_week():
+	if not can_train_wuxue(category, id) or not spend_action():
 		return {"ok": false}
 	var base_xp := xp_roll if xp_roll >= 0 else randi_range(WUXUE_RULES.TRAIN_XP_MIN, WUXUE_RULES.TRAIN_XP_MAX)
 	var xp_gain := base_xp + WUXUE_RULES.insight_xp_bonus(data)
@@ -166,7 +175,7 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 	var safe_score := clampi(score, 0, TRAINING_RULES.MAX_TOTAL_SCORE)
 	var outcome := TRAINING_RULES.outcome(discipline, safe_score)
 	var focus_week := int(data.get("week", 1))
-	if outcome.is_empty() or not spend_week():
+	if outcome.is_empty() or not spend_action():
 		return {}
 	if discipline == TRAINING_RULES.weekly_focus(focus_week):
 		outcome.weekly_focus = true
@@ -233,7 +242,7 @@ func add_investigation(clue: String, message: String) -> bool:
 	return true
 
 func start_blackreed_battle() -> bool:
-	if not spend_week():
+	if not spend_action():
 		return false
 	data.qi = 20
 	data.battle = {
@@ -267,7 +276,7 @@ func start_qingyun_spar_battle(discipline: String = "swordsmanship") -> bool:
 	if discipline not in ["swordsmanship", "bladesmanship"]:
 		return false
 	var rotation := SPARRING_RULES.rotation_for(int(data.week))
-	if not spend_week():
+	if not spend_action():
 		return false
 	data.qi = 20
 	data.battle = {
@@ -285,7 +294,7 @@ func start_qingyun_spar_battle(discipline: String = "swordsmanship") -> bool:
 	return true
 
 func start_huashan_trial_battle() -> bool:
-	if not spend_week():
+	if not spend_action():
 		return false
 	data.qi = 20
 	data.battle = {
@@ -315,7 +324,7 @@ func start_huashan_trial_battle() -> bool:
 	return true
 
 func start_final_battle() -> bool:
-	if not spend_week():
+	if not spend_action():
 		return false
 	data.qi = 20
 	data.hp = data.max_hp
@@ -445,7 +454,7 @@ func capture_battle_checkpoint() -> void:
 		"qi": int(data.qi),
 		"silver": int(data.silver),
 		"week": int(data.week),
-		"energy": int(data.energy),
+		"acted_this_week": bool(data.get("acted_this_week", false)),
 		"skill_mastery": data.skill_mastery.duplicate(true),
 		"log": data.log.duplicate(true)
 	}
@@ -461,7 +470,7 @@ func retry_last_battle() -> bool:
 	data.qi = clampi(int(checkpoint.get("qi", 20)), 0, 20)
 	data.silver = maxi(0, int(checkpoint.get("silver", data.silver)))
 	data.week = clampi(int(checkpoint.get("week", data.week)), 1, FINAL_WEEK)
-	data.energy = clampi(int(checkpoint.get("energy", data.energy)), 0, 3)
+	data.acted_this_week = bool(checkpoint.get("acted_this_week", data.get("acted_this_week", false)))
 	if typeof(checkpoint.get("skill_mastery", {})) == TYPE_DICTIONARY:
 		data.skill_mastery = checkpoint.skill_mastery.duplicate(true)
 	if typeof(checkpoint.get("log", [])) == TYPE_ARRAY:
@@ -568,7 +577,7 @@ func _migrate_and_validate() -> void:
 	if not _valid_battle(data.battle):
 		data.battle = {}
 	data.week = clampi(int(data.week), 1, FINAL_WEEK)
-	data.energy = clampi(int(data.energy), 0, 3)
+	data.acted_this_week = typeof(data.get("acted_this_week", false)) == TYPE_BOOL and bool(data.acted_this_week)
 	data.max_hp = maxi(1, int(data.max_hp))
 	data.hp = clampi(int(data.hp), 1, int(data.max_hp))
 	data.qi = clampi(int(data.qi), 0, 20)
