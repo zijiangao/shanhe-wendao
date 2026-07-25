@@ -193,20 +193,25 @@ static func apply(state: Dictionary, recipe_id: String) -> bool:
 			state.equipped_armor = recipe_id
 	return true
 
-## 炼药坊 only deals in herbs -- its prompt line omits ore/矿谱 entirely.
+## 炼药坊 only deals in herbs -- its prompt line omits ore entirely. Generic
+## 药材 and the named 药谱 specimens are both just backpack materials to the
+## player, so they're shown together on one "材料" line (0.89.0), not split
+## into a separate count and a separate collection line.
 static func inventory_text_alchemy(state: Dictionary) -> String:
-	return "药材 %d · 银两 %d · 回春散 %d · 臂力 %d · 身法 %d · 悟性 %d · 根骨 %d\n药谱：%s" % [
-		int(state.get("materials", {}).get("herbs", 0)), int(state.get("silver", 0)),
-		int(state.get("consumables", {}).get("healing_powder", 0)),
-		int(state.get("strength", 0)), int(state.get("agility", 0)), int(state.get("insight", 0)), int(state.get("constitution", 0)),
-		HERBARIUM_RULES.collection_text(state.get("herbarium", {}))
+	return "材料：药材 %d · %s\n银两 %d · 回春散 %d · 臂力 %d · 身法 %d · 悟性 %d · 根骨 %d" % [
+		int(state.get("materials", {}).get("herbs", 0)), HERBARIUM_RULES.collection_text(state.get("herbarium", {})),
+		int(state.get("silver", 0)), int(state.get("consumables", {}).get("healing_powder", 0)),
+		int(state.get("strength", 0)), int(state.get("agility", 0)), int(state.get("insight", 0)), int(state.get("constitution", 0))
 	]
 
-## 锻造坊 only deals in ore -- its prompt line omits herbs/药谱 entirely.
-## No longer mentions 霹雳石 (recipe removed) or 淬炼 (legacy forge_level
-## stat, unrelated to any current recipe) -- 0.88.0.
+## 锻造坊 only deals in ore -- its prompt line omits herbs entirely. Generic
+## 矿石 and the named 矿谱 specimens are both just backpack materials to the
+## player, so they're shown together on one "材料" line (0.89.0), not split
+## into a separate count and a separate collection line. No longer mentions
+## 霹雳石 (recipe removed) or 淬炼 (legacy forge_level stat, unrelated to any
+## current recipe) -- 0.88.0.
 static func inventory_text_forge(state: Dictionary) -> String:
-	return "矿石 %d · 银两 %d\n矿谱：%s" % [
-		int(state.get("materials", {}).get("ore", 0)), int(state.get("silver", 0)),
-		MINERALOGY_RULES.collection_text(state.get("mineralogy", {}))
+	return "材料：矿石 %d · %s\n银两 %d" % [
+		int(state.get("materials", {}).get("ore", 0)), MINERALOGY_RULES.collection_text(state.get("mineralogy", {})),
+		int(state.get("silver", 0))
 	]
