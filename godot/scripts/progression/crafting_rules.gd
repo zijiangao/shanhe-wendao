@@ -54,21 +54,21 @@ const RECIPES := {
 		"title": "打造 · 双刃寒锋",
 		"item_name": "双刃寒锋",
 		"description": "工坊自制兵刃，攻击 +3，流银砂 1，锻造要求更高。",
-		"cost": {"herbs": 2, "ore": 8, "silver": 0, "specimens": {"silver_sand": 1}},
+		"cost": {"herbs": 0, "ore": 10, "silver": 0, "specimens": {"silver_sand": 1}},
 		"attack_bonus": 3
 	},
 	"rattan_guard": {
 		"title": "打造 · 藤甲护身",
 		"item_name": "藤甲护身",
 		"description": "工坊自制护具，防御 +1，只需材料，不同于西市的银两购置。",
-		"cost": {"herbs": 5, "ore": 0, "silver": 0, "specimens": {}},
+		"cost": {"herbs": 0, "ore": 5, "silver": 0, "specimens": {}},
 		"defense_bonus": 1
 	},
 	"layered_iron_armor": {
 		"title": "打造 · 叠层甲胄",
 		"item_name": "叠层甲胄",
 		"description": "工坊自制护具，防御 +2，流银砂 1，赤火铜 1，锻造要求更高。",
-		"cost": {"herbs": 2, "ore": 6, "silver": 0, "specimens": {"silver_sand": 1, "fire_copper": 1}},
+		"cost": {"herbs": 0, "ore": 8, "silver": 0, "specimens": {"silver_sand": 1, "fire_copper": 1}},
 		"defense_bonus": 2
 	}
 }

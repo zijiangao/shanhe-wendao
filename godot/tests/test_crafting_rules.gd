@@ -77,10 +77,13 @@ func _initialize() -> void:
 
 	# Workshop-crafted weapons/armor: a separate, materials-only set from
 	# 西市's silver-priced catalog. Replaces the old 淬炼青锋 tempering recipe.
+	# 锻造坊 recipes are ore-only now (0.86.0) -- herbs alone should never
+	# afford any of them, matching 炼药坊's herb-only recipes on the other side.
 	var smith := _state()
-	smith.materials = {"herbs": 0, "ore": 5}
+	smith.materials = {"herbs": 5, "ore": 0}
 	smith.silver = 0
-	assert(not RULES.can_craft(smith, "rattan_guard"), "Five ore alone should not afford an armor recipe that needs herbs.")
+	assert(not RULES.can_craft(smith, "forged_iron_blade"), "Herbs alone should not afford an ore-only forge recipe.")
+	smith.materials = {"herbs": 0, "ore": 5}
 	assert(RULES.can_craft(smith, "forged_iron_blade"), "Five ore should exactly afford the cheaper workshop weapon, with zero silver or named specimens required.")
 	assert(RULES.apply(smith, "forged_iron_blade"), "A well-stocked smith should be able to forge the weapon.")
 	assert(int(smith.materials.ore) == 0 and "forged_iron_blade" in Array(smith.owned_weapons) and str(smith.equipped_weapon) == "forged_iron_blade", "Forging a workshop weapon should consume its full ore cost, own it, and equip it immediately -- no silver ever changes hands.")
@@ -88,16 +91,18 @@ func _initialize() -> void:
 
 	var armorer := _state()
 	armorer.materials = {"herbs": 5, "ore": 0}
-	assert(RULES.apply(armorer, "rattan_guard"), "Five herbs should afford the cheaper workshop armor.")
-	assert(int(armorer.materials.herbs) == 0 and "rattan_guard" in Array(armorer.owned_armors) and str(armorer.equipped_armor) == "rattan_guard", "Forging workshop armor should consume its full herb cost, own it, and equip it immediately.")
+	assert(not RULES.can_craft(armorer, "rattan_guard"), "Herbs alone should not afford 藤甲护身 now that it is an ore-only forge recipe.")
+	armorer.materials = {"herbs": 0, "ore": 5}
+	assert(RULES.apply(armorer, "rattan_guard"), "Five ore should afford the cheaper workshop armor.")
+	assert(int(armorer.materials.ore) == 0 and "rattan_guard" in Array(armorer.owned_armors) and str(armorer.equipped_armor) == "rattan_guard", "Forging workshop armor should consume its full ore cost, own it, and equip it immediately.")
 
 	# Mining mastery discounts the ORE cost of workshop gear now, replacing
-	# the old silver discount on 淬炼青锋. 双刃寒锋 additionally needs a named
-	# 流银砂 specimen from the 矿谱 collection (0.85.0).
+	# the old silver discount on 淬炼青锋. 双刃寒锋 is ore-only (0.86.0) and
+	# additionally needs a named 流银砂 specimen from the 矿谱 collection (0.85.0).
 	var master_smith := _state()
-	master_smith.materials = {"herbs": 2, "ore": 5}
+	master_smith.materials = {"herbs": 0, "ore": 7}
 	master_smith.mining = 10
-	assert(RULES.effective_cost(master_smith, "twin_edge_saber").ore == 5, "Mining mastery should reduce the pricier saber's ore cost from eight to five.")
+	assert(RULES.effective_cost(master_smith, "twin_edge_saber").ore == 7, "Mining mastery should reduce the pricier saber's ore cost from ten to seven.")
 	assert(not RULES.can_craft(master_smith, "twin_edge_saber"), "Even with the ore discount, the saber should still be blocked without a 流银砂 specimen.")
 	master_smith.mineralogy = {"silver_sand": 1}
 	assert("挖矿大成减免" in str(RULES.options_forge(master_smith).filter(func(o): return str(o[2]) == "twin_edge_saber")[0][0]), "The forge choice should disclose the mastery discount before crafting.")
