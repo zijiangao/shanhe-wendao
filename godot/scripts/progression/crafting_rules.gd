@@ -72,20 +72,32 @@ const RECIPES := {
 const CRAFTABLE_WEAPONS := ["forged_iron_blade", "twin_edge_saber"]
 const CRAFTABLE_ARMORS := ["rattan_guard", "layered_iron_armor"]
 
-static func options(state: Dictionary) -> Array:
+## 炼药坊/锻造坊 split (0.84.0): alchemy covers every herb-based "炼制" recipe,
+## forge covers every ore-based "打造" recipe -- this mirrors the verb the
+## recipe titles already used before the split existed, not a new taxonomy.
+const ALCHEMY_RECIPES := ["healing_powder", "insight_pill", "strength_pill", "agility_pill", "constitution_pill"]
+const FORGE_RECIPES := ["thunder_stone", "forged_iron_blade", "twin_edge_saber", "rattan_guard", "layered_iron_armor"]
+
+static func options_alchemy(state: Dictionary) -> Array:
 	var options := [
 		[RECIPES.healing_powder.title, "%s 当前携带 %d 份。" % [RECIPES.healing_powder.description, int(state.get("consumables", {}).get("healing_powder", 0))], "healing_powder", not can_craft(state, "healing_powder")],
-		[RECIPES.thunder_stone.title, "%s 当前携带 %d 枚。" % [RECIPES.thunder_stone.description, int(state.get("consumables", {}).get("thunder_stone", 0))], "thunder_stone", not can_craft(state, "thunder_stone")],
 		[RECIPES.insight_pill.title, "%s 当前悟性 %d。" % [RECIPES.insight_pill.description, int(state.get("insight", 0))], "insight_pill", not can_craft(state, "insight_pill")],
 		[RECIPES.strength_pill.title, "%s 当前臂力 %d。" % [RECIPES.strength_pill.description, int(state.get("strength", 0))], "strength_pill", not can_craft(state, "strength_pill")],
 		[RECIPES.agility_pill.title, "%s 当前身法 %d。" % [RECIPES.agility_pill.description, int(state.get("agility", 0))], "agility_pill", not can_craft(state, "agility_pill")],
 		[RECIPES.constitution_pill.title, "%s 当前根骨 %d。" % [RECIPES.constitution_pill.description, int(state.get("constitution", 0))], "constitution_pill", not can_craft(state, "constitution_pill")],
 	]
+	options.append(["离开炼药坊", "不消耗材料，直接返回青云门。", "leave"])
+	return options
+
+static func options_forge(state: Dictionary) -> Array:
+	var options := [
+		[RECIPES.thunder_stone.title, "%s 当前携带 %d 枚。" % [RECIPES.thunder_stone.description, int(state.get("consumables", {}).get("thunder_stone", 0))], "thunder_stone", not can_craft(state, "thunder_stone")],
+	]
 	for id in CRAFTABLE_WEAPONS:
 		options.append(_gear_row(state, id, "owned_weapons"))
 	for id in CRAFTABLE_ARMORS:
 		options.append(_gear_row(state, id, "owned_armors"))
-	options.append(["离开工坊", "不消耗材料，直接返回青云门。", "leave"])
+	options.append(["离开锻造坊", "不消耗材料，直接返回青云门。", "leave"])
 	return options
 
 static func _gear_row(state: Dictionary, id: String, owned_key: String) -> Array:

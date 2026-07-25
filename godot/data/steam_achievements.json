@@ -62,13 +62,13 @@
   {
     "api_name": "ACH_FIELD_APOTHECARY",
     "title": "药香初成",
-    "description": "在青云工坊首次制作回春散。",
+    "description": "在青云门炼药坊首次制作回春散。",
     "hidden": false
   },
   {
     "api_name": "ACH_FIRST_TEMPER",
     "title": "百炼成锋",
-    "description": "在青云工坊首次淬炼兵刃。",
+    "description": "在青云门锻造坊首次淬炼兵刃。",
     "hidden": false
   },
   {

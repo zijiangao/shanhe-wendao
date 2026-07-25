@@ -849,7 +849,8 @@ func _location_actions(location_id: String) -> Array:
 			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
 			{"id": "train", "text": train_text, "x": 420, "y": 205},
 			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
-			{"id": "workshop", "text": "工坊 · 炼药与锻造", "x": 710, "y": 330},
+			{"id": "workshop", "text": "炼药坊 · 丹药炼制", "x": 710, "y": 330},
+			{"id": "forge", "text": "锻造坊 · 兵刃甲胄打造", "x": 500, "y": 420},
 			{"id": "gathering", "text": gathering_text, "x": 150, "y": 350},
 			{"id": "map", "text": "山门 · 返回舆图", "x": 910, "y": 420}
 		]
@@ -1002,8 +1003,14 @@ func _location_action_requested(action_id: String) -> void:
 		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
 		"workshop":
 			choice_event = "workshop"
-			choice_prompt = "青云工坊 · %s" % CRAFTING_RULES.inventory_text(GameState.data)
-			choice_options = CRAFTING_RULES.options(GameState.data)
+			choice_prompt = "炼药坊 · %s" % CRAFTING_RULES.inventory_text(GameState.data)
+			choice_options = CRAFTING_RULES.options_alchemy(GameState.data)
+			screen = "choice"
+			_rebuild()
+		"forge":
+			choice_event = "forge"
+			choice_prompt = "锻造坊 · %s" % CRAFTING_RULES.inventory_text(GameState.data)
+			choice_options = CRAFTING_RULES.options_forge(GameState.data)
 			screen = "choice"
 			_rebuild()
 		"fisher": _start_dialogue("clue_fisher", ONBOARDING_SPEC.dialogue_for("clue_fisher"))
@@ -1168,7 +1175,11 @@ func _show_choice() -> void:
 	_clear_content()
 	var view: ChoiceView = CHOICE_VIEW.instantiate()
 	content.add_child(view)
-	var choice_title := "青 云 工 坊" if choice_event == "workshop" else "抉 择"
+	var choice_title := "抉 择"
+	if choice_event == "workshop":
+		choice_title = "炼 药 坊"
+	elif choice_event == "forge":
+		choice_title = "锻 造 坊"
 	if choice_event.begins_with("market"):
 		choice_title = "西 市 坊 市"
 	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_title)
@@ -1325,9 +1336,15 @@ func _resolve_choice(route: String) -> void:
 	elif choice_event == "workshop":
 		if route != "leave":
 			if not GameState.craft(route):
-				_toast("材料不足，或青锋剑已淬炼至最高等级。")
+				_toast("材料不足。")
 				return
-			_toast("工坊制作完成。")
+			_toast("炼药坊制作完成。")
+	elif choice_event == "forge":
+		if route != "leave":
+			if not GameState.craft(route):
+				_toast("材料不足，或这件装备已经打造过了。")
+				return
+			_toast("锻造坊制作完成。")
 	elif choice_event == "baima_route":
 		GameState.data.alignment[route] = int(GameState.data.alignment.get(route, 0)) + 1
 		GameState.data.luoyang_route = route
@@ -1693,7 +1710,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.83.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.84.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

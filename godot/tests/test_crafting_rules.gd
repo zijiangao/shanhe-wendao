@@ -12,13 +12,21 @@ func _initialize() -> void:
 	assert(not RULES.apply(state, "invalid"), "Unknown recipes must never mutate state.")
 
 	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "forge_level": 0, "mining": 0, "strength": 0, "agility": 0, "insight": 0, "constitution": 0, "owned_weapons": [], "owned_armors": []}
-	var broke_options: Array = RULES.options(broke)
-	assert(broke_options.size() == 11, "A fresh recruit with no materials should still see an eleventh way out of the workshop.")
-	for option in broke_options.slice(0, 10):
-		assert(bool(option[3]), "Every real recipe should be disabled when nothing is affordable.")
-	var leave_option: Array = broke_options[10]
-	assert(str(leave_option[2]) == "leave", "The escape option must be the fixed 'leave' id, not a recipe.")
-	assert(leave_option.size() <= 3 or not bool(leave_option[3]), "Leaving the workshop must never be disabled, even with zero materials.")
+	var broke_alchemy: Array = RULES.options_alchemy(broke)
+	assert(broke_alchemy.size() == 6, "A fresh recruit with no materials should still see a sixth way out of the alchemy building.")
+	for option in broke_alchemy.slice(0, 5):
+		assert(bool(option[3]), "Every real alchemy recipe should be disabled when nothing is affordable.")
+	var alchemy_leave_option: Array = broke_alchemy[5]
+	assert(str(alchemy_leave_option[2]) == "leave", "The escape option must be the fixed 'leave' id, not a recipe.")
+	assert(alchemy_leave_option.size() <= 3 or not bool(alchemy_leave_option[3]), "Leaving the alchemy building must never be disabled, even with zero materials.")
+
+	var broke_forge: Array = RULES.options_forge(broke)
+	assert(broke_forge.size() == 6, "A fresh recruit with no materials should still see a sixth way out of the forge.")
+	for option in broke_forge.slice(0, 5):
+		assert(bool(option[3]), "Every real forge recipe should be disabled when nothing is affordable.")
+	var forge_leave_option: Array = broke_forge[5]
+	assert(str(forge_leave_option[2]) == "leave", "The escape option must be the fixed 'leave' id, not a recipe.")
+	assert(forge_leave_option.size() <= 3 or not bool(forge_leave_option[3]), "Leaving the forge must never be disabled, even with zero materials.")
 
 	# 悟性丹 (insight pill): there is no level cap -- it can be crafted
 	# repeatedly for as long as the player can afford it, mirroring how
@@ -78,7 +86,7 @@ func _initialize() -> void:
 	master_smith.materials = {"herbs": 2, "ore": 5}
 	master_smith.mining = 10
 	assert(RULES.effective_cost(master_smith, "twin_edge_saber").ore == 5, "Mining mastery should reduce the pricier saber's ore cost from eight to five.")
-	assert("挖矿大成减免" in str(RULES.options(master_smith).filter(func(o): return str(o[2]) == "twin_edge_saber")[0][0]), "The workshop choice should disclose the mastery discount before crafting.")
+	assert("挖矿大成减免" in str(RULES.options_forge(master_smith).filter(func(o): return str(o[2]) == "twin_edge_saber")[0][0]), "The forge choice should disclose the mastery discount before crafting.")
 	assert(RULES.apply(master_smith, "twin_edge_saber") and int(master_smith.materials.ore) == 0, "The discounted ore cost should be charged exactly once.")
 
 	print("Crafting rules tests passed.")
