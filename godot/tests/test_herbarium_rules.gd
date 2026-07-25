@@ -16,6 +16,6 @@ func _init() -> void:
 	var low_state := {"herbarium": {}}
 	assert(RULES.record(low_state, "C", 99).id == "dewgrass", "Low-grade gathering should only find the common specimen.")
 	assert(RULES.record(low_state, "invalid", 0).is_empty(), "Unknown grades must not mutate the collection.")
-	assert(RULES.collection_text({"dewgrass": 2}).contains("凝露草×2") and RULES.collection_text({"dewgrass": 2}).contains("？？？"), "The collection summary should show counts without revealing undiscovered specimens.")
+	assert(RULES.collection_text({"dewgrass": 2}).contains("凝露草×2") and RULES.collection_text({"dewgrass": 2}).contains("云纹叶×0"), "The collection summary should always name every specimen (0.90.0), not hide undiscovered ones behind ？？？.")
 	print("Herbarium rule tests passed.")
 	quit()

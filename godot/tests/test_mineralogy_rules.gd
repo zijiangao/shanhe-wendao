@@ -16,6 +16,6 @@ func _init() -> void:
 	var low_state := {"mineralogy": {}}
 	assert(RULES.record(low_state, "C", 99).id == "ironstone", "Low-grade mining should only find the common mineral.")
 	assert(RULES.record(low_state, "invalid", 0).is_empty(), "Unknown grades must not mutate the mineral ledger.")
-	assert(RULES.collection_text({"ironstone": 2}).contains("青铁石×2") and RULES.collection_text({"ironstone": 2}).contains("？？？"), "The mineral summary should show counts without revealing undiscovered minerals.")
+	assert(RULES.collection_text({"ironstone": 2}).contains("青铁石×2") and RULES.collection_text({"ironstone": 2}).contains("流银砂×0"), "The mineral summary should always name every mineral (0.90.0), not hide undiscovered ones behind ？？？.")
 	print("Mineralogy rule tests passed.")
 	quit()

@@ -74,5 +74,5 @@ static func collection_text(collection: Variant) -> String:
 	for specimen_id in SPECIMENS:
 		var spec: Dictionary = SPECIMENS[specimen_id]
 		var count := int(safe_collection.get(specimen_id, 0))
-		entries.append("%s×%d" % [str(spec.name), count] if count > 0 else "？？？")
+		entries.append("%s×%d" % [str(spec.name), count])
 	return " · ".join(entries)
