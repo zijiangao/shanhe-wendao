@@ -113,6 +113,30 @@ static func _train(state: Dictionary, level_key: String, id: String, xp_gain: in
 	state.wuxue_xp[id] = 0 if level >= MAX_LEVEL else xp
 	return {"ok": true, "leveled_up": leveled_up, "new_level": level, "xp": int(state.wuxue_xp[id]), "xp_needed": xp_needed(level) if level < MAX_LEVEL else 0}
 
+## 藏经阁 (0.91.0): a read-only summary of every learned move/internal/
+## lightness art and its current level/equip state -- every row is disabled
+## since this screen only informs, it never lets you train/equip/upgrade
+## (those actions stay at 演武场/秘籍阁 respectively).
+static func options_library(state: Dictionary) -> Array:
+	var options := []
+	var equipped_moves: Array = state.get("equipped_moves", [])
+	for id in Array(state.get("learned_moves", [])):
+		options.append(_library_row(str(MOVES[id].title), move_level(state, id), id in equipped_moves))
+	var equipped_internal := str(state.get("equipped_internal", ""))
+	for id in Array(state.get("learned_internal", [])):
+		options.append(_library_row(str(INTERNAL[id].title), internal_level(state, id), id == equipped_internal))
+	var equipped_lightness := str(state.get("equipped_lightness", ""))
+	for id in Array(state.get("learned_lightness", [])):
+		options.append(_library_row(str(LIGHTNESS[id].title), lightness_level(state, id), id == equipped_lightness))
+	if options.is_empty():
+		options.append(["尚无藏书可阅", "尚未习得任何招式/内功/轻功，请先前往洛阳西市秘籍阁学习。", "none", true])
+	options.append(["返回", "不消耗行动点，返回青云门。", "leave"])
+	return options
+
+static func _library_row(title: String, level: int, equipped: bool) -> Array:
+	var rank := "已大成" if level >= MAX_LEVEL else "Lv.%d" % level
+	return ["%s · %s%s" % [title, rank, "（已装备）" if equipped else ""], "已习得", "none", true]
+
 static func options_training(state: Dictionary) -> Array:
 	var options := []
 	for id in Array(state.get("learned_moves", [])):

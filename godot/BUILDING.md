@@ -228,6 +228,8 @@ The Qingyun training menu also offers a repeatable, nonlethal sparring battle. I
 
 Run `res://tests/test_qingyun_spar_view.gd` without `--headless` to capture `qingyun_spar_preview.png` at 1280×720 and verify that the shipping battle UI shows the rotating lesson and chosen weapon focus.
 
+As of 2026-07-25, 藏经阁 (`"library"` hotspot at 青云门) no longer opens the fixed one-off 玄铁令 story dialogue (0.91.0) -- it now opens a read-only `choice` screen (`choice_event == "library"`) listing every learned move/internal/lightness art via `WuxueRules.options_library()`, each row disabled (informational only, no train/equip/upgrade actions from here) and showing its level and equipped state. A placeholder row appears if nothing is learned yet. New test `tests/test_library_view.gd`; `test_wuxue_rules.gd` extended to cover the empty-state placeholder and the equipped-state label.
+
 As of 2026-07-25, `HerbariumRules.collection_text()`/`MineralogyRules.collection_text()` no longer hide undiscovered specimens behind "？？？" (0.90.0) -- every specimen's real name is always shown, with its count (0 if not yet found). `test_herbarium_rules.gd`/`test_mineralogy_rules.gd` were updated accordingly.
 
 As of 2026-07-25, `inventory_text_alchemy()`/`inventory_text_forge()`'s prompt lines merged their generic material count and named 药谱/矿谱 collection into a single "材料：" line each (0.89.0) -- previously shown as two separate concepts ("药材 N" on one line, "药谱：..." on another), which read as if generic herbs and named specimens were different resource pools even though both are just backpack materials to the player.

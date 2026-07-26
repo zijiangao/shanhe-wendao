@@ -161,6 +161,24 @@ func _initialize() -> void:
 	var equipped_row := rich_options.filter(func(o): return str(o[2]) == "unequip_move_stone_splitting_fist")
 	assert(equipped_row.size() == 1, "A learned-and-auto-equipped move should offer an unequip action, not a learn action.")
 
+	# 藏经阁 (0.91.0): a read-only summary, every row disabled, of every
+	# learned move/internal/lightness art and whether it's equipped.
+	var empty_library: Array = RULES.options_library(_state())
+	assert(empty_library.size() == 2 and str(empty_library[0][2]) == "none" and bool(empty_library[0][3]), "An untrained hero should see a disabled placeholder row explaining nothing is learned yet.")
+	var empty_leave: Array = empty_library[1]
+	assert(str(empty_leave[2]) == "leave" and not (empty_leave.size() > 3 and bool(empty_leave[3])), "藏经阁's leave option must always stay enabled, even with nothing learned.")
+
+	var learned := _state()
+	learned.silver = 1000
+	RULES.learn_move(learned, "stone_splitting_fist")
+	RULES.learn_internal(learned, "purple_mist_art")
+	var library_options: Array = RULES.options_library(learned)
+	assert(library_options.size() == 3, "Two learned arts should produce two info rows plus the leave row.")
+	for row in library_options.slice(0, 2):
+		assert(bool(row[3]), "Every 藏经阁 info row must be disabled -- it only informs, it never lets you train/equip from here.")
+	var move_row := library_options.filter(func(o): return str(o[0]).begins_with("裂石拳"))
+	assert(move_row.size() == 1 and "已装备" in str(move_row[0][0]), "A learned-and-equipped move should show its equipped state in 藏经阁.")
+
 	print("Wuxue rules tests passed.")
 	quit()
 

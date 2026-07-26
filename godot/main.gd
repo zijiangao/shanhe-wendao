@@ -1003,7 +1003,12 @@ func _location_action_requested(action_id: String) -> void:
 				_toast(_time_action_failure_message())
 				return
 			_show_gathering_menu()
-		"library": _start_dialogue("library", [["守阁弟子", "玄铁令本是前朝武库信物，近年却频频出现在厉千秋党羽手中。"], ["沈羽", "看来黑苇渡之事并非普通匪患。"]])
+		"library":
+			choice_event = "library"
+			choice_prompt = "藏经阁 · 已习得武学一览"
+			choice_options = WUXUE_RULES.options_library(GameState.data)
+			screen = "choice"
+			_rebuild()
 		"workshop":
 			choice_event = "workshop"
 			choice_prompt = "炼药坊 · %s" % CRAFTING_RULES.inventory_text_alchemy(GameState.data)
@@ -1183,6 +1188,8 @@ func _show_choice() -> void:
 		choice_title = "炼 药 坊"
 	elif choice_event == "forge":
 		choice_title = "锻 造 坊"
+	elif choice_event == "library":
+		choice_title = "藏 经 阁"
 	if choice_event.begins_with("market"):
 		choice_title = "西 市 坊 市"
 	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_title)
@@ -1713,7 +1720,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.90.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.91.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
