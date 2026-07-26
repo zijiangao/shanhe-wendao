@@ -37,6 +37,7 @@ func new_game() -> void:
 		"silver": 10000,
 		"renown": 0,
 		"xp": 0,
+		"character_level": 1,
 		"strength": 4,
 		"agility": 5,
 		"insight": 4,
@@ -195,7 +196,7 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 		outcome.herbs = int(outcome.get("herbs", 0)) + gathering_bonus
 	if discipline == "mining":
 		outcome.ore = int(outcome.get("ore", 0)) + gathering_bonus
-	data.xp += int(outcome.xp)
+	var levels_gained := GROWTH_RULES.grant_xp(data, int(outcome.xp))
 	data.silver += int(outcome.silver)
 	data.materials.herbs = int(data.materials.herbs) + int(outcome.get("herbs", 0))
 	data.materials.ore = int(data.materials.ore) + int(outcome.get("ore", 0))
@@ -203,7 +204,7 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 		var discovery := HERBARIUM_RULES.record(data, str(outcome.grade), event_roll if event_roll >= 0 else randi_range(0, 99))
 		if not discovery.is_empty():
 			outcome.herb_discovery = discovery
-			data.xp += int(discovery.get("xp", 0))
+			levels_gained += GROWTH_RULES.grant_xp(data, int(discovery.get("xp", 0)))
 	if discipline == "mining":
 		var discovery := MINERALOGY_RULES.record(data, str(outcome.grade), event_roll if event_roll >= 0 else randi_range(0, 99))
 		if not discovery.is_empty():
@@ -222,6 +223,9 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 	add_log("专项修炼完成：%s级，%s。" % [str(outcome.grade), TRAINING_RULES.reward_text(outcome)])
 	if bool(outcome.rank_up):
 		add_log("%s技艺突破至%s。" % [str(TRAINING_RULES.DISCIPLINES[discipline].title).split(" · ")[0], str(outcome.specialty_rank)])
+	outcome.character_levels_gained = levels_gained
+	if levels_gained > 0:
+		add_log("角色等级提升至 %d 级，基础属性各 +%d。" % [GROWTH_RULES.character_level(int(data.xp)), levels_gained])
 	return outcome
 
 ## 炼药坊/锻造坊 crafting spends the week's one action too, same as every
@@ -371,14 +375,14 @@ func finish_battle(victory: bool) -> void:
 	if victory:
 		data.battle_retry = {}
 		var base_reward := REWARD_RULES.base_for(battle_id)
-		data.xp += int(base_reward.xp)
+		GROWTH_RULES.grant_xp(data, int(base_reward.xp))
 		data.renown += int(base_reward.renown)
 		data.silver += int(base_reward.silver)
 		data.pending_reward = {"battle_id": battle_id, "turns": battle_turns}
 		if battle_id == "qingyun_spar":
 			var spar_result := SPARRING_RULES.record_victory(data.get("sparring_record", {}), battle_turns)
 			data.sparring_record = spar_result.record
-			data.xp += int(spar_result.bonus_xp)
+			GROWTH_RULES.grant_xp(data, int(spar_result.bonus_xp))
 			var skill_gain := SPARRING_RULES.skill_gain_for_grade(str(spar_result.grade))
 			data[spar_discipline] = int(data.get(spar_discipline, 0)) + skill_gain
 			data.pending_reward.grade = spar_result.grade
@@ -524,6 +528,12 @@ func _migrate_and_validate() -> void:
 		data.herbarium = {}
 	if typeof(data.get("mineralogy", {})) != TYPE_DICTIONARY:
 		data.mineralogy = {}
+	# Saves from before the character-level system (0.93.0) start tracking
+	# from whatever level their existing xp already implies, not from 1 --
+	# otherwise they'd suddenly get back-paid a pile of free attribute
+	# points the next time they gain any xp. See GrowthRules.grant_xp().
+	if not data.has("character_level"):
+		data.character_level = GROWTH_RULES.character_level(int(data.get("xp", 0)))
 	data.training_records = TRAINING_RULES.normalize_records(data.get("training_records", {}))
 	data.sparring_record = SPARRING_RULES.normalize_record(data.get("sparring_record", {}))
 	if typeof(data.consumables) != TYPE_DICTIONARY:

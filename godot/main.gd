@@ -1730,7 +1730,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.92.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.93.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1964,7 +1964,7 @@ func _show_character() -> void:
 	var summary := Label.new()
 	var next_rank := GROWTH_RULES.next_rank_xp(int(GameState.data.xp))
 	var rank_progress := "已达最高境界" if next_rank < 0 else "距下境界 %d 修为" % (next_rank - int(GameState.data.xp))
-	summary.text = "综合战力  %d     气血  %d/%d     真气  %d     声望  %d\n修为  %d · %s · %s · 伤害加成 +%d" % [GameState.power(), GameState.data.hp, GameState.data.max_hp, GameState.data.qi, GameState.data.renown, GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp)), rank_progress, GROWTH_RULES.combat_bonus(int(GameState.data.xp))]
+	summary.text = "综合战力  %d     气血  %d/%d     真气  %d     声望  %d\n修为  %d · %s · %s · 伤害加成 +%d\n角色等级 Lv.%d（距下一级 %d 修为，每级四项基础属性各 +1）" % [GameState.power(), GameState.data.hp, GameState.data.max_hp, GameState.data.qi, GameState.data.renown, GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp)), rank_progress, GROWTH_RULES.combat_bonus(int(GameState.data.xp)), GROWTH_RULES.character_level(int(GameState.data.xp)), GROWTH_RULES.LEVEL_XP_STEP - GROWTH_RULES.xp_into_level(int(GameState.data.xp))]
 	summary.add_theme_font_size_override("font_size", 18)
 	summary.add_theme_color_override("font_color", Color("#e9e1cf"))
 	info.add_child(summary)

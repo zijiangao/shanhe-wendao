@@ -1,6 +1,8 @@
 class_name RewardRules
 extends RefCounted
 
+const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
+
 const BASE_REWARDS := {
 	"qingyun_spar": {"title": "同 门 切 磋", "story": "晨光落在演武场上。胜负点到即止，你与同门互相指出了招式中的破绽。", "xp": 4, "silver": 2, "renown": 0, "item": "无", "next_screen": "location"},
 	"blackreed": {"title": "大 捷", "story": "黑苇寨众溃散，渡口重归平静。你从寨主身上搜出一枚玄铁令，厉千秋的阴谋终于露出端倪。", "xp": 22, "silver": 15, "renown": 4, "item": "玄铁令", "next_screen": "map"},
@@ -48,7 +50,7 @@ static func apply_choice(state: Dictionary, battle_id: String, choice_id: String
 	if choice.is_empty():
 		return false
 	var effects: Dictionary = choice.get("effects", {})
-	state.xp = int(state.get("xp", 0)) + int(effects.get("xp", 0))
+	GROWTH_RULES.grant_xp(state, int(effects.get("xp", 0)))
 	state.silver = int(state.get("silver", 0)) + int(effects.get("silver", 0))
 	state.renown = int(state.get("renown", 0)) + int(effects.get("renown", 0))
 	if bool(effects.get("restore_qi", false)):
