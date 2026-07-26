@@ -224,7 +224,12 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 		add_log("%s技艺突破至%s。" % [str(TRAINING_RULES.DISCIPLINES[discipline].title).split(" · ")[0], str(outcome.specialty_rank)])
 	return outcome
 
+## 炼药坊/锻造坊 crafting spends the week's one action too, same as every
+## other time-consuming action (0.92.0) -- validated (can_craft) before
+## spend_action() so an unaffordable attempt never wastes the week.
 func craft(recipe_id: String) -> bool:
+	if not CRAFTING_RULES.can_craft(data, recipe_id) or not spend_action():
+		return false
 	if not CRAFTING_RULES.apply(data, recipe_id):
 		return false
 	var milestone: String = str({"healing_powder": "crafted_healing_powder", "forged_iron_blade": "tempered_blade", "twin_edge_saber": "tempered_blade"}.get(recipe_id, ""))

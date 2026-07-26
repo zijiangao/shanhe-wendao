@@ -81,6 +81,38 @@ func _capture() -> void:
 			await process_frame
 	valid = valid and forge_leave_reachable and main_scene.screen == "location"
 
+	# Crafting now spends the week's one action too (0.92.0) -- confirm a
+	# real craft blocks re-entering either building until end_week().
+	game_state.new_game()
+	game_state.data.materials = {"herbs": 4, "ore": 5}
+	main_scene.screen = "location"
+	main_scene._rebuild()
+	for frame in range(2):
+		await process_frame
+	main_scene._location_action_requested("workshop")
+	for frame in range(3):
+		await process_frame
+	var powder_craft_button: Button = null
+	for b in main_scene.find_children("*", "Button", true, false):
+		if (b as Button).text.begins_with("炼制 · 回春散"):
+			powder_craft_button = b
+	var craft_reachable := powder_craft_button != null and not powder_craft_button.disabled
+	if craft_reachable:
+		powder_craft_button.pressed.emit()
+		for frame in range(2):
+			await process_frame
+	var acted_after_craft: bool = bool(game_state.data.get("acted_this_week", false))
+	main_scene._location_action_requested("forge")
+	for frame in range(2):
+		await process_frame
+	var forge_blocked_same_week: bool = main_scene.screen == "location"
+	game_state.end_week()
+	main_scene._location_action_requested("forge")
+	for frame in range(3):
+		await process_frame
+	var forge_open_after_end_week: bool = main_scene.screen == "choice" and main_scene.choice_event == "forge"
+	valid = valid and craft_reachable and acted_after_craft and forge_blocked_same_week and forge_open_after_end_week
+
 	if not valid:
-		push_error("Crafting view regression: powder_buttons=%s craft_weapon_buttons=%s discount_buttons=%s no_gear_in_alchemy=%s no_pills_in_forge=%s battle_powder_buttons=%s alchemy_leave_reachable=%s forge_leave_reachable=%s" % [powder_buttons.size(), craft_weapon_buttons.size(), discount_buttons.size(), no_gear_in_alchemy, no_pills_in_forge, battle_powder_buttons.size(), alchemy_leave_reachable, forge_leave_reachable])
+		push_error("Crafting view regression: powder_buttons=%s craft_weapon_buttons=%s discount_buttons=%s no_gear_in_alchemy=%s no_pills_in_forge=%s battle_powder_buttons=%s alchemy_leave_reachable=%s forge_leave_reachable=%s craft_reachable=%s acted_after_craft=%s forge_blocked_same_week=%s forge_open_after_end_week=%s" % [powder_buttons.size(), craft_weapon_buttons.size(), discount_buttons.size(), no_gear_in_alchemy, no_pills_in_forge, battle_powder_buttons.size(), alchemy_leave_reachable, forge_leave_reachable, craft_reachable, acted_after_craft, forge_blocked_same_week, forge_open_after_end_week])
 	quit(0 if valid else 17)

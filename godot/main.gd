@@ -152,8 +152,12 @@ func _verify_crafting_flow() -> void:
 	var medicine_ok := GameState.craft("healing_powder")
 	# 霹雳石 was removed from 锻造坊's recipe list (0.88.0) -- it's still
 	# purchasable at 西市's 杂货铺, just no longer forged with materials.
+	# Crafting now spends the week's one action too (0.92.0), so an
+	# end_week() is needed between each of these three actions.
 	var stone_ok := SHOP_RULES.buy_good(GameState.data, "thunder_stone")
+	GameState.end_week()
 	var forge_ok := GameState.craft("forged_iron_blade")
+	GameState.end_week()
 	var battle_ok := GameState.start_blackreed_battle()
 	GameState.data.battle.enemies[0].x = 4
 	GameState.data.battle.enemies[0].y = 3
@@ -1010,12 +1014,18 @@ func _location_action_requested(action_id: String) -> void:
 			screen = "choice"
 			_rebuild()
 		"workshop":
+			if GameState.deadline_reached() or bool(GameState.data.get("acted_this_week", false)):
+				_toast(_time_action_failure_message())
+				return
 			choice_event = "workshop"
 			choice_prompt = "炼药坊 · %s" % CRAFTING_RULES.inventory_text_alchemy(GameState.data)
 			choice_options = CRAFTING_RULES.options_alchemy(GameState.data)
 			screen = "choice"
 			_rebuild()
 		"forge":
+			if GameState.deadline_reached() or bool(GameState.data.get("acted_this_week", false)):
+				_toast(_time_action_failure_message())
+				return
 			choice_event = "forge"
 			choice_prompt = "锻造坊 · %s" % CRAFTING_RULES.inventory_text_forge(GameState.data)
 			choice_options = CRAFTING_RULES.options_forge(GameState.data)
@@ -1346,13 +1356,13 @@ func _resolve_choice(route: String) -> void:
 	elif choice_event == "workshop":
 		if route != "leave":
 			if not GameState.craft(route):
-				_toast("材料不足。")
+				_toast("材料不足，或%s" % _time_action_failure_message())
 				return
 			_toast("炼药坊制作完成。")
 	elif choice_event == "forge":
 		if route != "leave":
 			if not GameState.craft(route):
-				_toast("材料不足，或这件装备已经打造过了。")
+				_toast("材料不足，或这件装备已经打造过了，或%s" % _time_action_failure_message())
 				return
 			_toast("锻造坊制作完成。")
 	elif choice_event == "baima_route":
@@ -1720,7 +1730,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.91.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.92.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

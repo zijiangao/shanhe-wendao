@@ -72,9 +72,14 @@ func _initialize() -> void:
 	assert(int(state.data.materials.ore) == 5 and int(state.data.mineralogy.get("ironstone", 0)) == 1, "Mining should commit normal ore, encounter ore, and a score-eligible mineral discovery together.")
 	assert(str(mining_training.mineral_discovery.name) == "青铁石" and bool(mining_training.mineral_discovery.first_discovery), "The mining result should expose its newly recorded mineral.")
 	assert(int(mining_training.mineral_discovery.silver) == 2 and int(state.data.silver) == 10014, "A first mineral appraisal should add its one-time silver bonus to normal mining income.")
+	# Crafting now spends the week's one action too (0.92.0), same as
+	# mining just did above -- each craft() below needs its own end_week().
+	state.end_week()
 	state.data.materials.herbs = 2
 	assert(state.craft("healing_powder") and int(state.data.consumables.healing_powder) == 1, "GameState should expose medicine crafting through the saved inventory.")
 	assert("crafted_healing_powder" in state.data.flags, "Medicine crafting must persist its Steam milestone.")
+	assert(not state.craft("healing_powder"), "A second craft in the same week must be rejected even with enough materials left.")
+	state.end_week()
 	state.data.materials.ore = 7
 	assert(state.craft("forged_iron_blade") and "tempered_blade" in state.data.flags, "Crafting a workshop weapon must persist the same Steam milestone tempering used to.")
 	assert(not state.craft("thunder_stone"), "霹雳石 is no longer a craftable workshop recipe (0.88.0).")
