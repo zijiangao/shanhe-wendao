@@ -1,6 +1,18 @@
 class_name WuxueRules
 extends RefCounted
 
+const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+
+## 流云剑法/断岳刀法 (0.94.0) are innate combat techniques every hero starts
+## with -- always available in battle regardless of the wuxue system (see
+## BattleEngine's "skill"/"blade_skill" actions), never learned/equipped
+## through MOVES. They still belong in 藏经阁's summary, scaled by
+## swordsmanship/bladesmanship specialty rank rather than a wuxue level.
+const INNATE_MOVES := [
+	{"title": "流云剑法", "discipline": "swordsmanship"},
+	{"title": "断岳刀法", "discipline": "bladesmanship"},
+]
+
 const MAX_EQUIPPED_MOVES := 2
 const MAX_LEVEL := 10
 const LIGHTNESS_LEVEL_DIVISOR := 3
@@ -12,12 +24,20 @@ const MOVES := {
 	"night_triple_blade": {"title": "暗夜三刀", "description": "三刀连斩，刀刀见血。", "price": 260, "qi_cost": 9, "upgrade_base": 50, "level_damage_bonus": 1},
 }
 
+## 基础内功/基础身法 (0.94.0): every hero starts already knowing these, same
+## as 流云剑法/断岳刀法 always being available in battle -- new_game() learns
+## and equips them by default. Deliberately weaker than the purchasable arts
+## (no move-range bonus at all for 基础身法, matching the existing caution
+## around lightness range escalation on a small tactical board) so learning
+## a real art at 秘籍阁 is still a meaningful upgrade, not a sidegrade.
 const INTERNAL := {
+	"foundational_qi": {"title": "基础内功 · 混元气", "description": "与生俱来的根基内力，尚未开辟真正法门。攻击 +1。", "price": 0, "damage_bonus": 1, "upgrade_base": 20, "level_damage_bonus": 1},
 	"purple_mist_art": {"title": "紫霞神功", "description": "内力外放，诸般攻击更进一筹。攻击 +2。", "price": 200, "damage_bonus": 2, "upgrade_base": 40, "level_damage_bonus": 1},
 	"five_elements_art": {"title": "五行归元功", "description": "五行调和，疗伤更速。回春散额外恢复 +5。", "price": 200, "healing_bonus": 5, "upgrade_base": 40, "level_healing_bonus": 1},
 }
 
 const LIGHTNESS := {
+	"basic_footwork": {"title": "基础身法 · 寻常步法", "description": "略通行走身法，尚未开辟真正轻功。", "price": 0, "move_bonus": 0, "upgrade_base": 20},
 	"ripple_steps": {"title": "凌波微步", "description": "身法灵动，多行一步。移动范围 +1。", "price": 150, "move_bonus": 1, "upgrade_base": 30},
 	"wind_walk": {"title": "神行百变", "description": "疾行如风，进退由心。移动范围 +2。", "price": 320, "move_bonus": 2, "upgrade_base": 60},
 }
@@ -119,6 +139,9 @@ static func _train(state: Dictionary, level_key: String, id: String, xp_gain: in
 ## (those actions stay at 演武场/秘籍阁 respectively).
 static func options_library(state: Dictionary) -> Array:
 	var options := []
+	for innate in INNATE_MOVES:
+		var level := int(state.get(str(innate.discipline), 0))
+		options.append(["%s · %s" % [str(innate.title), TRAINING_RULES.specialty_rank_name(level)], "与生俱来的技法，随%s精通而增强。" % ("剑法" if innate.discipline == "swordsmanship" else "刀法"), "none", true])
 	var equipped_moves: Array = state.get("equipped_moves", [])
 	for id in Array(state.get("learned_moves", [])):
 		options.append(_library_row(str(MOVES[id].title), move_level(state, id), id in equipped_moves))
@@ -128,8 +151,6 @@ static func options_library(state: Dictionary) -> Array:
 	var equipped_lightness := str(state.get("equipped_lightness", ""))
 	for id in Array(state.get("learned_lightness", [])):
 		options.append(_library_row(str(LIGHTNESS[id].title), lightness_level(state, id), id == equipped_lightness))
-	if options.is_empty():
-		options.append(["尚无藏书可阅", "尚未习得任何招式/内功/轻功，请先前往洛阳西市秘籍阁学习。", "none", true])
 	options.append(["返回", "不消耗行动点，返回青云门。", "leave"])
 	return options
 

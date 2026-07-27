@@ -32,13 +32,14 @@ func _capture() -> void:
 	# leaks into 演武场's own option list.
 	var no_gathering_in_training := not main_scene.find_children("*", "Button", true, false).any(func(b): return "采药" in (b as Button).text or "挖矿" in (b as Button).text)
 
-	# 武学修炼 must stay disabled with no manuals learned yet -- it would
-	# otherwise open a sub-menu with nothing but a "返回" row in it.
+	# 武学修炼 is enabled from the very start (0.94.0) -- every hero already
+	# knows 基础内功/基础身法 by default, so there's always something to
+	# train even before visiting 秘籍阁 for the first time.
 	var wuxue_training_button: Button = null
 	for b in main_scene.find_children("*", "Button", true, false):
 		if (b as Button).text.begins_with("武学修炼"):
 			wuxue_training_button = b
-	var wuxue_disabled_when_unlearned := wuxue_training_button != null and wuxue_training_button.disabled
+	var wuxue_enabled_by_default := wuxue_training_button != null and not wuxue_training_button.disabled
 
 	# Learn one move, then confirm 武学修炼 opens, lists it, trains it (spending
 	# a week/energy like every other training action), and returns cleanly.
@@ -137,8 +138,8 @@ func _capture() -> void:
 			await process_frame
 		gathering_leave_works = main_scene.screen == "location"
 
-	var valid: bool = menu_valid and wuxue_disabled_when_unlearned and wuxue_enabled_when_learned and wuxue_menu_open and wuxue_training_ok and wuxue_training_back_ok and spar_focus_valid and leave_works
+	var valid: bool = menu_valid and wuxue_enabled_by_default and wuxue_enabled_when_learned and wuxue_menu_open and wuxue_training_ok and wuxue_training_back_ok and spar_focus_valid and leave_works
 	valid = valid and no_gathering_in_training and gathering_menu_open and has_herbalism_button and has_mining_button and no_combat_in_gathering and gathering_leave_works
 	if not valid:
-		push_error("Training menu regression: menu_valid=%s wuxue_disabled_when_unlearned=%s wuxue_enabled_when_learned=%s wuxue_menu_open=%s wuxue_training_ok=%s wuxue_training_back_ok=%s spar_focus_valid=%s leave_works=%s no_gathering_in_training=%s gathering_menu_open=%s has_herbalism_button=%s has_mining_button=%s no_combat_in_gathering=%s gathering_leave_works=%s" % [menu_valid, wuxue_disabled_when_unlearned, wuxue_enabled_when_learned, wuxue_menu_open, wuxue_training_ok, wuxue_training_back_ok, spar_focus_valid, leave_works, no_gathering_in_training, gathering_menu_open, has_herbalism_button, has_mining_button, no_combat_in_gathering, gathering_leave_works])
+		push_error("Training menu regression: menu_valid=%s wuxue_enabled_by_default=%s wuxue_enabled_when_learned=%s wuxue_menu_open=%s wuxue_training_ok=%s wuxue_training_back_ok=%s spar_focus_valid=%s leave_works=%s no_gathering_in_training=%s gathering_menu_open=%s has_herbalism_button=%s has_mining_button=%s no_combat_in_gathering=%s gathering_leave_works=%s" % [menu_valid, wuxue_enabled_by_default, wuxue_enabled_when_learned, wuxue_menu_open, wuxue_training_ok, wuxue_training_back_ok, spar_focus_valid, leave_works, no_gathering_in_training, gathering_menu_open, has_herbalism_button, has_mining_button, no_combat_in_gathering, gathering_leave_works])
 	quit(0 if valid else 18)

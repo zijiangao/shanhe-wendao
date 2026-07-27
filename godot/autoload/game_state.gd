@@ -54,17 +54,16 @@ func new_game() -> void:
 		"herbarium": {},
 		"mineralogy": {},
 		"consumables": {"healing_powder": 0, "thunder_stone": 0},
-		"forge_level": 0,
 		"equipped_weapon": "",
 		"equipped_armor": "",
 		"owned_weapons": [],
 		"owned_armors": [],
 		"learned_moves": [],
-		"learned_internal": [],
-		"learned_lightness": [],
+		"learned_internal": ["foundational_qi"],
+		"learned_lightness": ["basic_footwork"],
 		"equipped_moves": [],
-		"equipped_internal": "",
-		"equipped_lightness": "",
+		"equipped_internal": "foundational_qi",
+		"equipped_lightness": "basic_footwork",
 		"move_levels": {},
 		"internal_levels": {},
 		"lightness_levels": {},
@@ -92,7 +91,7 @@ func new_game() -> void:
 
 func power() -> int:
 	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
-	var equipment_power := int(data.get("forge_level", 0)) * 2 + SHOP_RULES.weapon_attack_bonus(data) + SHOP_RULES.armor_defense_bonus(data)
+	var equipment_power := SHOP_RULES.weapon_attack_bonus(data) + SHOP_RULES.armor_defense_bonus(data)
 	var equipped_move_power := 0
 	for move_id in Array(data.get("equipped_moves", [])):
 		equipped_move_power += 3 + WUXUE_RULES.move_damage_bonus(data, str(move_id))
@@ -132,13 +131,18 @@ func rest() -> bool:
 	add_log("你调息本周，恢复全部气血与真气。")
 	return true
 
+## Traveling between cities/locations on the world map is free (0.94.0) --
+## it never spends the week's one action, unlike training/gathering/crafting/
+## battles. Still blocked once the two-year deadline is reached, matching
+## every other time-consuming action.
 func travel(destination: String) -> bool:
 	if destination == data.location:
 		return true
-	if not spend_action():
+	if deadline_reached():
 		return false
 	data.location = destination
 	add_log("你动身前往%s。" % place_name(destination))
+	state_changed.emit()
 	return true
 
 func train(focus: String = "strength") -> bool:
@@ -616,7 +620,6 @@ func _migrate_and_validate() -> void:
 	data.mineralogy = normalized_mineralogy
 	data.consumables.healing_powder = maxi(0, int(data.consumables.get("healing_powder", 0)))
 	data.consumables.thunder_stone = maxi(0, int(data.consumables.get("thunder_stone", 0)))
-	data.forge_level = clampi(int(data.get("forge_level", 0)), 0, CRAFTING_RULES.MAX_FORGE_LEVEL)
 	if typeof(data.get("owned_weapons", [])) != TYPE_ARRAY:
 		data.owned_weapons = []
 	data.owned_weapons = Array(data.owned_weapons).filter(func(id): return SHOP_RULES.WEAPONS.has(str(id)) or CRAFTING_RULES.RECIPES.get(str(id), {}).has("attack_bonus"))
@@ -645,6 +648,14 @@ func _migrate_and_validate() -> void:
 		data.equipped_internal = ""
 	if str(data.get("equipped_lightness", "")) not in data.learned_lightness:
 		data.equipped_lightness = ""
+	if "foundational_qi" not in data.learned_internal:
+		data.learned_internal.append("foundational_qi")
+	if str(data.get("equipped_internal", "")).is_empty():
+		data.equipped_internal = "foundational_qi"
+	if "basic_footwork" not in data.learned_lightness:
+		data.learned_lightness.append("basic_footwork")
+	if str(data.get("equipped_lightness", "")).is_empty():
+		data.equipped_lightness = "basic_footwork"
 	if typeof(data.get("move_levels", {})) != TYPE_DICTIONARY:
 		data.move_levels = {}
 	data.move_levels = _clamped_levels(data.move_levels, data.learned_moves)

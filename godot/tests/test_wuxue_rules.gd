@@ -6,6 +6,17 @@ func _initialize() -> void:
 	var state := _state()
 	assert(int(RULES.internal_damage_bonus(state)) == 0 and int(RULES.internal_healing_bonus(state)) == 0 and int(RULES.lightness_move_bonus(state)) == 0, "An untrained hero should have zero wuxue bonuses.")
 
+	# 基础内功/基础身法 (0.94.0): every real save starts with these already
+	# learned and equipped (see GameState.new_game()), deliberately weaker
+	# than any purchasable art -- 基础身法 grants no move bonus at all.
+	var baseline_state := _state()
+	baseline_state.learned_internal = ["foundational_qi"]
+	baseline_state.equipped_internal = "foundational_qi"
+	baseline_state.learned_lightness = ["basic_footwork"]
+	baseline_state.equipped_lightness = "basic_footwork"
+	assert(int(RULES.internal_damage_bonus(baseline_state)) == 1, "基础内功 should grant a modest +1 damage bonus by default.")
+	assert(int(RULES.lightness_move_bonus(baseline_state)) == 0, "基础身法 should grant no move-range bonus at all, keeping a real lightness purchase a genuine upgrade.")
+
 	assert(not RULES.learn_move(state, "stone_splitting_fist"), "150 silver should be unaffordable with only 100.")
 	assert(int(state.silver) == 100 and state.learned_moves.is_empty(), "A failed manual purchase must not touch silver or the learned list.")
 
@@ -146,10 +157,16 @@ func _initialize() -> void:
 	assert(RULES.insight_xp_bonus({"insight": 7}) == 3, "Insight should round down to the nearest whole bonus point, not round up.")
 
 	# options_manuals must reflect affordability and current learn/equip state for the choice-menu UI.
+	# 基础内功/基础身法 (0.94.0) are free (price 0) baseline catalog entries --
+	# they stay "learnable" (and always affordable) in this bare fixture only
+	# because it doesn't pre-learn them the way real new_game() saves always
+	# do; exclude them from the "disabled when poor" check for that reason.
 	var poor := _state()
 	var poor_options: Array = RULES.options_manuals(poor)
 	assert(poor_options.size() == RULES.MOVES.size() + RULES.INTERNAL.size() + RULES.LIGHTNESS.size() + 1, "Every catalog entry plus one leave row should always be listed.")
 	for option in poor_options.slice(0, poor_options.size() - 1):
+		if str(option[2]) in ["learn_internal_foundational_qi", "learn_lightness_basic_footwork"]:
+			continue
 		assert(bool(option[3]), "Every unlearned entry should be disabled when the hero has no silver.")
 	var leave_row: Array = poor_options.back()
 	assert(str(leave_row[2]) == "leave" and not (leave_row.size() > 3 and bool(leave_row[3])), "Leaving the manuals shop must always stay enabled.")
@@ -163,9 +180,14 @@ func _initialize() -> void:
 
 	# 藏经阁 (0.91.0): a read-only summary, every row disabled, of every
 	# learned move/internal/lightness art and whether it's equipped.
+	# 流云剑法/断岳刀法 (0.94.0) are innate -- always shown even with nothing
+	# else learned, scaled by swordsmanship/bladesmanship specialty rank.
 	var empty_library: Array = RULES.options_library(_state())
-	assert(empty_library.size() == 2 and str(empty_library[0][2]) == "none" and bool(empty_library[0][3]), "An untrained hero should see a disabled placeholder row explaining nothing is learned yet.")
-	var empty_leave: Array = empty_library[1]
+	assert(empty_library.size() == 3, "An untrained hero should still see the two innate techniques plus the leave row.")
+	for row in empty_library.slice(0, 2):
+		assert(bool(row[3]), "The innate-technique rows must be disabled -- they only inform, they're always available in battle regardless.")
+	assert(str(empty_library[0][0]).begins_with("流云剑法") and str(empty_library[1][0]).begins_with("断岳刀法"), "The two innate techniques should be 流云剑法 and 断岳刀法 specifically.")
+	var empty_leave: Array = empty_library[2]
 	assert(str(empty_leave[2]) == "leave" and not (empty_leave.size() > 3 and bool(empty_leave[3])), "藏经阁's leave option must always stay enabled, even with nothing learned.")
 
 	var learned := _state()
@@ -173,8 +195,8 @@ func _initialize() -> void:
 	RULES.learn_move(learned, "stone_splitting_fist")
 	RULES.learn_internal(learned, "purple_mist_art")
 	var library_options: Array = RULES.options_library(learned)
-	assert(library_options.size() == 3, "Two learned arts should produce two info rows plus the leave row.")
-	for row in library_options.slice(0, 2):
+	assert(library_options.size() == 5, "Two innate techniques plus two learned arts should produce four info rows plus the leave row.")
+	for row in library_options.slice(0, 4):
 		assert(bool(row[3]), "Every 藏经阁 info row must be disabled -- it only informs, it never lets you train/equip from here.")
 	var move_row := library_options.filter(func(o): return str(o[0]).begins_with("裂石拳"))
 	assert(move_row.size() == 1 and "已装备" in str(move_row[0][0]), "A learned-and-equipped move should show its equipped state in 藏经阁.")

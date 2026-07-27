@@ -33,6 +33,18 @@ func _initialize() -> void:
 	assert(state.end_week(), "Ending the week after resting should succeed.")
 	assert(state.data.week == 13 and not bool(state.data.acted_this_week), "Ending the week should advance it by exactly one and clear the acted flag.")
 
+	# Traveling between cities is free (0.94.0) -- it never spends the
+	# week's action, unlike training/gathering/crafting/battles, and stays
+	# available even after the hero has already acted this week.
+	state.new_game()
+	state.data.acted_this_week = true
+	assert(state.travel("luoyang"), "Traveling should succeed even after the week's action is already spent.")
+	assert(str(state.data.location) == "luoyang" and bool(state.data.acted_this_week), "Travel must not clear or otherwise touch the acted flag.")
+	assert(state.travel("qingyun"), "A second trip in the same week must also succeed -- travel has no per-week limit.")
+	assert(str(state.data.location) == "qingyun", "Travel should freely move between locations any number of times per week.")
+	state.data.week = state.FINAL_WEEK
+	assert(not state.travel("luoyang"), "Travel must still be blocked once the two-year deadline is reached, same as every other action.")
+
 	var future_save: Dictionary = state.data.duplicate(true)
 	future_save.save_version = state.SAVE_VERSION + 1
 	assert(not state.import_data(future_save), "Saves from newer versions must be rejected.")
@@ -88,7 +100,6 @@ func _initialize() -> void:
 	legacy_material_save.save_version = 6
 	legacy_material_save.erase("materials")
 	legacy_material_save.erase("consumables")
-	legacy_material_save.erase("forge_level")
 	legacy_material_save.erase("herbarium")
 	legacy_material_save.erase("mineralogy")
 	legacy_material_save.erase("training_records")
@@ -197,7 +208,7 @@ func _initialize() -> void:
 	pre_wuxue_save.erase("equipped_lightness")
 	assert(state.import_data(pre_wuxue_save), "Saves from before the wuxue system should still migrate.")
 	assert(state.data.learned_moves.is_empty() and state.data.equipped_moves.is_empty(), "A save with no wuxue fields should default to no moves learned or equipped.")
-	assert(str(state.data.equipped_internal) == "" and str(state.data.equipped_lightness) == "", "A save with no wuxue fields should default to no internal art or lightness skill equipped.")
+	assert(str(state.data.equipped_internal) == "foundational_qi" and str(state.data.equipped_lightness) == "basic_footwork", "A save with no wuxue fields should retroactively gain and equip the baseline 基础内功/基础身法 (0.94.0), since every hero always secretly knew these.")
 
 	var corrupted_wuxue_save: Dictionary = state.data.duplicate(true)
 	corrupted_wuxue_save.learned_moves = ["stone_splitting_fist", "a_deleted_move_id"]
@@ -209,9 +220,9 @@ func _initialize() -> void:
 	assert(state.import_data(corrupted_wuxue_save), "A save with stale or malformed wuxue data must still load.")
 	assert(state.data.learned_moves == ["stone_splitting_fist"], "An unrecognized move id must be dropped from the learned list on migration.")
 	assert(state.data.equipped_moves == ["stone_splitting_fist"], "equipped_moves must drop any id that is not (or no longer) actually learned.")
-	assert(typeof(state.data.learned_internal) == TYPE_ARRAY and state.data.learned_internal.is_empty(), "A non-array learned_internal field must be repaired to an empty list.")
-	assert(str(state.data.equipped_internal) == "", "An internal art that is not actually learned (post-repair) must be cleared rather than trusted.")
-	assert(str(state.data.equipped_lightness) == "", "A lightness skill that was never learned must be cleared, even if it names a real catalog id.")
+	assert(typeof(state.data.learned_internal) == TYPE_ARRAY and state.data.learned_internal == ["foundational_qi"], "A non-array learned_internal field must be repaired to just the baseline 基础内功 (0.94.0), not left empty.")
+	assert(str(state.data.equipped_internal) == "foundational_qi", "An internal art that is not actually learned (post-repair) must be cleared, then fall back to the baseline 基础内功 rather than staying blank.")
+	assert(str(state.data.equipped_lightness) == "basic_footwork", "A lightness skill that was never learned must be cleared, then fall back to the baseline 基础身法 rather than staying blank.")
 
 	var oversized_moves_save: Dictionary = state.data.duplicate(true)
 	oversized_moves_save.learned_moves = ["stone_splitting_fist", "night_triple_blade"]
@@ -251,7 +262,11 @@ func _initialize() -> void:
 	state.data.silver = 1000
 	var wuxue_power_before := int(state.power())
 	assert(WUXUE_RULES.learn_move(state.data, "stone_splitting_fist") and WUXUE_RULES.learn_internal(state.data, "purple_mist_art") and WUXUE_RULES.learn_lightness(state.data, "ripple_steps"), "A well-funded fresh save should be able to learn one manual of each kind.")
-	assert(int(state.power()) == wuxue_power_before + 7, "One equipped move (+3), Purple Mist Art's damage bonus (+2), and Ripple Steps' move bonus doubled (+2) should raise power by exactly seven.")
+	# Purple Mist Art (damage_bonus 2) replaces the baseline 基础内功
+	# (damage_bonus 1, equipped by default since 0.94.0), so its net delta
+	# is only +1 here, not its full +2 -- baseline lightness (基础身法)
+	# grants no move bonus at all, so Ripple Steps' delta is unaffected.
+	assert(int(state.power()) == wuxue_power_before + 6, "One equipped move (+3), Purple Mist Art's net damage delta over the baseline internal art (+1), and Ripple Steps' move bonus doubled (+2) should raise power by exactly six.")
 
 	var power_before_leveling := int(state.power())
 	assert(WUXUE_RULES.upgrade_move(state.data, "stone_splitting_fist"), "A well-funded hero should be able to level up a learned, equipped move.")

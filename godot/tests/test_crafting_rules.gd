@@ -10,7 +10,7 @@ func _initialize() -> void:
 	assert(not RULES.can_craft(state, "thunder_stone"), "霹雳石 is no longer a craftable recipe (0.88.0) -- it's still buyable at 西市's 杂货铺, just not forged here.")
 	assert(not RULES.apply(state, "invalid"), "Unknown recipes must never mutate state.")
 
-	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "forge_level": 0, "mining": 0, "strength": 0, "agility": 0, "insight": 0, "constitution": 0, "owned_weapons": [], "owned_armors": [], "herbarium": {}, "mineralogy": {}}
+	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "mining": 0, "strength": 0, "agility": 0, "insight": 0, "constitution": 0, "owned_weapons": [], "owned_armors": [], "herbarium": {}, "mineralogy": {}}
 	var broke_alchemy: Array = RULES.options_alchemy(broke)
 	assert(broke_alchemy.size() == 6, "A fresh recruit with no materials should still see a sixth way out of the alchemy building.")
 	for option in broke_alchemy.slice(0, 5):
@@ -111,4 +111,4 @@ func _initialize() -> void:
 	quit()
 
 func _state() -> Dictionary:
-	return {"materials": {"herbs": 3, "ore": 5}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 20, "forge_level": 0, "mining": 0, "strength": 4, "agility": 5, "insight": 4, "constitution": 4, "hp": 45, "max_hp": 45, "owned_weapons": [], "equipped_weapon": "", "owned_armors": [], "equipped_armor": "", "herbarium": {}, "mineralogy": {}}
+	return {"materials": {"herbs": 3, "ore": 5}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 20, "mining": 0, "strength": 4, "agility": 5, "insight": 4, "constitution": 4, "hp": 45, "max_hp": 45, "owned_weapons": [], "equipped_weapon": "", "owned_armors": [], "equipped_armor": "", "herbarium": {}, "mineralogy": {}}

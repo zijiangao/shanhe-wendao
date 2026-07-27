@@ -40,16 +40,15 @@ func _capture() -> void:
 		reachable = visible_rect.intersects(Rect2(label_rect.position, Vector2(1, 1)))
 
 	# A fresh save must read as bare-handed/unarmored, not silently claim
-	# "青锋剑" (the legacy tempering flavor weapon) is already equipped just
-	# because forge_level exists -- that was misleading once the shop's real
-	# equipped_weapon/equipped_armor system shipped alongside it. Tempering
-	# is still a real, separate bonus and must still be visible somewhere.
+	# "青锋剑" (the legacy tempering flavor weapon) is already equipped.
+	# 淬炼/forge_level was removed entirely (0.94.0) -- it must no longer
+	# appear anywhere on the character sheet.
 	var shows_bare_default := labels.any(func(l): return "已装备：赤手" in str((l as Label).text))
 	var shows_qingfeng_as_equipped := labels.any(func(l): return "已装备：青锋剑" in str((l as Label).text))
-	var shows_tempering_separately := labels.any(func(l): return "淬炼层数" in str((l as Label).text))
+	var no_tempering_shown := not labels.any(func(l): return "淬炼" in str((l as Label).text))
 
 	var valid := has_scroll and mastery_label_found and reachable
-	valid = valid and shows_bare_default and not shows_qingfeng_as_equipped and shows_tempering_separately
+	valid = valid and shows_bare_default and not shows_qingfeng_as_equipped and no_tempering_shown
 
 	# A workshop-crafted weapon (an id that was never in ShopRules.WEAPONS at
 	# all) must still show its real title here, not a blank name -- this is
@@ -64,5 +63,5 @@ func _capture() -> void:
 	valid = valid and shows_crafted_weapon
 
 	if not valid:
-		push_error("Character screen regression: has_scroll=%s mastery_label_found=%s reachable=%s shows_bare_default=%s shows_qingfeng_as_equipped=%s shows_tempering_separately=%s shows_crafted_weapon=%s" % [has_scroll, mastery_label_found, reachable, shows_bare_default, shows_qingfeng_as_equipped, shows_tempering_separately, shows_crafted_weapon])
+		push_error("Character screen regression: has_scroll=%s mastery_label_found=%s reachable=%s shows_bare_default=%s shows_qingfeng_as_equipped=%s no_tempering_shown=%s shows_crafted_weapon=%s" % [has_scroll, mastery_label_found, reachable, shows_bare_default, shows_qingfeng_as_equipped, no_tempering_shown, shows_crafted_weapon])
 	quit(0 if valid else 11)

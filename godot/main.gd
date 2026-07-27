@@ -1730,7 +1730,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.93.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.94.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2039,7 +2039,7 @@ func _show_character() -> void:
 	var armor_entry: Dictionary = SHOP_RULES.ARMORS.get(armor_id, CRAFTING_RULES.RECIPES.get(armor_id, {}))
 	var armor_title: String = str(armor_entry.get("item_name", armor_entry.get("title", "")))
 	var armor_text := "无护具" if armor_id == "" else "%s（防御+%d）" % [armor_title, SHOP_RULES.armor_defense_bonus(GameState.data)]
-	items.text = "已装备：%s · %s\n淬炼层数：%d/3（额外攻击 +%d，随手法生效，与是否佩剑无关）\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [weapon_text, armor_text, GameState.data.forge_level, GameState.data.forge_level, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
+	items.text = "已装备：%s · %s\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [weapon_text, armor_text, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
 	items.add_theme_font_size_override("font_size", 17)
 	items.add_theme_color_override("font_color", Color("#f4eee2"))
 	info.add_child(items)

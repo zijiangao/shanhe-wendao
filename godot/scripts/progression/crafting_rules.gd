@@ -5,7 +5,6 @@ const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rul
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 
-const MAX_FORGE_LEVEL := 3
 ## "specimens" (0.85.0) names specific 药谱/矿谱 collectibles a recipe needs,
 ## on top of the plain herbs/ore pool -- reuses the same named items 采药/挖矿
 ## already roll into state.herbarium/state.mineralogy, giving those specimens
