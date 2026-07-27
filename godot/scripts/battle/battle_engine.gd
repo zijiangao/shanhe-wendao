@@ -33,11 +33,11 @@ static func normal_damage_range(player: Dictionary) -> Vector2i:
 	return Vector2i(base, base + 2)
 
 static func cloud_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3
+	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3 + WUXUE_RULES.move_damage_bonus(player, "cloud_sword")
 	return Vector2i(base, base + 3)
 
 static func blade_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
+	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "blade_technique")
 	return Vector2i(base, base + 3)
 
 static func blade_armor_break(player: Dictionary) -> int:
@@ -145,13 +145,15 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
 		return _failure("林清霜无法施展流云剑法。")
+	if "cloud_sword" not in Array(player.get("equipped_moves", [])):
+		return _failure("尚未装备流云剑法，请先在背包中装备。")
 	var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
 	if not RULES.can_attack_cell(battle, target, true, int(player.qi), qi_cost):
 		return _failure("流云剑法需要%d点真气，并只能攻击同一直线三格内的敌人。" % qi_cost)
 	var enemy_index := RULES.enemy_at(battle, target)
 	var exposure := RULES.enemy_exposure(battle.enemies[enemy_index])
 	var exposure_bonus := exposure * 4
-	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.skill_mastery.cloud / 3) + exposure_bonus + _roll_range(rng, 0, 3)
+	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.skill_mastery.cloud / 3) + WUXUE_RULES.move_damage_bonus(player, "cloud_sword") + exposure_bonus + _roll_range(rng, 0, 3)
 	player.qi = int(player.qi) - qi_cost
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
 	battle.enemies[enemy_index].exposure = 0
@@ -166,6 +168,8 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 static func _blade_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
 		return _failure("林清霜无法施展断岳刀法。")
+	if "blade_technique" not in Array(player.get("equipped_moves", [])):
+		return _failure("尚未装备断岳刀法，请先在背包中装备。")
 	if int(player.get("qi", 0)) < BLADE_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
 		return _failure("断岳刀法需要%d点真气，并只能攻击相邻敌人。" % BLADE_QI_COST)
 	var enemy_index := RULES.enemy_at(battle, target)

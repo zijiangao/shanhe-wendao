@@ -7,6 +7,9 @@ func _capture() -> void:
 	var game_state = root.get_node("GameState")
 	game_state.new_game()
 	game_state.data.acted_this_week = false
+	# 断岳刀法 became a normal learnable/equippable move (0.95.0), no longer
+	# innate -- equip it directly so the action bar still shows it here.
+	game_state.data.equipped_moves = ["blade_technique"]
 	assert(game_state.start_qingyun_spar_battle("bladesmanship"), "The sparring preview needs a live blade lesson.")
 	game_state.data.tutorial = {"map": true, "location": true, "sparring": true, "battle": true, "battle_tactics": true, "battle_arts": true, "battle_defense": true}
 	var main_scene: Control = load("res://scenes/main.tscn").instantiate()

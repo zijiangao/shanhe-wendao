@@ -180,26 +180,26 @@ func _initialize() -> void:
 
 	# 藏经阁 (0.91.0): a read-only summary, every row disabled, of every
 	# learned move/internal/lightness art and whether it's equipped.
-	# 流云剑法/断岳刀法 (0.94.0) are innate -- always shown even with nothing
-	# else learned, scaled by swordsmanship/bladesmanship specialty rank.
+	# 流云剑法/断岳刀法 became normal learnable/equippable moves (0.95.0), no
+	# longer innate -- an untrained hero sees nothing but the leave row.
 	var empty_library: Array = RULES.options_library(_state())
-	assert(empty_library.size() == 3, "An untrained hero should still see the two innate techniques plus the leave row.")
-	for row in empty_library.slice(0, 2):
-		assert(bool(row[3]), "The innate-technique rows must be disabled -- they only inform, they're always available in battle regardless.")
-	assert(str(empty_library[0][0]).begins_with("流云剑法") and str(empty_library[1][0]).begins_with("断岳刀法"), "The two innate techniques should be 流云剑法 and 断岳刀法 specifically.")
-	var empty_leave: Array = empty_library[2]
+	assert(empty_library.size() == 1, "An untrained hero with nothing learned at all should see only the leave row.")
+	var empty_leave: Array = empty_library[0]
 	assert(str(empty_leave[2]) == "leave" and not (empty_leave.size() > 3 and bool(empty_leave[3])), "藏经阁's leave option must always stay enabled, even with nothing learned.")
 
 	var learned := _state()
 	learned.silver = 1000
+	RULES.learn_move(learned, "cloud_sword")
 	RULES.learn_move(learned, "stone_splitting_fist")
 	RULES.learn_internal(learned, "purple_mist_art")
 	var library_options: Array = RULES.options_library(learned)
-	assert(library_options.size() == 5, "Two innate techniques plus two learned arts should produce four info rows plus the leave row.")
-	for row in library_options.slice(0, 4):
+	assert(library_options.size() == 4, "Two learned moves plus one learned internal art should produce three info rows plus the leave row.")
+	for row in library_options.slice(0, 3):
 		assert(bool(row[3]), "Every 藏经阁 info row must be disabled -- it only informs, it never lets you train/equip from here.")
 	var move_row := library_options.filter(func(o): return str(o[0]).begins_with("裂石拳"))
 	assert(move_row.size() == 1 and "已装备" in str(move_row[0][0]), "A learned-and-equipped move should show its equipped state in 藏经阁.")
+	var cloud_row := library_options.filter(func(o): return str(o[0]).begins_with("流云剑法"))
+	assert(cloud_row.size() == 1, "流云剑法 should now appear as a normal learned move in 藏经阁, exactly like any other.")
 
 	print("Wuxue rules tests passed.")
 	quit()

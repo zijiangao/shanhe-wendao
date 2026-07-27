@@ -1,25 +1,21 @@
 class_name WuxueRules
 extends RefCounted
 
-const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
-
-## 流云剑法/断岳刀法 (0.94.0) are innate combat techniques every hero starts
-## with -- always available in battle regardless of the wuxue system (see
-## BattleEngine's "skill"/"blade_skill" actions), never learned/equipped
-## through MOVES. They still belong in 藏经阁's summary, scaled by
-## swordsmanship/bladesmanship specialty rank rather than a wuxue level.
-const INNATE_MOVES := [
-	{"title": "流云剑法", "discipline": "swordsmanship"},
-	{"title": "断岳刀法", "discipline": "bladesmanship"},
-]
-
 const MAX_EQUIPPED_MOVES := 2
 const MAX_LEVEL := 10
 const LIGHTNESS_LEVEL_DIVISOR := 3
 const TRAIN_XP_MIN := 8
 const TRAIN_XP_MAX := 15
 
+## 流云剑法/断岳刀法 (0.95.0) are normal learnable/equippable moves like any
+## other -- no longer innate/always-available (reverted from 0.94.0's
+## special-cased treatment, since the user found that inconsistent with
+## every other wuxue art). Not learned by default; a fresh hero has no
+## equipped_moves at all until something is purchased at 秘籍阁, same as
+## 裂石拳/暗夜三刀 already worked.
 const MOVES := {
+	"cloud_sword": {"title": "流云剑法", "description": "直线三格，无视护甲，引爆破绽。", "price": 120, "qi_cost": 8, "upgrade_base": 35, "level_damage_bonus": 1},
+	"blade_technique": {"title": "断岳刀法", "description": "相邻重击，永久破甲并制造2层破绽。", "price": 120, "qi_cost": 6, "upgrade_base": 35, "level_damage_bonus": 1},
 	"stone_splitting_fist": {"title": "裂石拳", "description": "内力贯拳，无视护甲。", "price": 150, "qi_cost": 5, "upgrade_base": 30, "level_damage_bonus": 1},
 	"night_triple_blade": {"title": "暗夜三刀", "description": "三刀连斩，刀刀见血。", "price": 260, "qi_cost": 9, "upgrade_base": 50, "level_damage_bonus": 1},
 }
@@ -139,9 +135,6 @@ static func _train(state: Dictionary, level_key: String, id: String, xp_gain: in
 ## (those actions stay at 演武场/秘籍阁 respectively).
 static func options_library(state: Dictionary) -> Array:
 	var options := []
-	for innate in INNATE_MOVES:
-		var level := int(state.get(str(innate.discipline), 0))
-		options.append(["%s · %s" % [str(innate.title), TRAINING_RULES.specialty_rank_name(level)], "与生俱来的技法，随%s精通而增强。" % ("剑法" if innate.discipline == "swordsmanship" else "刀法"), "none", true])
 	var equipped_moves: Array = state.get("equipped_moves", [])
 	for id in Array(state.get("learned_moves", [])):
 		options.append(_library_row(str(MOVES[id].title), move_level(state, id), id in equipped_moves))

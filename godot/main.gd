@@ -244,6 +244,9 @@ func _capture_store_screenshots() -> void:
 
 	GameState.data.acted_this_week = false
 	GameState.data.investigations = ["archer", "herbs"]
+	# 流云剑法 became a normal learnable/equippable move (0.95.0) -- equip it
+	# so the "skill_impact" capture below still shows a real skill effect.
+	GameState.data.equipped_moves = ["cloud_sword"]
 	GameState.start_blackreed_battle()
 	GameState.data.battle.turn = 3
 	GameState.data.battle.enemies[2].y = GameState.data.battle.player_y
@@ -1730,7 +1733,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.94.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.95.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2016,9 +2019,7 @@ func _show_character() -> void:
 	if WUXUE_RULES.LIGHTNESS.has(lightness_id):
 		var lightness_item: Dictionary = WUXUE_RULES.LIGHTNESS[lightness_id]
 		wuxue_lines.append("%s Lv.%d · %s" % [str(lightness_item.title), WUXUE_RULES.lightness_level(GameState.data, lightness_id), str(lightness_item.description)])
-	skill_card.text = "流云剑法 · 直线三格 · %d真气：无视护甲并引爆破绽。\n断岳刀法 · 相邻重击 · %d真气：永久破甲并制造2层破绽；刀法精通后破甲翻倍。" % [TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)), BATTLE_ENGINE.BLADE_QI_COST]
-	if not wuxue_lines.is_empty():
-		skill_card.text += "\n" + "\n".join(wuxue_lines)
+	skill_card.text = "\n".join(wuxue_lines) if not wuxue_lines.is_empty() else "尚未装备任何招式/内功/轻功，请前往洛阳西市秘籍阁学习。"
 	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_card.add_theme_font_size_override("font_size", 17)
 	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))

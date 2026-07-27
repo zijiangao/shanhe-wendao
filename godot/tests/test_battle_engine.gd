@@ -370,6 +370,15 @@ func _test_wuxue_moves_require_equip() -> void:
 	var blade_attempt: Dictionary = ENGINE.player_action(battle, unequipped, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
 	assert(not bool(blade_attempt.ok), "Night Triple Blade should also require its move be equipped first.")
 
+	# 流云剑法/断岳刀法 became normal learnable/equippable moves (0.95.0), no
+	# longer innate -- they now require the same equip gate as any other.
+	var bare := _player_fixture()
+	bare.equipped_moves = []
+	var cloud_attempt: Dictionary = ENGINE.player_action(battle, bare, "skill", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(cloud_attempt.ok) and int(battle.ap) == 2, "流云剑法 must now require the move be equipped first, same as 裂石拳.")
+	var blade_technique_attempt: Dictionary = ENGINE.player_action(battle, bare, "blade_skill", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(blade_technique_attempt.ok), "断岳刀法 must now require the move be equipped first, same as 暗夜三刀.")
+
 	var ally_battle := _fixture()
 	ally_battle.active_unit = "ally"
 	ally_battle.ap = 2
@@ -410,6 +419,29 @@ func _test_wuxue_move_damage() -> void:
 	low_qi_battle.enemies[0].y = 1
 	var starved_attempt: Dictionary = ENGINE.player_action(low_qi_battle, low_qi_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
 	assert(not bool(starved_attempt.ok) and int(low_qi_player.qi) == 4, "Four qi should be insufficient for Stone Splitting Fist's five-qi cost, and a failed use must not spend any.")
+
+	# 流云剑法/断岳刀法 now level like any other move (0.95.0) -- guard against
+	# the exact "preview formula updated, inline execution formula forgotten"
+	# bug class this file already documents for other moves, by comparing a
+	# same-seed-RNG plain skill hit before and after leveling cloud_sword up.
+	var cloud_plain_battle := _fixture()
+	cloud_plain_battle.erase("ally")
+	cloud_plain_battle.active_unit = "hero"
+	cloud_plain_battle.ap = 2
+	cloud_plain_battle.enemies[0].x = 1
+	cloud_plain_battle.enemies[0].y = 4
+	var cloud_plain_player := _player_fixture()
+	var cloud_plain_result: Dictionary = ENGINE.player_action(cloud_plain_battle, cloud_plain_player, "skill", Vector2i(1, 4), _seeded_rng())
+	var cloud_leveled_battle := _fixture()
+	cloud_leveled_battle.erase("ally")
+	cloud_leveled_battle.active_unit = "hero"
+	cloud_leveled_battle.ap = 2
+	cloud_leveled_battle.enemies[0].x = 1
+	cloud_leveled_battle.enemies[0].y = 4
+	var cloud_leveled_player := _player_fixture()
+	cloud_leveled_player.move_levels = {"cloud_sword": 2}
+	var cloud_leveled_result: Dictionary = ENGINE.player_action(cloud_leveled_battle, cloud_leveled_player, "skill", Vector2i(1, 4), _seeded_rng())
+	assert(int(cloud_leveled_result.damage) == int(cloud_plain_result.damage) + 1, "Leveling 流云剑法 from 1 to 2 should raise its actual inflicted damage by exactly its one-point-per-level bonus, not just the preview formula.")
 
 	var blade_battle := _fixture()
 	blade_battle.erase("ally")
@@ -804,5 +836,10 @@ func _player_fixture() -> Dictionary:
 		"insight": 4,
 		"xp": 0,
 		"qi": 20,
-		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0}
+		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
+		# 流云剑法/断岳刀法 became normal learnable/equippable moves (0.95.0) --
+		# most of this file's tests are about damage formulas, not the equip
+		# gate itself, so the shared fixture equips both by default. Tests
+		# specifically covering the equip requirement override this array.
+		"equipped_moves": ["cloud_sword", "blade_technique"]
 	}

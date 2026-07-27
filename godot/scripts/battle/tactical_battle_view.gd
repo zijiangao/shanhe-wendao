@@ -150,9 +150,11 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		actions.append(["寒锋守势", "frost_guard"])
 	else:
 		var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
-		actions.append(["流云剑法 · %d真气" % qi_cost, "skill"])
-		actions.append(["断岳刀法 · %d真气" % BATTLE_ENGINE.BLADE_QI_COST, "blade_skill"])
 		var equipped_moves: Array = player.get("equipped_moves", [])
+		if "cloud_sword" in equipped_moves:
+			actions.append(["流云剑法 · %d真气" % qi_cost, "skill"])
+		if "blade_technique" in equipped_moves:
+			actions.append(["断岳刀法 · %d真气" % BATTLE_ENGINE.BLADE_QI_COST, "blade_skill"])
 		if "stone_splitting_fist" in equipped_moves:
 			actions.append(["裂石拳 · %d真气" % BATTLE_ENGINE.STONE_FIST_QI_COST, "stone_splitting_fist"])
 		if "night_triple_blade" in equipped_moves:
