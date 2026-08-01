@@ -24,14 +24,11 @@ func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, av
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(art)
 
-	var side_panel := PanelContainer.new()
-	side_panel.position = Vector2(855, 30)
-	side_panel.size = Vector2(390, 500)
-	side_panel.add_theme_stylebox_override("panel", UI_THEME.panel_box(UI_THEME.DARK_TINT))
-	add_child(side_panel)
 	var side := VBoxContainer.new()
+	side.position = Vector2(855, 30)
+	side.size = Vector2(390, 500)
 	side.add_theme_constant_override("separation", 12)
-	side_panel.add_child(side)
+	add_child(side)
 	var objective := Label.new()
 	objective.text = "主线：%s\n\n本周：%s\n气血：%d/%d\n修为：%d\n声望：%d" % [objective_text, "已行动，可结束本周" if bool(state.get("acted_this_week", false)) else "尚未行动", state.hp, state.max_hp, state.xp, state.renown]
 	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
