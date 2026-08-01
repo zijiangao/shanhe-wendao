@@ -13,12 +13,26 @@ const TRAIN_XP_MAX := 15
 ## every other wuxue art). Not learned by default; a fresh hero has no
 ## equipped_moves at all until something is purchased at 秘籍阁, same as
 ## 裂石拳/暗夜三刀 already worked.
+##
+## "category" (0.102.0) sorts moves into 藏经阁's four weapon-style
+## groupings -- purely a display grouping, no gameplay effect. No 枪棍
+## move exists yet, so that category simply never appears in 藏经阁 until
+## one is added (see CATEGORIES below).
 const MOVES := {
-	"cloud_sword": {"title": "流云剑法", "description": "直线三格，无视护甲，引爆破绽。", "price": 120, "qi_cost": 8, "upgrade_base": 35, "level_damage_bonus": 1},
-	"blade_technique": {"title": "断岳刀法", "description": "相邻重击，永久破甲并制造2层破绽。", "price": 120, "qi_cost": 6, "upgrade_base": 35, "level_damage_bonus": 1},
-	"stone_splitting_fist": {"title": "裂石拳", "description": "内力贯拳，无视护甲。", "price": 150, "qi_cost": 5, "upgrade_base": 30, "level_damage_bonus": 1},
-	"night_triple_blade": {"title": "暗夜三刀", "description": "三刀连斩，刀刀见血。", "price": 260, "qi_cost": 9, "upgrade_base": 50, "level_damage_bonus": 1},
+	"cloud_sword": {"title": "流云剑法", "description": "直线三格，无视护甲，引爆破绽。", "price": 120, "qi_cost": 8, "upgrade_base": 35, "level_damage_bonus": 1, "category": "sword"},
+	"blade_technique": {"title": "断岳刀法", "description": "相邻重击，永久破甲并制造2层破绽。", "price": 120, "qi_cost": 6, "upgrade_base": 35, "level_damage_bonus": 1, "category": "blade"},
+	"stone_splitting_fist": {"title": "裂石拳", "description": "内力贯拳，无视护甲。", "price": 150, "qi_cost": 5, "upgrade_base": 30, "level_damage_bonus": 1, "category": "fist"},
+	"night_triple_blade": {"title": "暗夜三刀", "description": "三刀连斩，刀刀见血。", "price": 260, "qi_cost": 9, "upgrade_base": 50, "level_damage_bonus": 1, "category": "blade"},
 }
+
+## Display order for 藏经阁's move groupings -- categories with no learned
+## moves are simply skipped, not shown as an empty header.
+const CATEGORIES := [
+	["fist", "拳掌"],
+	["sword", "剑法"],
+	["blade", "刀法"],
+	["staff", "枪棍"],
+]
 
 ## 基础内功/基础身法 (0.94.0): every hero starts already knowing these, same
 ## as 流云剑法/断岳刀法 always being available in battle -- new_game() learns
@@ -133,11 +147,22 @@ static func _train(state: Dictionary, level_key: String, id: String, xp_gain: in
 ## lightness art and its current level/equip state -- every row is disabled
 ## since this screen only informs, it never lets you train/equip/upgrade
 ## (those actions stay at 演武场/秘籍阁 respectively).
+## 藏经阁's moves are grouped under 拳掌/剑法/刀法/枪棍 headers (0.102.0),
+## purely for display -- categories with nothing learned are skipped
+## entirely, not shown as an empty header (no 枪棍 move exists yet, so
+## that heading simply never appears until one is added).
 static func options_library(state: Dictionary) -> Array:
 	var options := []
 	var equipped_moves: Array = state.get("equipped_moves", [])
-	for id in Array(state.get("learned_moves", [])):
-		options.append(_library_row(str(MOVES[id].title), move_level(state, id), id in equipped_moves))
+	var learned_moves: Array = Array(state.get("learned_moves", []))
+	for category in CATEGORIES:
+		var rows := []
+		for id in learned_moves:
+			if str(MOVES.get(id, {}).get("category", "")) == str(category[0]):
+				rows.append(_library_row(str(MOVES[id].title), move_level(state, id), id in equipped_moves))
+		if not rows.is_empty():
+			options.append(_library_header(str(category[1])))
+			options.append_array(rows)
 	var equipped_internal := str(state.get("equipped_internal", ""))
 	for id in Array(state.get("learned_internal", [])):
 		options.append(_library_row(str(INTERNAL[id].title), internal_level(state, id), id == equipped_internal))
@@ -146,6 +171,9 @@ static func options_library(state: Dictionary) -> Array:
 		options.append(_library_row(str(LIGHTNESS[id].title), lightness_level(state, id), id == equipped_lightness))
 	options.append(["返回", "不消耗行动点，返回青云门。", "leave"])
 	return options
+
+static func _library_header(name: String) -> Array:
+	return ["── %s ──" % name, "", "none", true]
 
 static func _library_row(title: String, level: int, equipped: bool) -> Array:
 	var rank := "已大成" if level >= MAX_LEVEL else "Lv.%d" % level
