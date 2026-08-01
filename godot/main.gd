@@ -42,6 +42,7 @@ var content: Control
 var status_label: Label
 var toast_label: Label
 var end_week_button: Button
+var rest_button: Button
 var battle_mode: String = "move"
 var last_rewards: Dictionary = {}
 var dialogue_event: String = ""
@@ -556,6 +557,16 @@ func _build_shell() -> void:
 		dev_button.pressed.connect(_switch_screen.bind("dev"))
 		header.add_child(dev_button)
 
+	rest_button = Button.new()
+	rest_button.text = "调息"
+	rest_button.flat = true
+	rest_button.add_theme_font_size_override("font_size", 16)
+	rest_button.add_theme_color_override("font_color", Color("#dfbf74"))
+	rest_button.add_theme_color_override("font_hover_color", Color("#ffe9b8"))
+	rest_button.add_theme_color_override("font_disabled_color", Color("#6c6455"))
+	rest_button.pressed.connect(_rest_requested)
+	header.add_child(rest_button)
+
 	end_week_button = Button.new()
 	end_week_button.text = "结束本周"
 	end_week_button.flat = true
@@ -812,8 +823,6 @@ func _show_map() -> void:
 	content.add_child(view)
 	view.setup(MAP_TEXTURE, GameState.data, places)
 	view.destination_requested.connect(_map_destination_requested)
-	view.enter_requested.connect(func(): screen = "location"; _rebuild())
-	view.rest_requested.connect(_rest_requested)
 
 func _continue_auto_save() -> void:
 	if SaveManager.load_auto():
@@ -822,6 +831,10 @@ func _continue_auto_save() -> void:
 		_toast("自动存档读取失败，请检查存档文件。")
 
 func _rest_requested() -> void:
+	if NAVIGATION_RULES.blocks_header_navigation(screen):
+		AudioFeedback.play("error")
+		_toast("当前流程不能调息，请先按 Esc / 手柄 B 打开暂停菜单。")
+		return
 	if not GameState.rest():
 		_toast(_time_action_failure_message())
 		return
@@ -1659,6 +1672,29 @@ func _show_quests() -> void:
 	hint.add_theme_color_override("font_color", Color("#cfc8b8"))
 	box.add_child(hint)
 
+	# 江湖纪事 (0.100.0): moved here from the world map's now-removed side
+	# panel -- collapsed by default, click to expand/collapse in place.
+	box.add_child(HSeparator.new())
+	var chronicle_toggle := Button.new()
+	chronicle_toggle.flat = true
+	chronicle_toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	chronicle_toggle.add_theme_font_size_override("font_size", 18)
+	chronicle_toggle.add_theme_color_override("font_color", Color("#dfbf74"))
+	chronicle_toggle.add_theme_color_override("font_hover_color", Color("#ffe9b8"))
+	box.add_child(chronicle_toggle)
+	var chronicle_label := Label.new()
+	chronicle_label.text = "· " + "\n· ".join(PackedStringArray(GameState.data.log))
+	chronicle_label.add_theme_font_size_override("font_size", 16)
+	chronicle_label.add_theme_color_override("font_color", Color("#e5ddc8"))
+	chronicle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	chronicle_label.visible = false
+	box.add_child(chronicle_label)
+	chronicle_toggle.text = "▸ 江湖纪事"
+	chronicle_toggle.pressed.connect(func():
+		chronicle_label.visible = not chronicle_label.visible
+		chronicle_toggle.text = "%s 江湖纪事" % ("▾" if chronicle_label.visible else "▸")
+	)
+
 func _show_achievements() -> void:
 	_clear_content()
 	var backdrop := ColorRect.new()
@@ -1733,7 +1769,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.99.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.100.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3125,6 +3161,10 @@ func _update_status() -> void:
 		var acted := bool(GameState.data.get("acted_this_week", false))
 		end_week_button.disabled = GameState.deadline_reached() or not acted
 		end_week_button.tooltip_text = "本周已行动，点击进入下一周。" if acted else "本周尚未行动，选择一件事情去做吧。"
+	if rest_button != null:
+		var already_acted := bool(GameState.data.get("acted_this_week", false))
+		rest_button.disabled = GameState.deadline_reached() or already_acted
+		rest_button.tooltip_text = "本周已行动，请先结束本周。" if already_acted else "调息一周，恢复全部气血与真气。"
 
 func _end_week_requested() -> void:
 	if NAVIGATION_RULES.blocks_header_navigation(screen):

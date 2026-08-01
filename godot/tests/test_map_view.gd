@@ -32,35 +32,35 @@ func _capture() -> void:
 	var huashan_shown: bool = shown.call("华山")
 	var emei_shown: bool = shown.call("峨眉山")
 
-	# 江湖纪事 (0.97.0) moved into a collapsed-by-default section at the
-	# bottom of the side panel; the redundant "当前所在" panel title was
-	# removed since the map marker itself already labels the current location.
+	# The map's side panel (title, 主线/本周/气血 status text, and the
+	# 进入/调息/江湖纪事 buttons) was removed entirely (0.100.0) -- the map
+	# now only shows the art and its clickable location markers.
 	var no_current_location_title: bool = not shown.call("当前所在 ·")
-	# The side panel's remaining 主线/本周/气血/修为/声望 status text block was
-	# removed entirely (0.98.0), per explicit user request -- only the
-	# 进入/调息/江湖纪事 buttons remain.
 	var no_objective_text: bool = not shown.call("主线：") and not shown.call("气血：")
-	var chronicle_toggle: Button = null
-	for b in main_scene.find_children("*", "Button", true, false):
-		if (b as Button).text.ends_with("江湖纪事"):
-			chronicle_toggle = b
-	var chronicle_label: Label = null
-	for l in labels:
-		if str((l as Label).text).begins_with("· "):
-			chronicle_label = l
-	var chronicle_starts_collapsed := chronicle_toggle != null and chronicle_toggle.text.begins_with("▸") and chronicle_label != null and not chronicle_label.visible
-	var chronicle_expands := false
-	if chronicle_toggle != null:
-		chronicle_toggle.pressed.emit()
-		for frame in range(2):
-			await process_frame
-		chronicle_expands = chronicle_toggle.text.begins_with("▾") and chronicle_label.visible
+	# 调息 moved to the persistent header nav bar (visible on every screen,
+	# not just the map), so it's deliberately excluded from this check.
+	var no_side_buttons: bool = not main_scene.find_children("*", "Button", true, false).any(func(b): return (b as Button).text.begins_with("进入") or (b as Button).text.ends_with("江湖纪事"))
 
 	var buttons: Array = main_scene.find_children("*", "Button", true, false)
 	var huashan_button_ok: bool = buttons.any(func(b): return str((b as Button).tooltip_text) == "华山")
 	var emei_button_ok: bool = buttons.any(func(b): return str((b as Button).tooltip_text) == "峨眉山")
 
-	var luoyang_button: Array = buttons.filter(func(b): return str((b as Button).tooltip_text) == "洛阳城")
+	# Clicking the current-location marker itself now enters that location
+	# directly (destination_requested with the hero's own current location,
+	# which _map_destination_requested() already treats as "enter").
+	var current_marker: Array = buttons.filter(func(b): return str((b as Button).tooltip_text) == "青云门")
+	var enter_via_marker_ok := false
+	if current_marker.size() == 1:
+		(current_marker[0] as Button).pressed.emit()
+		for frame in range(2):
+			await process_frame
+		enter_via_marker_ok = main_scene.screen == "location"
+		main_scene.screen = "map"
+		main_scene._rebuild()
+		for frame in range(2):
+			await process_frame
+
+	var luoyang_button: Array = main_scene.find_children("*", "Button", true, false).filter(func(b): return str((b as Button).tooltip_text) == "洛阳城")
 	var travel_ok := false
 	if luoyang_button.size() == 1:
 		(luoyang_button[0] as Button).pressed.emit()
@@ -79,8 +79,44 @@ func _capture() -> void:
 	var quest_text_correct := quest_labels.any(func(l): return "黑苇疑云" in str((l as Label).text))
 	var quest_text_wrong := quest_labels.any(func(l): return "洛阳风云" in str((l as Label).text))
 
+	# 江湖纪事 (0.100.0) moved from the map's side panel into the quest
+	# journal screen, still collapsed by default.
+	var chronicle_toggle: Button = null
+	for b in main_scene.find_children("*", "Button", true, false):
+		if (b as Button).text.ends_with("江湖纪事"):
+			chronicle_toggle = b
+	var chronicle_label: Label = null
+	for l in quest_labels:
+		if str((l as Label).text).begins_with("· "):
+			chronicle_label = l
+	var chronicle_starts_collapsed := chronicle_toggle != null and chronicle_toggle.text.begins_with("▸") and chronicle_label != null and not chronicle_label.visible
+	var chronicle_expands := false
+	if chronicle_toggle != null:
+		chronicle_toggle.pressed.emit()
+		for frame in range(2):
+			await process_frame
+		chronicle_expands = chronicle_toggle.text.begins_with("▾") and chronicle_label.visible
+
+	# 调息 (0.100.0) moved to a persistent header button next to 结束本周,
+	# usable from any screen -- confirm it works and syncs its disabled
+	# state with acted_this_week just like 结束本周 already does.
+	game_state.new_game()
+	main_scene.screen = "map"
+	main_scene._rebuild()
+	for frame in range(2):
+		await process_frame
+	var rest_before_ok: bool = main_scene.rest_button != null and not main_scene.rest_button.disabled
+	var hp_before := int(game_state.data.hp)
+	game_state.data.hp = hp_before - 10
+	main_scene.rest_button.pressed.emit()
+	for frame in range(2):
+		await process_frame
+	var rest_worked: bool = int(game_state.data.hp) == int(game_state.data.max_hp) and bool(game_state.data.acted_this_week)
+	var rest_disabled_after: bool = main_scene.rest_button.disabled
+
 	var valid := luoyang_shown and huashan_shown and emei_shown and huashan_button_ok and emei_button_ok and luoyang_button.size() == 1 and travel_ok and quest_text_correct and not quest_text_wrong
-	valid = valid and no_current_location_title and chronicle_starts_collapsed and chronicle_expands and no_objective_text
+	valid = valid and no_current_location_title and no_objective_text and no_side_buttons and enter_via_marker_ok and chronicle_starts_collapsed and chronicle_expands
+	valid = valid and rest_before_ok and rest_worked and rest_disabled_after
 	if not valid:
-		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s no_current_location_title=%s chronicle_starts_collapsed=%s chronicle_expands=%s no_objective_text=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong, no_current_location_title, chronicle_starts_collapsed, chronicle_expands, no_objective_text])
+		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s no_current_location_title=%s no_objective_text=%s no_side_buttons=%s enter_via_marker_ok=%s chronicle_starts_collapsed=%s chronicle_expands=%s rest_before_ok=%s rest_worked=%s rest_disabled_after=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong, no_current_location_title, no_objective_text, no_side_buttons, enter_via_marker_ok, chronicle_starts_collapsed, chronicle_expands, rest_before_ok, rest_worked, rest_disabled_after])
 	quit(0 if valid else 22)

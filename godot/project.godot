@@ -34,8 +34,8 @@ window/stretch/mode="canvas_items"
 
 [gui]
 
-theme/custom="res://assets/theme/default_theme.tres"
 theme/default_font_multichannel_signed_distance_field=true
+theme/custom="res://assets/theme/default_theme.tres"
 
 [rendering]
 
