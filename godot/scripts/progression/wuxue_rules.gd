@@ -143,37 +143,32 @@ static func _train(state: Dictionary, level_key: String, id: String, xp_gain: in
 	state.wuxue_xp[id] = 0 if level >= MAX_LEVEL else xp
 	return {"ok": true, "leveled_up": leveled_up, "new_level": level, "xp": int(state.wuxue_xp[id]), "xp_needed": xp_needed(level) if level < MAX_LEVEL else 0}
 
-## 藏经阁 (0.91.0): a read-only summary of every learned move/internal/
-## lightness art and its current level/equip state -- every row is disabled
-## since this screen only informs, it never lets you train/equip/upgrade
-## (those actions stay at 演武场/秘籍阁 respectively).
-## 藏经阁's moves are grouped under 拳掌/剑法/刀法/枪棍 headers (0.102.0),
-## purely for display -- categories with nothing learned are skipped
-## entirely, not shown as an empty header (no 枪棍 move exists yet, so
-## that heading simply never appears until one is added).
-static func options_library(state: Dictionary) -> Array:
-	var options := []
-	var equipped_moves: Array = state.get("equipped_moves", [])
-	var learned_moves: Array = Array(state.get("learned_moves", []))
-	for category in CATEGORIES:
-		var rows := []
-		for id in learned_moves:
-			if str(MOVES.get(id, {}).get("category", "")) == str(category[0]):
+## 藏经阁 (0.91.0) is a read-only summary of learned wuxue -- every row is
+## disabled since this screen only informs, it never lets you train/equip/
+## upgrade (those actions stay at 演武场/秘籍阁 respectively). As of
+## 0.103.0 it's a left/right category browser (拳掌/剑法/刀法/枪棍/内功/轻功
+## buttons on the left, the selected category's learned wuxue on the
+## right) instead of one long grouped list -- this returns just the rows
+## for a single category_id ("fist"/"sword"/"blade"/"staff"/"internal"/
+## "lightness"), with a placeholder row when nothing is learned in it yet.
+static func options_library_category(state: Dictionary, category_id: String) -> Array:
+	var rows := []
+	if category_id == "internal":
+		var equipped_internal := str(state.get("equipped_internal", ""))
+		for id in Array(state.get("learned_internal", [])):
+			rows.append(_library_row(str(INTERNAL[id].title), internal_level(state, id), id == equipped_internal))
+	elif category_id == "lightness":
+		var equipped_lightness := str(state.get("equipped_lightness", ""))
+		for id in Array(state.get("learned_lightness", [])):
+			rows.append(_library_row(str(LIGHTNESS[id].title), lightness_level(state, id), id == equipped_lightness))
+	else:
+		var equipped_moves: Array = state.get("equipped_moves", [])
+		for id in Array(state.get("learned_moves", [])):
+			if str(MOVES.get(id, {}).get("category", "")) == category_id:
 				rows.append(_library_row(str(MOVES[id].title), move_level(state, id), id in equipped_moves))
-		if not rows.is_empty():
-			options.append(_library_header(str(category[1])))
-			options.append_array(rows)
-	var equipped_internal := str(state.get("equipped_internal", ""))
-	for id in Array(state.get("learned_internal", [])):
-		options.append(_library_row(str(INTERNAL[id].title), internal_level(state, id), id == equipped_internal))
-	var equipped_lightness := str(state.get("equipped_lightness", ""))
-	for id in Array(state.get("learned_lightness", [])):
-		options.append(_library_row(str(LIGHTNESS[id].title), lightness_level(state, id), id == equipped_lightness))
-	options.append(["返回", "不消耗行动点，返回青云门。", "leave"])
-	return options
-
-static func _library_header(name: String) -> Array:
-	return ["── %s ──" % name, "", "none", true]
+	if rows.is_empty():
+		rows.append(["尚未习得", "这一类武学尚未习得任何内容，请前往洛阳西市秘籍阁学习。", "none", true])
+	return rows
 
 static func _library_row(title: String, level: int, equipped: bool) -> Array:
 	var rank := "已大成" if level >= MAX_LEVEL else "Lv.%d" % level

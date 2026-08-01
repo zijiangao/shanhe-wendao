@@ -178,36 +178,28 @@ func _initialize() -> void:
 	var equipped_row := rich_options.filter(func(o): return str(o[2]) == "unequip_move_stone_splitting_fist")
 	assert(equipped_row.size() == 1, "A learned-and-auto-equipped move should offer an unequip action, not a learn action.")
 
-	# 藏经阁 (0.91.0): a read-only summary, every row disabled, of every
-	# learned move/internal/lightness art and whether it's equipped.
-	# 流云剑法/断岳刀法 became normal learnable/equippable moves (0.95.0), no
-	# longer innate -- an untrained hero sees nothing but the leave row.
-	var empty_library: Array = RULES.options_library(_state())
-	assert(empty_library.size() == 1, "An untrained hero with nothing learned at all should see only the leave row.")
-	var empty_leave: Array = empty_library[0]
-	assert(str(empty_leave[2]) == "leave" and not (empty_leave.size() > 3 and bool(empty_leave[3])), "藏经阁's leave option must always stay enabled, even with nothing learned.")
+	# 藏经阁 (0.91.0) is a read-only summary, every row disabled, of learned
+	# wuxue. As of 0.103.0 it's a left/right category browser instead of one
+	# long list -- options_library_category() returns just one category's
+	# rows at a time, with a placeholder when that category has nothing.
+	var empty_fist: Array = RULES.options_library_category(_state(), "fist")
+	assert(empty_fist.size() == 1 and str(empty_fist[0][2]) == "none" and bool(empty_fist[0][3]), "An untrained category should show a single disabled placeholder row, not an empty list.")
+	var empty_staff: Array = RULES.options_library_category(_state(), "staff")
+	assert(empty_staff.size() == 1, "枪棍 should also show the placeholder row, even though no move belongs to it at all yet.")
 
 	var learned := _state()
 	learned.silver = 1000
 	RULES.learn_move(learned, "cloud_sword")
 	RULES.learn_move(learned, "stone_splitting_fist")
 	RULES.learn_internal(learned, "purple_mist_art")
-	var library_options: Array = RULES.options_library(learned)
-	# 拳掌 header + 裂石拳 row, 剑法 header + 流云剑法 row, one internal row,
-	# one leave row -- 藏经阁 groups moves by category (0.102.0), skipping
-	# any category (like 枪棍, which has no move at all yet) with nothing in it.
-	assert(library_options.size() == 6, "Two categorized moves (each with its own header) plus one learned internal art should produce six rows total, including the leave row.")
-	for row in library_options.slice(0, 5):
-		assert(bool(row[3]), "Every 藏经阁 row (including category headers) must be disabled -- it only informs, it never lets you train/equip from here.")
-	var move_row := library_options.filter(func(o): return str(o[0]).begins_with("裂石拳"))
-	assert(move_row.size() == 1 and "已装备" in str(move_row[0][0]), "A learned-and-equipped move should show its equipped state in 藏经阁.")
-	var cloud_row := library_options.filter(func(o): return str(o[0]).begins_with("流云剑法"))
-	assert(cloud_row.size() == 1, "流云剑法 should now appear as a normal learned move in 藏经阁, exactly like any other.")
-	var fist_header := library_options.filter(func(o): return "拳掌" in str(o[0]))
-	var sword_header := library_options.filter(func(o): return "剑法" in str(o[0]) and str(o[2]) == "none" and not str(o[0]).begins_with("流云剑法"))
-	assert(fist_header.size() == 1 and sword_header.size() == 1, "Category headers should appear for 拳掌 and 剑法, since each has a learned move.")
-	var staff_header := library_options.filter(func(o): return "枪棍" in str(o[0]))
-	assert(staff_header.is_empty(), "The 枪棍 category should not appear at all, since no move belongs to it yet.")
+	var fist_rows: Array = RULES.options_library_category(learned, "fist")
+	assert(fist_rows.size() == 1 and bool(fist_rows[0][3]) and "已装备" in str(fist_rows[0][0]) and str(fist_rows[0][0]).begins_with("裂石拳"), "拳掌 should show exactly the learned-and-equipped 裂石拳, disabled and marked equipped.")
+	var sword_rows: Array = RULES.options_library_category(learned, "sword")
+	assert(sword_rows.size() == 1 and str(sword_rows[0][0]).begins_with("流云剑法"), "剑法 should show exactly 流云剑法, now a normal learned move like any other.")
+	var blade_rows: Array = RULES.options_library_category(learned, "blade")
+	assert(blade_rows.size() == 1 and str(blade_rows[0][2]) == "none" and bool(blade_rows[0][3]) and not str(blade_rows[0][0]).begins_with("流云剑法") and not str(blade_rows[0][0]).begins_with("裂石拳"), "刀法 should show its own placeholder, not leak rows from other categories.")
+	var internal_rows: Array = RULES.options_library_category(learned, "internal")
+	assert(internal_rows.size() == 1 and "紫霞神功" in str(internal_rows[0][0]), "内功 should show the learned internal art.")
 
 	print("Wuxue rules tests passed.")
 	quit()

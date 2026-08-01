@@ -32,6 +32,11 @@ const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
+## 藏经阁 (0.103.0): left-column category buttons, in display order. The
+## first four match WuxueRules.MOVES' "category" field; 内功/轻功 aren't
+## move categories at all, so they're handled separately in
+## WuxueRules.options_library_category() rather than via that same field.
+const LIBRARY_CATEGORIES := [["fist", "拳掌"], ["sword", "剑法"], ["blade", "刀法"], ["staff", "枪棍"], ["internal", "内功"], ["lightness", "轻功"]]
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 const CREDITS_PATH := "res://data/credits.json"
@@ -43,6 +48,7 @@ var status_label: Label
 var toast_label: Label
 var end_week_button: Button
 var battle_mode: String = "move"
+var library_category: String = "fist"
 var last_rewards: Dictionary = {}
 var dialogue_event: String = ""
 var dialogue_index: int = 0
@@ -772,6 +778,7 @@ func _rebuild() -> void:
 		"settings": _show_settings()
 		"controls": _show_controls()
 		"achievements": _show_achievements()
+		"library": _show_library()
 		"credits": _show_credits()
 		"battle": _show_battle()
 		"victory": _show_victory()
@@ -1001,10 +1008,7 @@ func _location_action_requested(action_id: String) -> void:
 				return
 			_show_gathering_menu()
 		"library":
-			choice_event = "library"
-			choice_prompt = "藏经阁 · 已习得武学一览"
-			choice_options = WUXUE_RULES.options_library(GameState.data)
-			screen = "choice"
+			screen = "library"
 			_rebuild()
 		"workshop":
 			if GameState.deadline_reached() or bool(GameState.data.get("acted_this_week", false)):
@@ -1191,8 +1195,6 @@ func _show_choice() -> void:
 		choice_title = "炼 药 坊"
 	elif choice_event == "forge":
 		choice_title = "锻 造 坊"
-	elif choice_event == "library":
-		choice_title = "藏 经 阁"
 	if choice_event.begins_with("market"):
 		choice_title = "西 市 坊 市"
 	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_title)
@@ -1672,6 +1674,63 @@ func _show_quests() -> void:
 		chronicle_toggle.text = "%s 江湖纪事" % ("▾" if chronicle_label.visible else "▸")
 	)
 
+## 藏经阁 (0.103.0): left/right category browser -- 拳掌/剑法/刀法/枪棍/内功/
+## 轻功 buttons on the left select which category's learned wuxue shows on
+## the right. Replaces the old single long grouped list.
+func _show_library() -> void:
+	_clear_content()
+	var backdrop := ColorRect.new()
+	backdrop.color = Color("#d8cfbd")
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(backdrop)
+	var panel := UI_THEME.framed_panel(content, Vector2(155, 28), Vector2(970, 520), UI_THEME.PARCHMENT_TINT, 14)
+	var title := Label.new()
+	title.text = "藏 经 阁"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#193128"))
+	panel.add_child(title)
+
+	var body := HBoxContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 20)
+	panel.add_child(body)
+
+	var left := VBoxContainer.new()
+	left.custom_minimum_size.x = 190
+	left.add_theme_constant_override("separation", 10)
+	body.add_child(left)
+	for pair in LIBRARY_CATEGORIES:
+		var category_id: String = pair[0]
+		var category_button := UI_THEME.action_button(str(pair[1]), Color("#8b493b") if library_category == category_id else Color("#315f4b"))
+		category_button.custom_minimum_size.y = 50
+		category_button.pressed.connect(func(): library_category = category_id; _rebuild())
+		left.add_child(category_button)
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left.add_child(spacer)
+	var leave := UI_THEME.action_button("返回", Color("#4d5550"))
+	leave.custom_minimum_size.y = 50
+	leave.pressed.connect(func(): screen = "location"; _rebuild())
+	left.add_child(leave)
+
+	var right_scroll := ScrollContainer.new()
+	right_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(right_scroll)
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 10)
+	right_scroll.add_child(right)
+	for row in WUXUE_RULES.options_library_category(GameState.data, library_category):
+		var entry := Label.new()
+		entry.text = "%s\n%s" % [str(row[0]), str(row[1])]
+		entry.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		entry.add_theme_font_size_override("font_size", 18)
+		entry.add_theme_color_override("font_color", Color("#f4eee2"))
+		entry.add_theme_stylebox_override("normal", _box(Color("#294438")))
+		right.add_child(entry)
+
 func _show_achievements() -> void:
 	_clear_content()
 	var backdrop := ColorRect.new()
@@ -1746,7 +1805,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.102.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.103.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
