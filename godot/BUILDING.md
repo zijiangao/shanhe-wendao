@@ -228,6 +228,8 @@ The Qingyun training menu also offers a repeatable, nonlethal sparring battle. I
 
 Run `res://tests/test_qingyun_spar_view.gd` without `--headless` to capture `qingyun_spar_preview.png` at 1280×720 and verify that the shipping battle UI shows the rotating lesson and chosen weapon focus.
 
+As of 2026-08-01, 天下舆图's side panel also lost its remaining 主线/本周/气血/修为/声望 status text entirely (0.99.0), per explicit follow-up request -- only the 进入/调息/江湖纪事 buttons remain. `WorldMapView.setup()`'s now-unused `objective_text` parameter was removed (previously the only caller, `main.gd`, computed it via `_quest_objective()` just to pass it in); `_quest_objective()` itself is untouched and still used elsewhere (quests screen, tutorial content).
+
 As of 2026-08-01, 天下舆图's side panel lost its dark framed background entirely (0.98.0) -- the `PanelContainer` wrapper (and its `UI_THEME.panel_box(DARK_TINT)` stylebox) was replaced with a plain `VBoxContainer` at the same position/size, so the panel's text/buttons now sit directly over the map art with no boxed frame around them.
 
 As of 2026-08-01, 天下舆图's side panel was reorganized (0.97.0): removed the redundant "当前所在 · X" title label (the current-location map marker already labels itself "当前所在"), and moved 江湖纪事 (the adventure log) from a fixed overlay panel in the map's bottom-left corner into a collapsible section at the bottom of the side panel -- collapsed by default (▸ 江湖纪事), click to expand/collapse in place (▾ 江湖纪事), matching every other panel's screen space rather than floating over the map art. `test_map_view.gd` extended to cover both changes.

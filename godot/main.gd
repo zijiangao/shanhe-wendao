@@ -810,7 +810,7 @@ func _show_map() -> void:
 	var places: Array[String] = ["qingyun", "blackreed", "luoyang", "huashan", "emei"]
 	var view: WorldMapView = WORLD_MAP_VIEW.instantiate()
 	content.add_child(view)
-	view.setup(MAP_TEXTURE, GameState.data, _quest_objective(), places)
+	view.setup(MAP_TEXTURE, GameState.data, places)
 	view.destination_requested.connect(_map_destination_requested)
 	view.enter_requested.connect(func(): screen = "location"; _rebuild())
 	view.rest_requested.connect(_rest_requested)
@@ -1733,7 +1733,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.98.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.99.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

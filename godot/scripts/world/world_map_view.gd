@@ -16,7 +16,7 @@ const MARKERS := {
 	"emei": Vector2(510, 400)
 }
 
-func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, available_places: Array[String]) -> void:
+func setup(map_texture: Texture2D, state: Dictionary, available_places: Array[String]) -> void:
 	var art := TextureRect.new()
 	art.texture = map_texture
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -29,12 +29,6 @@ func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, av
 	side.size = Vector2(390, 500)
 	side.add_theme_constant_override("separation", 12)
 	add_child(side)
-	var objective := Label.new()
-	objective.text = "主线：%s\n\n本周：%s\n气血：%d/%d\n修为：%d\n声望：%d" % [objective_text, "已行动，可结束本周" if bool(state.get("acted_this_week", false)) else "尚未行动", state.hp, state.max_hp, state.xp, state.renown]
-	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	objective.add_theme_font_size_override("font_size", 18)
-	objective.add_theme_color_override("font_color", Color("#f6f0e4"))
-	side.add_child(objective)
 	var enter := _action_button("进入%s" % PLACE_NAMES.get(str(state.location), "当前地点"), Color("#315746"))
 	enter.pressed.connect(func(): enter_requested.emit())
 	side.add_child(enter)

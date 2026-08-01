@@ -36,6 +36,10 @@ func _capture() -> void:
 	# bottom of the side panel; the redundant "当前所在" panel title was
 	# removed since the map marker itself already labels the current location.
 	var no_current_location_title: bool = not shown.call("当前所在 ·")
+	# The side panel's remaining 主线/本周/气血/修为/声望 status text block was
+	# removed entirely (0.98.0), per explicit user request -- only the
+	# 进入/调息/江湖纪事 buttons remain.
+	var no_objective_text: bool = not shown.call("主线：") and not shown.call("气血：")
 	var chronicle_toggle: Button = null
 	for b in main_scene.find_children("*", "Button", true, false):
 		if (b as Button).text.ends_with("江湖纪事"):
@@ -76,7 +80,7 @@ func _capture() -> void:
 	var quest_text_wrong := quest_labels.any(func(l): return "洛阳风云" in str((l as Label).text))
 
 	var valid := luoyang_shown and huashan_shown and emei_shown and huashan_button_ok and emei_button_ok and luoyang_button.size() == 1 and travel_ok and quest_text_correct and not quest_text_wrong
-	valid = valid and no_current_location_title and chronicle_starts_collapsed and chronicle_expands
+	valid = valid and no_current_location_title and chronicle_starts_collapsed and chronicle_expands and no_objective_text
 	if not valid:
-		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s no_current_location_title=%s chronicle_starts_collapsed=%s chronicle_expands=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong, no_current_location_title, chronicle_starts_collapsed, chronicle_expands])
+		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s no_current_location_title=%s chronicle_starts_collapsed=%s chronicle_expands=%s no_objective_text=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong, no_current_location_title, chronicle_starts_collapsed, chronicle_expands, no_objective_text])
 	quit(0 if valid else 22)
