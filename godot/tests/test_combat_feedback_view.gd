@@ -22,7 +22,7 @@ func _capture() -> void:
 	# 流云剑法 became a normal learnable/equippable move (0.95.0), no longer
 	# innate -- equip it directly so both the "skill" action and its action
 	# bar button still work here.
-	game_state.data.equipped_moves = ["cloud_sword"]
+	game_state.data.learned_moves = ["cloud_sword"]
 	game_state.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": true}
 	game_state.start_blackreed_battle()
 	var battle: Dictionary = game_state.data.battle

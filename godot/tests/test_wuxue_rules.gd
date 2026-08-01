@@ -22,18 +22,15 @@ func _initialize() -> void:
 
 	state.silver = 1000
 	assert(RULES.learn_move(state, "stone_splitting_fist"), "1000 silver should easily afford the cheaper move.")
-	assert(int(state.silver) == 850 and "stone_splitting_fist" in Array(state.learned_moves) and "stone_splitting_fist" in Array(state.equipped_moves), "Learning a move with a free slot should charge its price and auto-equip it.")
+	assert(int(state.silver) == 850 and "stone_splitting_fist" in Array(state.learned_moves), "Learning a move should charge its price and make it immediately usable, with no separate equip step (0.104.0).")
 	assert(not RULES.learn_move(state, "stone_splitting_fist"), "Learning an already-known move must be rejected, not double-charge.")
 
+	# 0.104.0 removed the two-slot equip cap for moves entirely -- learning a
+	# third and fourth move must succeed with no capacity gating at all.
 	assert(RULES.learn_move(state, "night_triple_blade"), "The second move should also be affordable and learnable.")
-	assert(Array(state.equipped_moves).size() == RULES.MAX_EQUIPPED_MOVES, "Both moves should now be auto-equipped, filling the two-slot cap.")
-
-	assert(RULES.unequip_move(state, "stone_splitting_fist"), "Unequipping a currently-equipped move should succeed.")
-	assert(not ("stone_splitting_fist" in Array(state.equipped_moves)) and "stone_splitting_fist" in Array(state.learned_moves), "Unequipping must leave the move learned but no longer active.")
-	assert(not RULES.unequip_move(state, "stone_splitting_fist"), "Unequipping a move that is already unequipped must fail.")
-	assert(RULES.equip_move(state, "stone_splitting_fist"), "Re-equipping a learned move with a free slot should succeed.")
-	assert(not RULES.equip_move(state, "stone_splitting_fist"), "Equipping an already-equipped move must fail.")
-	assert(not RULES.equip_move(state, "wind_walk"), "Equipping a move id that belongs to a different category (lightness) must fail.")
+	assert(RULES.learn_move(state, "cloud_sword"), "A third learned move must not be blocked by any slot cap now that moves need no equip step.")
+	assert(RULES.learn_move(state, "blade_technique"), "A fourth learned move must likewise succeed.")
+	assert(Array(state.learned_moves) == ["stone_splitting_fist", "night_triple_blade", "cloud_sword", "blade_technique"], "All four learned moves should be retained with no slot-based eviction.")
 
 	# Internal arts: learning auto-replaces, exactly like weapons/armor in ShopRules.
 	var internal_state := _state()
@@ -175,8 +172,8 @@ func _initialize() -> void:
 	rich.silver = 1000
 	RULES.learn_move(rich, "stone_splitting_fist")
 	var rich_options: Array = RULES.options_manuals(rich)
-	var equipped_row := rich_options.filter(func(o): return str(o[2]) == "unequip_move_stone_splitting_fist")
-	assert(equipped_row.size() == 1, "A learned-and-auto-equipped move should offer an unequip action, not a learn action.")
+	var learned_row := rich_options.filter(func(o): return str(o[2]) == "none" and str(o[0]).begins_with("已习得 · 裂石拳"))
+	assert(learned_row.size() == 1, "A learned move should show a read-only 已习得 row, not a learn action -- and (0.104.0) never an equip/unequip toggle.")
 
 	# 藏经阁 (0.91.0) is a read-only summary, every row disabled, of learned
 	# wuxue. As of 0.103.0 it's a left/right category browser instead of one
@@ -193,7 +190,7 @@ func _initialize() -> void:
 	RULES.learn_move(learned, "stone_splitting_fist")
 	RULES.learn_internal(learned, "purple_mist_art")
 	var fist_rows: Array = RULES.options_library_category(learned, "fist")
-	assert(fist_rows.size() == 1 and bool(fist_rows[0][3]) and "已装备" in str(fist_rows[0][0]) and str(fist_rows[0][0]).begins_with("裂石拳"), "拳掌 should show exactly the learned-and-equipped 裂石拳, disabled and marked equipped.")
+	assert(fist_rows.size() == 1 and bool(fist_rows[0][3]) and "已装备" not in str(fist_rows[0][0]) and str(fist_rows[0][0]).begins_with("裂石拳"), "拳掌 should show exactly the learned 裂石拳, disabled and (0.104.0) with no equipped-state suffix since moves no longer have one.")
 	var sword_rows: Array = RULES.options_library_category(learned, "sword")
 	assert(sword_rows.size() == 1 and str(sword_rows[0][0]).begins_with("流云剑法"), "剑法 should show exactly 流云剑法, now a normal learned move like any other.")
 	var blade_rows: Array = RULES.options_library_category(learned, "blade")
@@ -207,7 +204,7 @@ func _initialize() -> void:
 func _state() -> Dictionary:
 	return {
 		"silver": 100,
-		"learned_moves": [], "equipped_moves": [],
+		"learned_moves": [],
 		"learned_internal": [], "equipped_internal": "",
 		"learned_lightness": [], "equipped_lightness": "",
 	}

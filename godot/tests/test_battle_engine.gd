@@ -15,7 +15,7 @@ func _initialize() -> void:
 	_test_specialty_mastery_perks()
 	_test_armor_and_exposure_combo()
 	_test_equipped_gear_bonuses()
-	_test_wuxue_moves_require_equip()
+	_test_wuxue_moves_require_learning()
 	_test_wuxue_move_damage()
 	_test_wuxue_internal_and_lightness_bonuses()
 	_test_wuxue_leveling()
@@ -357,37 +357,46 @@ func _test_equipped_gear_bonuses() -> void:
 	var implicit_outcome: Dictionary = ENGINE.enemy_turn(implicit_battle, 20, _seeded_rng())
 	assert(int(implicit_outcome.hero_hp) == int(unarmored_outcome.hero_hp), "Calling enemy_turn with only three positional arguments must default armor to zero.")
 
-func _test_wuxue_moves_require_equip() -> void:
+func _test_wuxue_moves_require_learning() -> void:
 	var battle := _fixture()
 	battle.erase("ally")
 	battle.active_unit = "hero"
 	battle.ap = 2
 	battle.enemies[0].x = 2
 	battle.enemies[0].y = 1
-	var unequipped := _player_fixture()
-	var stone_attempt: Dictionary = ENGINE.player_action(battle, unequipped, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
-	assert(not bool(stone_attempt.ok) and int(battle.ap) == 2, "Using an unequipped move must fail without consuming an action point.")
-	var blade_attempt: Dictionary = ENGINE.player_action(battle, unequipped, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
-	assert(not bool(blade_attempt.ok), "Night Triple Blade should also require its move be equipped first.")
+	var unlearned := _player_fixture()
+	var stone_attempt: Dictionary = ENGINE.player_action(battle, unlearned, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(stone_attempt.ok) and int(battle.ap) == 2, "Using an unlearned move must fail without consuming an action point.")
+	var blade_attempt: Dictionary = ENGINE.player_action(battle, unlearned, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(blade_attempt.ok), "Night Triple Blade should also require the move be learned first.")
 
-	# 流云剑法/断岳刀法 became normal learnable/equippable moves (0.95.0), no
-	# longer innate -- they now require the same equip gate as any other.
+	# 流云剑法/断岳刀法 became normal learnable moves (0.95.0), no longer
+	# innate -- they still require the same learned gate as any other, but
+	# (0.104.0) no longer need a separate equip step once learned.
 	var bare := _player_fixture()
-	bare.equipped_moves = []
+	bare.learned_moves = []
 	var cloud_attempt: Dictionary = ENGINE.player_action(battle, bare, "skill", Vector2i(2, 1), _seeded_rng())
-	assert(not bool(cloud_attempt.ok) and int(battle.ap) == 2, "流云剑法 must now require the move be equipped first, same as 裂石拳.")
+	assert(not bool(cloud_attempt.ok) and int(battle.ap) == 2, "流云剑法 must still require the move be learned first, same as 裂石拳.")
 	var blade_technique_attempt: Dictionary = ENGINE.player_action(battle, bare, "blade_skill", Vector2i(2, 1), _seeded_rng())
-	assert(not bool(blade_technique_attempt.ok), "断岳刀法 must now require the move be equipped first, same as 暗夜三刀.")
+	assert(not bool(blade_technique_attempt.ok), "断岳刀法 must still require the move be learned first, same as 暗夜三刀.")
+
+	# A move that was learned but never "equipped" (0.104.0 removed the
+	# equip step/slot cap entirely) must still work -- this is the real
+	# behavioral proof the slot limit is gone, not just a field rename.
+	var never_equipped := _player_fixture()
+	never_equipped.learned_moves = ["stone_splitting_fist", "night_triple_blade", "cloud_sword", "blade_technique"]
+	var never_equipped_attempt: Dictionary = ENGINE.player_action(battle, never_equipped, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	assert(bool(never_equipped_attempt.ok), "A learned move with more than two total learned moves at once (impossible under the old two-slot cap) must still be usable.")
 
 	var ally_battle := _fixture()
 	ally_battle.active_unit = "ally"
 	ally_battle.ap = 2
 	ally_battle.enemies[0].x = 1
 	ally_battle.enemies[0].y = 3
-	var equipped_player := _player_fixture()
-	equipped_player.equipped_moves = ["stone_splitting_fist", "night_triple_blade"]
-	var ally_attempt: Dictionary = ENGINE.player_action(ally_battle, equipped_player, "stone_splitting_fist", Vector2i(1, 3), _seeded_rng())
-	assert(not bool(ally_attempt.ok), "林清霜 cannot use the hero's equipped moves on her own turn.")
+	var learned_player := _player_fixture()
+	learned_player.learned_moves = ["stone_splitting_fist", "night_triple_blade"]
+	var ally_attempt: Dictionary = ENGINE.player_action(ally_battle, learned_player, "stone_splitting_fist", Vector2i(1, 3), _seeded_rng())
+	assert(not bool(ally_attempt.ok), "林清霜 cannot use the hero's learned moves on her own turn.")
 
 func _test_wuxue_move_damage() -> void:
 	var stone_battle := _fixture()
@@ -400,7 +409,7 @@ func _test_wuxue_move_damage() -> void:
 	stone_battle.enemies[0].max_hp = 100
 	stone_battle.enemies[0].armor = 50
 	var stone_player := _player_fixture()
-	stone_player.equipped_moves = ["stone_splitting_fist"]
+	stone_player.learned_moves = ["stone_splitting_fist"]
 	stone_player.qi = 20
 	var stone_result: Dictionary = ENGINE.player_action(stone_battle, stone_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
 	var expected_stone := ENGINE.stone_fist_damage_range(stone_player)
@@ -409,7 +418,7 @@ func _test_wuxue_move_damage() -> void:
 	assert(int(stone_battle.enemies[0].hp) == 100 - int(stone_result.damage), "A heavily-armored enemy should take the exact same damage as an unarmored one -- Stone Splitting Fist ignores armor entirely.")
 
 	var low_qi_player := _player_fixture()
-	low_qi_player.equipped_moves = ["stone_splitting_fist"]
+	low_qi_player.learned_moves = ["stone_splitting_fist"]
 	low_qi_player.qi = 4
 	var low_qi_battle := _fixture()
 	low_qi_battle.erase("ally")
@@ -453,7 +462,7 @@ func _test_wuxue_move_damage() -> void:
 	blade_battle.enemies[0].max_hp = 200
 	blade_battle.enemies[0].armor = 0
 	var blade_player := _player_fixture()
-	blade_player.equipped_moves = ["night_triple_blade"]
+	blade_player.learned_moves = ["night_triple_blade"]
 	blade_player.qi = 20
 	var blade_result: Dictionary = ENGINE.player_action(blade_battle, blade_player, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
 	assert(bool(blade_result.ok) and int(blade_player.qi) == 11, "A legal Night Triple Blade should hit and consume nine qi.")
@@ -470,7 +479,7 @@ func _test_wuxue_move_damage() -> void:
 	armored_blade_battle.enemies[0].max_hp = 200
 	armored_blade_battle.enemies[0].armor = 2
 	var armored_blade_player := _player_fixture()
-	armored_blade_player.equipped_moves = ["night_triple_blade"]
+	armored_blade_player.learned_moves = ["night_triple_blade"]
 	armored_blade_player.qi = 20
 	var armored_blade_result: Dictionary = ENGINE.player_action(armored_blade_battle, armored_blade_player, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
 	assert(int(armored_blade_result.damage) < int(blade_result.damage), "Unlike Stone Splitting Fist, Night Triple Blade should subtract the enemy's armor from every one of its three hits.")
@@ -550,7 +559,7 @@ func _test_wuxue_leveling() -> void:
 	level1_battle.enemies[0].hp = 100
 	level1_battle.enemies[0].armor = 50
 	var level1_player := _player_fixture()
-	level1_player.equipped_moves = ["stone_splitting_fist"]
+	level1_player.learned_moves = ["stone_splitting_fist"]
 	level1_player.qi = 20
 	var level1_result: Dictionary = ENGINE.player_action(level1_battle, level1_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
 	assert(bool(level1_result.ok), "A level-1 Stone Splitting Fist should still land normally.")
@@ -564,7 +573,7 @@ func _test_wuxue_leveling() -> void:
 	level10_battle.enemies[0].hp = 100
 	level10_battle.enemies[0].armor = 50
 	var level10_player := _player_fixture()
-	level10_player.equipped_moves = ["stone_splitting_fist"]
+	level10_player.learned_moves = ["stone_splitting_fist"]
 	level10_player.qi = 20
 	level10_player.move_levels = {"stone_splitting_fist": WUXUE_RULES.MAX_LEVEL}
 	var level10_result: Dictionary = ENGINE.player_action(level10_battle, level10_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
@@ -837,9 +846,10 @@ func _player_fixture() -> Dictionary:
 		"xp": 0,
 		"qi": 20,
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
-		# 流云剑法/断岳刀法 became normal learnable/equippable moves (0.95.0) --
-		# most of this file's tests are about damage formulas, not the equip
-		# gate itself, so the shared fixture equips both by default. Tests
-		# specifically covering the equip requirement override this array.
-		"equipped_moves": ["cloud_sword", "blade_technique"]
+		# 流云剑法/断岳刀法 became normal learnable moves (0.95.0), usable
+		# without an equip step (0.104.0) -- most of this file's tests are
+		# about damage formulas, not the learned gate itself, so the shared
+		# fixture learns both by default. Tests specifically covering the
+		# learned-move gate override this array.
+		"learned_moves": ["cloud_sword", "blade_technique"]
 	}

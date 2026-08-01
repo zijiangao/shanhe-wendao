@@ -200,34 +200,25 @@ func _initialize() -> void:
 
 	var pre_wuxue_save: Dictionary = state.data.duplicate(true)
 	pre_wuxue_save.erase("learned_moves")
-	pre_wuxue_save.erase("equipped_moves")
 	pre_wuxue_save.erase("learned_internal")
 	pre_wuxue_save.erase("equipped_internal")
 	pre_wuxue_save.erase("learned_lightness")
 	pre_wuxue_save.erase("equipped_lightness")
 	assert(state.import_data(pre_wuxue_save), "Saves from before the wuxue system should still migrate.")
-	assert(state.data.learned_moves.is_empty() and state.data.equipped_moves.is_empty(), "A save with no wuxue fields should default to no moves learned or equipped.")
+	assert(state.data.learned_moves.is_empty(), "A save with no wuxue fields should default to no moves learned.")
 	assert(str(state.data.equipped_internal) == "foundational_qi" and str(state.data.equipped_lightness) == "basic_footwork", "A save with no wuxue fields should retroactively gain and equip the baseline 基础内功/基础身法 (0.94.0), since every hero always secretly knew these.")
 
 	var corrupted_wuxue_save: Dictionary = state.data.duplicate(true)
-	corrupted_wuxue_save.learned_moves = ["stone_splitting_fist", "a_deleted_move_id"]
-	corrupted_wuxue_save.equipped_moves = ["stone_splitting_fist", "night_triple_blade", "a_deleted_move_id"]
+	corrupted_wuxue_save.learned_moves = ["stone_splitting_fist", "night_triple_blade", "a_deleted_move_id"]
 	corrupted_wuxue_save.learned_internal = "not even an array"
 	corrupted_wuxue_save.equipped_internal = "purple_mist_art"
 	corrupted_wuxue_save.learned_lightness = ["ripple_steps"]
 	corrupted_wuxue_save.equipped_lightness = "wind_walk"
 	assert(state.import_data(corrupted_wuxue_save), "A save with stale or malformed wuxue data must still load.")
-	assert(state.data.learned_moves == ["stone_splitting_fist"], "An unrecognized move id must be dropped from the learned list on migration.")
-	assert(state.data.equipped_moves == ["stone_splitting_fist"], "equipped_moves must drop any id that is not (or no longer) actually learned.")
+	assert(state.data.learned_moves == ["stone_splitting_fist", "night_triple_blade"], "An unrecognized move id must be dropped from the learned list on migration; no slot cap applies (0.104.0) so both real moves survive.")
 	assert(typeof(state.data.learned_internal) == TYPE_ARRAY and state.data.learned_internal == ["foundational_qi"], "A non-array learned_internal field must be repaired to just the baseline 基础内功 (0.94.0), not left empty.")
 	assert(str(state.data.equipped_internal) == "foundational_qi", "An internal art that is not actually learned (post-repair) must be cleared, then fall back to the baseline 基础内功 rather than staying blank.")
 	assert(str(state.data.equipped_lightness) == "basic_footwork", "A lightness skill that was never learned must be cleared, then fall back to the baseline 基础身法 rather than staying blank.")
-
-	var oversized_moves_save: Dictionary = state.data.duplicate(true)
-	oversized_moves_save.learned_moves = ["stone_splitting_fist", "night_triple_blade"]
-	oversized_moves_save.equipped_moves = ["stone_splitting_fist", "night_triple_blade", "stone_splitting_fist"]
-	assert(state.import_data(oversized_moves_save), "A save whose equipped_moves list somehow grew past the slot cap must still load.")
-	assert(Array(state.data.equipped_moves).size() == WUXUE_RULES.MAX_EQUIPPED_MOVES, "equipped_moves must be clamped to the two-slot cap on migration, however it got oversized.")
 
 	var pre_leveling_save: Dictionary = state.data.duplicate(true)
 	pre_leveling_save.erase("move_levels")

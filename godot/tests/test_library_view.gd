@@ -37,7 +37,7 @@ func _capture() -> void:
 	for l in main_scene.find_children("*", "Label", true, false):
 		if "裂石拳" in (l as Label).text:
 			move_label = l
-	var fist_shown: bool = move_label != null and "已装备" in move_label.text
+	var fist_shown: bool = move_label != null and "已装备" not in move_label.text
 
 	var sword_button: Button = null
 	for b in buttons:

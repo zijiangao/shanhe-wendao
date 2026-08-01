@@ -250,9 +250,10 @@ func _capture_store_screenshots() -> void:
 
 	GameState.data.acted_this_week = false
 	GameState.data.investigations = ["archer", "herbs"]
-	# 流云剑法 became a normal learnable/equippable move (0.95.0) -- equip it
-	# so the "skill_impact" capture below still shows a real skill effect.
-	GameState.data.equipped_moves = ["cloud_sword"]
+	# 流云剑法 became a normal learnable move (0.95.0), usable without an
+	# equip step (0.104.0) -- learn it so the "skill_impact" capture below
+	# still shows a real skill effect.
+	GameState.data.learned_moves = ["cloud_sword"]
 	GameState.start_blackreed_battle()
 	GameState.data.battle.turn = 3
 	GameState.data.battle.enemies[2].y = GameState.data.battle.player_y
@@ -969,9 +970,10 @@ func _with_item_icons(options: Array) -> Array:
 	for option in options:
 		var item_id := str(option[2])
 		# Longer, category-specific prefixes must be checked before the
-		# shorter generic ones below -- "equip_move_x" begins with "equip_"
-		# too, and stripping only that would leave "move_x" instead of "x".
-		for prefix in ["learn_move_", "equip_move_", "unequip_move_", "upgrade_move_", "learn_internal_", "equip_internal_", "unequip_internal_", "upgrade_internal_", "learn_lightness_", "equip_lightness_", "unequip_lightness_", "upgrade_lightness_", "buy_", "equip_", "sell_"]:
+		# shorter generic ones below -- "equip_internal_x" begins with
+		# "equip_" too, and stripping only that would leave "internal_x"
+		# instead of "x".
+		for prefix in ["learn_move_", "upgrade_move_", "learn_internal_", "equip_internal_", "unequip_internal_", "upgrade_internal_", "learn_lightness_", "equip_lightness_", "unequip_lightness_", "upgrade_lightness_", "buy_", "equip_", "sell_"]:
 			if item_id.begins_with(prefix):
 				item_id = item_id.trim_prefix(prefix)
 				break
@@ -1319,10 +1321,6 @@ func _resolve_choice(route: String) -> void:
 		var ok := false
 		if route.begins_with("learn_move_"):
 			ok = WUXUE_RULES.learn_move(GameState.data, route.trim_prefix("learn_move_"))
-		elif route.begins_with("equip_move_"):
-			ok = WUXUE_RULES.equip_move(GameState.data, route.trim_prefix("equip_move_"))
-		elif route.begins_with("unequip_move_"):
-			ok = WUXUE_RULES.unequip_move(GameState.data, route.trim_prefix("unequip_move_"))
 		elif route.begins_with("upgrade_move_"):
 			ok = WUXUE_RULES.upgrade_move(GameState.data, route.trim_prefix("upgrade_move_"))
 		elif route.begins_with("learn_internal_"):
@@ -1805,7 +1803,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.103.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.104.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2079,7 +2077,7 @@ func _show_character() -> void:
 	info.add_child(skill_title)
 	var skill_card := Label.new()
 	var wuxue_lines: Array[String] = []
-	for move_id in Array(GameState.data.get("equipped_moves", [])):
+	for move_id in Array(GameState.data.get("learned_moves", [])):
 		var move_item: Dictionary = WUXUE_RULES.MOVES.get(str(move_id), {})
 		if not move_item.is_empty():
 			wuxue_lines.append("%s Lv.%d · %s" % [str(move_item.title), WUXUE_RULES.move_level(GameState.data, str(move_id)), str(move_item.description)])
@@ -2176,25 +2174,25 @@ func _show_backpack() -> void:
 		for id in unequipped_armors:
 			list.add_child(_backpack_equipment_row("armor", str(id), false))
 
-	var equipped_moves: Array = GameState.data.get("equipped_moves", [])
+	var learned_moves: Array = GameState.data.get("learned_moves", [])
+	if not learned_moves.is_empty():
+		list.add_child(_backpack_section_title("已习招式（战斗中皆可使用）"))
+		for id in learned_moves:
+			list.add_child(_backpack_wuxue_row("move", str(id), true))
+
 	var equipped_internal := str(GameState.data.get("equipped_internal", ""))
 	var equipped_lightness := str(GameState.data.get("equipped_lightness", ""))
-	if not equipped_moves.is_empty() or equipped_internal != "" or equipped_lightness != "":
-		list.add_child(_backpack_section_title("已修炼武学"))
-		for id in equipped_moves:
-			list.add_child(_backpack_wuxue_row("move", str(id), true))
+	if equipped_internal != "" or equipped_lightness != "":
+		list.add_child(_backpack_section_title("已修炼内功轻功"))
 		if equipped_internal != "":
 			list.add_child(_backpack_wuxue_row("internal", equipped_internal, true))
 		if equipped_lightness != "":
 			list.add_child(_backpack_wuxue_row("lightness", equipped_lightness, true))
 
-	var unequipped_moves: Array = Array(GameState.data.get("learned_moves", [])).filter(func(id): return str(id) not in equipped_moves)
 	var unequipped_internal: Array = Array(GameState.data.get("learned_internal", [])).filter(func(id): return str(id) != equipped_internal)
 	var unequipped_lightness: Array = Array(GameState.data.get("learned_lightness", [])).filter(func(id): return str(id) != equipped_lightness)
-	if not unequipped_moves.is_empty() or not unequipped_internal.is_empty() or not unequipped_lightness.is_empty():
-		list.add_child(_backpack_section_title("其余已习武学"))
-		for id in unequipped_moves:
-			list.add_child(_backpack_wuxue_row("move", str(id), false))
+	if not unequipped_internal.is_empty() or not unequipped_lightness.is_empty():
+		list.add_child(_backpack_section_title("其余已习内功轻功"))
 		for id in unequipped_internal:
 			list.add_child(_backpack_wuxue_row("internal", str(id), false))
 		for id in unequipped_lightness:
@@ -2248,32 +2246,28 @@ func _equip_from_backpack(category: String, id: String) -> void:
 	SaveManager.save_auto()
 	_show_backpack()
 
-## category is "move" (up to WUXUE_RULES.MAX_EQUIPPED_MOVES equipped at once),
+## category is "move" (always shown as usable, no equip step -- 0.104.0),
 ## "internal", or "lightness" (each single-slot, like weapon/armor).
 func _backpack_wuxue_row(category: String, id: String, equipped: bool) -> PanelContainer:
 	var catalog: Dictionary = WUXUE_RULES.MOVES if category == "move" else (WUXUE_RULES.INTERNAL if category == "internal" else WUXUE_RULES.LIGHTNESS)
 	var item: Dictionary = catalog.get(id, {})
 	var level: int = WUXUE_RULES.move_level(GameState.data, id) if category == "move" else (WUXUE_RULES.internal_level(GameState.data, id) if category == "internal" else WUXUE_RULES.lightness_level(GameState.data, id))
 	var name_text := "%s Lv.%d" % [str(item.get("title", id)), level]
-	var primary := ("【当前装备】" + name_text) if equipped else name_text
+	var primary := (("【可用】" if category == "move" else "【当前装备】") + name_text) if equipped else name_text
 	var secondary := str(item.get("description", ""))
 	var panel_color := Color("#294438") if equipped else Color("#4b514d")
 	var text_color := Color("#f2dfb3") if equipped else Color("#dbe0d9")
 	var action_button: Button = null
 	if not equipped:
-		var slot_full := category == "move" and Array(GameState.data.get("equipped_moves", [])).size() >= WUXUE_RULES.MAX_EQUIPPED_MOVES
-		action_button = UI_THEME.action_button("槽位已满" if slot_full else "装备", Color("#294438"))
-		action_button.disabled = slot_full
+		action_button = UI_THEME.action_button("装备", Color("#294438"))
 		action_button.custom_minimum_size = Vector2(96, 44)
 		action_button.add_theme_font_size_override("font_size", 16)
-		if not slot_full:
-			action_button.pressed.connect(_equip_wuxue_from_backpack.bind(category, id))
+		action_button.pressed.connect(_equip_wuxue_from_backpack.bind(category, id))
 	return _backpack_row(UI_THEME.item_icon(id), primary, secondary, panel_color, text_color, action_button)
 
 func _equip_wuxue_from_backpack(category: String, id: String) -> void:
 	var ok := false
 	match category:
-		"move": ok = WUXUE_RULES.equip_move(GameState.data, id)
 		"internal": ok = WUXUE_RULES.equip_internal(GameState.data, id)
 		_: ok = WUXUE_RULES.equip_lightness(GameState.data, id)
 	if not ok:

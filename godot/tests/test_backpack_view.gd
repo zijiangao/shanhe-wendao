@@ -42,7 +42,7 @@ func _capture() -> void:
 	var armor_ids: Array = SHOP_RULES.ARMORS.keys()
 	SHOP_RULES.equip_armor(game_state.data, armor_ids[0])
 
-	# Learn both moves (auto-equipping to fill the two-slot cap) and both
+	# Learn both moves (usable immediately, no equip step -- 0.104.0) and both
 	# internal arts / lightness skills in catalog order -- the second learn of
 	# each single-slot category auto-replaces the first, leaving the first as
 	# a learned-but-unequipped row so both new backpack sections render.
@@ -88,11 +88,12 @@ func _capture() -> void:
 	var equipped_armor_shown := labels.any(func(l): return "【当前装备】" in str((l as Label).text) and equipped_armor_title in str((l as Label).text))
 	var other_weapon_shown := labels.any(func(l): return other_weapon_title in str((l as Label).text) and "【当前装备】" not in str((l as Label).text))
 
-	# Wuxue: both equipped moves, the active internal art/lightness skill, and
-	# the bumped-out (learned-but-unequipped) internal art/lightness skill
-	# should all render in their respective new sections.
-	var stone_fist_shown := labels.any(func(l): return "【当前装备】" in str((l as Label).text) and "裂石拳" in str((l as Label).text))
-	var night_blade_shown := labels.any(func(l): return "【当前装备】" in str((l as Label).text) and "暗夜三刀" in str((l as Label).text))
+	# Wuxue: both learned moves (always shown as usable, no equip step --
+	# 0.104.0), the active internal art/lightness skill, and the bumped-out
+	# (learned-but-unequipped) internal art/lightness skill should all render
+	# in their respective new sections.
+	var stone_fist_shown := labels.any(func(l): return "【可用】" in str((l as Label).text) and "裂石拳" in str((l as Label).text))
+	var night_blade_shown := labels.any(func(l): return "【可用】" in str((l as Label).text) and "暗夜三刀" in str((l as Label).text))
 	var active_internal_shown := labels.any(func(l): return "【当前装备】" in str((l as Label).text) and "五行归元功" in str((l as Label).text))
 	var bumped_internal_shown := labels.any(func(l): return "紫霞神功" in str((l as Label).text) and "【当前装备】" not in str((l as Label).text))
 	var active_lightness_shown := labels.any(func(l): return "【当前装备】" in str((l as Label).text) and "神行百变" in str((l as Label).text))

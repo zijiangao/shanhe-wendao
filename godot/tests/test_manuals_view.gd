@@ -44,8 +44,8 @@ func _capture() -> void:
 	(stone_fist_buttons[0] as Button).pressed.emit()
 	for frame in range(3):
 		await process_frame
-	var stone_fist_unequip_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return "卸下 · 裂石拳" in b.text)
-	var learn_ok: bool = "stone_splitting_fist" in Array(game_state.data.learned_moves) and "stone_splitting_fist" in Array(game_state.data.equipped_moves) and int(game_state.data.silver) == 850 and stone_fist_unequip_buttons.size() == 1 and main_scene.screen == "choice" and str(main_scene.choice_event) == "market_manuals"
+	var stone_fist_learned_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return "已习得 · 裂石拳" in b.text)
+	var learn_ok: bool = "stone_splitting_fist" in Array(game_state.data.learned_moves) and int(game_state.data.silver) == 850 and stone_fist_learned_buttons.size() == 1 and main_scene.screen == "choice" and str(main_scene.choice_event) == "market_manuals"
 
 	# A learned move should also offer a direct "升级" (level-up) row, spending
 	# silver in place to raise its level rather than requiring a separate

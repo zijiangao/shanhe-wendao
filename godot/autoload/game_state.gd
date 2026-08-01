@@ -61,7 +61,6 @@ func new_game() -> void:
 		"learned_moves": [],
 		"learned_internal": ["foundational_qi"],
 		"learned_lightness": ["basic_footwork"],
-		"equipped_moves": [],
 		"equipped_internal": "foundational_qi",
 		"equipped_lightness": "basic_footwork",
 		"move_levels": {},
@@ -92,10 +91,10 @@ func new_game() -> void:
 func power() -> int:
 	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
 	var equipment_power := SHOP_RULES.weapon_attack_bonus(data) + SHOP_RULES.armor_defense_bonus(data)
-	var equipped_move_power := 0
-	for move_id in Array(data.get("equipped_moves", [])):
-		equipped_move_power += 3 + WUXUE_RULES.move_damage_bonus(data, str(move_id))
-	var wuxue_power := equipped_move_power + WUXUE_RULES.internal_damage_bonus(data) + WUXUE_RULES.internal_healing_bonus(data) / 2 + WUXUE_RULES.lightness_move_bonus(data) * 2
+	var learned_move_power := 0
+	for move_id in Array(data.get("learned_moves", [])):
+		learned_move_power += 3 + WUXUE_RULES.move_damage_bonus(data, str(move_id))
+	var wuxue_power := learned_move_power + WUXUE_RULES.internal_damage_bonus(data) + WUXUE_RULES.internal_healing_bonus(data) / 2 + WUXUE_RULES.lightness_move_bonus(data) * 2
 	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2 + equipment_power + wuxue_power)
 
 func weeks_left() -> int:
@@ -637,11 +636,6 @@ func _migrate_and_validate() -> void:
 	if typeof(data.get("learned_lightness", [])) != TYPE_ARRAY:
 		data.learned_lightness = []
 	data.learned_lightness = Array(data.learned_lightness).filter(func(id): return WUXUE_RULES.LIGHTNESS.has(str(id)))
-	if typeof(data.get("equipped_moves", [])) != TYPE_ARRAY:
-		data.equipped_moves = []
-	data.equipped_moves = Array(data.equipped_moves).filter(func(id): return str(id) in data.learned_moves)
-	if data.equipped_moves.size() > WUXUE_RULES.MAX_EQUIPPED_MOVES:
-		data.equipped_moves = data.equipped_moves.slice(0, WUXUE_RULES.MAX_EQUIPPED_MOVES)
 	if str(data.get("equipped_internal", "")) not in data.learned_internal:
 		data.equipped_internal = ""
 	if str(data.get("equipped_lightness", "")) not in data.learned_lightness:

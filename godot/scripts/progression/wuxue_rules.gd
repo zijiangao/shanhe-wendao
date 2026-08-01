@@ -1,7 +1,6 @@
 class_name WuxueRules
 extends RefCounted
 
-const MAX_EQUIPPED_MOVES := 2
 const MAX_LEVEL := 10
 const LIGHTNESS_LEVEL_DIVISOR := 3
 const TRAIN_XP_MIN := 8
@@ -11,8 +10,9 @@ const TRAIN_XP_MAX := 15
 ## other -- no longer innate/always-available (reverted from 0.94.0's
 ## special-cased treatment, since the user found that inconsistent with
 ## every other wuxue art). Not learned by default; a fresh hero has no
-## equipped_moves at all until something is purchased at 秘籍阁, same as
-## 裂石拳/暗夜三刀 already worked.
+## combat moves at all until something is purchased at 秘籍阁, same as
+## 裂石拳/暗夜三刀 already worked. Moves need no equip step (0.104.0) --
+## every learned move is usable in battle immediately.
 ##
 ## "category" (0.102.0) sorts moves into 藏经阁's four weapon-style
 ## groupings -- purely a display grouping, no gameplay effect. No 枪棍
@@ -162,10 +162,9 @@ static func options_library_category(state: Dictionary, category_id: String) -> 
 		for id in Array(state.get("learned_lightness", [])):
 			rows.append(_library_row(str(LIGHTNESS[id].title), lightness_level(state, id), id == equipped_lightness))
 	else:
-		var equipped_moves: Array = state.get("equipped_moves", [])
 		for id in Array(state.get("learned_moves", [])):
 			if str(MOVES.get(id, {}).get("category", "")) == category_id:
-				rows.append(_library_row(str(MOVES[id].title), move_level(state, id), id in equipped_moves))
+				rows.append(_library_row(str(MOVES[id].title), move_level(state, id), false))
 	if rows.is_empty():
 		rows.append(["尚未习得", "这一类武学尚未习得任何内容，请前往洛阳西市秘籍阁学习。", "none", true])
 	return rows
@@ -205,16 +204,12 @@ static func _level_row(title: String, level: int, cost: int, silver: int, route:
 
 static func _move_options(state: Dictionary) -> Array:
 	var learned: Array = state.get("learned_moves", [])
-	var equipped: Array = state.get("equipped_moves", [])
 	var silver := int(state.get("silver", 0))
 	var options := []
 	for id in MOVES:
 		var item: Dictionary = MOVES[id]
-		if id in equipped:
-			options.append(["卸下 · %s Lv.%d" % [str(item.title), move_level(state, id)], "%s（当前装备）" % str(item.description), "unequip_move_%s" % id, false])
-		elif id in learned:
-			var slot_full := equipped.size() >= MAX_EQUIPPED_MOVES
-			options.append(["装备 · %s Lv.%d" % [str(item.title), move_level(state, id)], "%s%s" % [str(item.description), "（招式槽位已满）" if slot_full else ""], "equip_move_%s" % id, slot_full])
+		if id in learned:
+			options.append(["已习得 · %s Lv.%d" % [str(item.title), move_level(state, id)], "%s（战斗中可直接使用）" % str(item.description), "none", true])
 		else:
 			options.append(["学习 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "learn_move_%s" % id, silver < int(item.price)])
 		if id in learned:
@@ -263,8 +258,6 @@ static func learn_move(state: Dictionary, id: String) -> bool:
 		return false
 	state.silver = int(state.get("silver", 0)) - int(MOVES[id].price)
 	state.learned_moves.append(id)
-	if Array(state.equipped_moves).size() < MAX_EQUIPPED_MOVES:
-		state.equipped_moves.append(id)
 	return true
 
 static func learn_internal(state: Dictionary, id: String) -> bool:
@@ -281,20 +274,6 @@ static func learn_lightness(state: Dictionary, id: String) -> bool:
 	state.silver = int(state.get("silver", 0)) - int(LIGHTNESS[id].price)
 	state.learned_lightness.append(id)
 	state.equipped_lightness = id
-	return true
-
-static func equip_move(state: Dictionary, id: String) -> bool:
-	if not MOVES.has(id) or id not in Array(state.get("learned_moves", [])) or id in Array(state.get("equipped_moves", [])):
-		return false
-	if Array(state.equipped_moves).size() >= MAX_EQUIPPED_MOVES:
-		return false
-	state.equipped_moves.append(id)
-	return true
-
-static func unequip_move(state: Dictionary, id: String) -> bool:
-	if id not in Array(state.get("equipped_moves", [])):
-		return false
-	state.equipped_moves.erase(id)
 	return true
 
 static func equip_internal(state: Dictionary, id: String) -> bool:

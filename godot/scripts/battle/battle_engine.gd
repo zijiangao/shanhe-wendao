@@ -68,11 +68,11 @@ static func hero_action_help(player: Dictionary) -> String:
 	var armor := SHOP_RULES.armor_defense_bonus(player)
 	if armor > 0:
 		text += "\n随身护甲：每次受创减免%d点" % armor
-	var equipped_moves: Array = player.get("equipped_moves", [])
-	if "stone_splitting_fist" in equipped_moves:
+	var learned_moves: Array = player.get("learned_moves", [])
+	if "stone_splitting_fist" in learned_moves:
 		var stone := stone_fist_damage_range(player)
 		text += "\n裂石拳 %d–%d（相邻，无视护甲）· %d真气" % [stone.x, stone.y, STONE_FIST_QI_COST]
-	if "night_triple_blade" in equipped_moves:
+	if "night_triple_blade" in learned_moves:
 		var night := night_blade_hit_range(player)
 		text += "\n暗夜三刀 · 相邻连击3次，每次 %d–%d（护甲前）· %d真气" % [night.x, night.y, NIGHT_BLADE_QI_COST]
 	var move_bonus := WUXUE_RULES.lightness_move_bonus(player)
@@ -145,8 +145,8 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
 		return _failure("林清霜无法施展流云剑法。")
-	if "cloud_sword" not in Array(player.get("equipped_moves", [])):
-		return _failure("尚未装备流云剑法，请先在背包中装备。")
+	if "cloud_sword" not in Array(player.get("learned_moves", [])):
+		return _failure("尚未习得流云剑法，请先在秘籍阁学习。")
 	var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
 	if not RULES.can_attack_cell(battle, target, true, int(player.qi), qi_cost):
 		return _failure("流云剑法需要%d点真气，并只能攻击同一直线三格内的敌人。" % qi_cost)
@@ -168,8 +168,8 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 static func _blade_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
 		return _failure("林清霜无法施展断岳刀法。")
-	if "blade_technique" not in Array(player.get("equipped_moves", [])):
-		return _failure("尚未装备断岳刀法，请先在背包中装备。")
+	if "blade_technique" not in Array(player.get("learned_moves", [])):
+		return _failure("尚未习得断岳刀法，请先在秘籍阁学习。")
 	if int(player.get("qi", 0)) < BLADE_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
 		return _failure("断岳刀法需要%d点真气，并只能攻击相邻敌人。" % BLADE_QI_COST)
 	var enemy_index := RULES.enemy_at(battle, target)
@@ -192,8 +192,8 @@ static func _blade_skill(battle: Dictionary, player: Dictionary, target: Vector2
 static func _stone_splitting_fist(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
 		return _failure("林清霜不会裂石拳。")
-	if "stone_splitting_fist" not in Array(player.get("equipped_moves", [])):
-		return _failure("尚未装备裂石拳，请先在背包中装备。")
+	if "stone_splitting_fist" not in Array(player.get("learned_moves", [])):
+		return _failure("尚未习得裂石拳，请先在秘籍阁学习。")
 	if int(player.get("qi", 0)) < STONE_FIST_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
 		return _failure("裂石拳需要%d点真气，并只能攻击相邻敌人。" % STONE_FIST_QI_COST)
 	var enemy_index := RULES.enemy_at(battle, target)
@@ -210,8 +210,8 @@ static func _stone_splitting_fist(battle: Dictionary, player: Dictionary, target
 static func _night_triple_blade(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
 		return _failure("林清霜不会暗夜三刀。")
-	if "night_triple_blade" not in Array(player.get("equipped_moves", [])):
-		return _failure("尚未装备暗夜三刀，请先在背包中装备。")
+	if "night_triple_blade" not in Array(player.get("learned_moves", [])):
+		return _failure("尚未习得暗夜三刀，请先在秘籍阁学习。")
 	if int(player.get("qi", 0)) < NIGHT_BLADE_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
 		return _failure("暗夜三刀需要%d点真气，并只能攻击相邻敌人。" % NIGHT_BLADE_QI_COST)
 	var enemy_index := RULES.enemy_at(battle, target)
