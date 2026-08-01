@@ -21,17 +21,16 @@ func _initialize() -> void:
 	assert(state.deadline_reached(), "The deadline should be reported at FINAL_WEEK.")
 	assert(not state.spend_action(), "Actions must not be takeable beyond the deadline.")
 	assert(not state.end_week(), "The week must not advance beyond the deadline.")
-	assert(not state.rest(), "Rest must not be takeable beyond the deadline.")
 
+	# 调息 (rest) was removed entirely (0.101.0) -- ending the week now
+	# automatically restores hp/qi to full instead, no dedicated action needed.
+	state.new_game()
 	state.data.week = 12
-	state.data.acted_this_week = true
-	assert(not state.spend_action(), "A second action in the same week requires ending the week first.")
-	assert(not state.rest(), "Rest is itself an action and must be blocked once the week's action is already spent.")
-	state.data.acted_this_week = false
-	assert(state.rest(), "Rest should work before the deadline when the week's action hasn't been used yet.")
-	assert(bool(state.data.acted_this_week) and state.data.week == 12, "Rest should count as this week's action without advancing the week by itself.")
-	assert(state.end_week(), "Ending the week after resting should succeed.")
+	state.data.hp = 1
+	state.data.qi = 0
+	assert(state.end_week(), "Ending the week should succeed.")
 	assert(state.data.week == 13 and not bool(state.data.acted_this_week), "Ending the week should advance it by exactly one and clear the acted flag.")
+	assert(int(state.data.hp) == int(state.data.max_hp) and int(state.data.qi) == 20, "Ending the week should automatically restore hp/qi to full.")
 
 	# Traveling between cities is free (0.94.0) -- it never spends the
 	# week's action, unlike training/gathering/crafting/battles, and stays

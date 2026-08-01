@@ -34,12 +34,12 @@ func _capture() -> void:
 
 	# The map's side panel (title, 主线/本周/气血 status text, and the
 	# 进入/调息/江湖纪事 buttons) was removed entirely (0.100.0) -- the map
-	# now only shows the art and its clickable location markers.
+	# now only shows the art and its clickable location markers. 调息 was
+	# then removed outright (0.101.0, not relocated) -- ending the week now
+	# restores hp/qi automatically instead.
 	var no_current_location_title: bool = not shown.call("当前所在 ·")
 	var no_objective_text: bool = not shown.call("主线：") and not shown.call("气血：")
-	# 调息 moved to the persistent header nav bar (visible on every screen,
-	# not just the map), so it's deliberately excluded from this check.
-	var no_side_buttons: bool = not main_scene.find_children("*", "Button", true, false).any(func(b): return (b as Button).text.begins_with("进入") or (b as Button).text.ends_with("江湖纪事"))
+	var no_side_buttons: bool = not main_scene.find_children("*", "Button", true, false).any(func(b): return (b as Button).text.begins_with("进入") or (b as Button).text.ends_with("江湖纪事") or (b as Button).text == "调息")
 
 	var buttons: Array = main_scene.find_children("*", "Button", true, false)
 	var huashan_button_ok: bool = buttons.any(func(b): return str((b as Button).tooltip_text) == "华山")
@@ -97,26 +97,8 @@ func _capture() -> void:
 			await process_frame
 		chronicle_expands = chronicle_toggle.text.begins_with("▾") and chronicle_label.visible
 
-	# 调息 (0.100.0) moved to a persistent header button next to 结束本周,
-	# usable from any screen -- confirm it works and syncs its disabled
-	# state with acted_this_week just like 结束本周 already does.
-	game_state.new_game()
-	main_scene.screen = "map"
-	main_scene._rebuild()
-	for frame in range(2):
-		await process_frame
-	var rest_before_ok: bool = main_scene.rest_button != null and not main_scene.rest_button.disabled
-	var hp_before := int(game_state.data.hp)
-	game_state.data.hp = hp_before - 10
-	main_scene.rest_button.pressed.emit()
-	for frame in range(2):
-		await process_frame
-	var rest_worked: bool = int(game_state.data.hp) == int(game_state.data.max_hp) and bool(game_state.data.acted_this_week)
-	var rest_disabled_after: bool = main_scene.rest_button.disabled
-
 	var valid := luoyang_shown and huashan_shown and emei_shown and huashan_button_ok and emei_button_ok and luoyang_button.size() == 1 and travel_ok and quest_text_correct and not quest_text_wrong
 	valid = valid and no_current_location_title and no_objective_text and no_side_buttons and enter_via_marker_ok and chronicle_starts_collapsed and chronicle_expands
-	valid = valid and rest_before_ok and rest_worked and rest_disabled_after
 	if not valid:
-		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s no_current_location_title=%s no_objective_text=%s no_side_buttons=%s enter_via_marker_ok=%s chronicle_starts_collapsed=%s chronicle_expands=%s rest_before_ok=%s rest_worked=%s rest_disabled_after=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong, no_current_location_title, no_objective_text, no_side_buttons, enter_via_marker_ok, chronicle_starts_collapsed, chronicle_expands, rest_before_ok, rest_worked, rest_disabled_after])
+		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s no_current_location_title=%s no_objective_text=%s no_side_buttons=%s enter_via_marker_ok=%s chronicle_starts_collapsed=%s chronicle_expands=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong, no_current_location_title, no_objective_text, no_side_buttons, enter_via_marker_ok, chronicle_starts_collapsed, chronicle_expands])
 	quit(0 if valid else 22)

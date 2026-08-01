@@ -115,20 +115,18 @@ func spend_action() -> bool:
 	state_changed.emit()
 	return true
 
+## Ending the week also restores hp/qi to full (0.101.0) -- the standalone
+## 调息 (rest) action was removed, so recovery now happens automatically
+## whenever a week passes, rather than requiring a dedicated action.
 func end_week() -> bool:
 	if deadline_reached():
 		return false
 	data.week = mini(FINAL_WEEK, int(data.week) + 1)
 	data.acted_this_week = false
-	state_changed.emit()
-	return true
-
-func rest() -> bool:
-	if not spend_action():
-		return false
 	data.hp = data.max_hp
 	data.qi = 20
-	add_log("你调息本周，恢复全部气血与真气。")
+	add_log("本周结束，气血与真气自然恢复。")
+	state_changed.emit()
 	return true
 
 ## Traveling between cities/locations on the world map is free (0.94.0) --

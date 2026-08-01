@@ -26,8 +26,9 @@ func setup(map_texture: Texture2D, state: Dictionary, available_places: Array[St
 	# entering the current location now happens by clicking its own map
 	# marker below (destination_requested with the same id the hero is
 	# already at, which _map_destination_requested() already treats as
-	# "enter" rather than "travel"). 调息 moved to a persistent header
-	# button; 江湖纪事 moved into the quest journal screen.
+	# "enter" rather than "travel"). 江湖纪事 moved into the quest journal
+	# screen; 调息 was removed outright (0.101.0), not relocated -- ending
+	# the week now restores hp/qi automatically instead.
 	for id in available_places:
 		_add_marker(PLACE_NAMES.get(id, id), MARKERS.get(id, Vector2.ZERO), id, id == str(state.location))
 
