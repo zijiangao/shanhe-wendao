@@ -32,6 +32,26 @@ func _capture() -> void:
 	var huashan_shown: bool = shown.call("华山")
 	var emei_shown: bool = shown.call("峨眉山")
 
+	# 江湖纪事 (0.97.0) moved into a collapsed-by-default section at the
+	# bottom of the side panel; the redundant "当前所在" panel title was
+	# removed since the map marker itself already labels the current location.
+	var no_current_location_title: bool = not shown.call("当前所在 ·")
+	var chronicle_toggle: Button = null
+	for b in main_scene.find_children("*", "Button", true, false):
+		if (b as Button).text.ends_with("江湖纪事"):
+			chronicle_toggle = b
+	var chronicle_label: Label = null
+	for l in labels:
+		if str((l as Label).text).begins_with("· "):
+			chronicle_label = l
+	var chronicle_starts_collapsed := chronicle_toggle != null and chronicle_toggle.text.begins_with("▸") and chronicle_label != null and not chronicle_label.visible
+	var chronicle_expands := false
+	if chronicle_toggle != null:
+		chronicle_toggle.pressed.emit()
+		for frame in range(2):
+			await process_frame
+		chronicle_expands = chronicle_toggle.text.begins_with("▾") and chronicle_label.visible
+
 	var buttons: Array = main_scene.find_children("*", "Button", true, false)
 	var huashan_button_ok: bool = buttons.any(func(b): return str((b as Button).tooltip_text) == "华山")
 	var emei_button_ok: bool = buttons.any(func(b): return str((b as Button).tooltip_text) == "峨眉山")
@@ -56,6 +76,7 @@ func _capture() -> void:
 	var quest_text_wrong := quest_labels.any(func(l): return "洛阳风云" in str((l as Label).text))
 
 	var valid := luoyang_shown and huashan_shown and emei_shown and huashan_button_ok and emei_button_ok and luoyang_button.size() == 1 and travel_ok and quest_text_correct and not quest_text_wrong
+	valid = valid and no_current_location_title and chronicle_starts_collapsed and chronicle_expands
 	if not valid:
-		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong])
+		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s no_current_location_title=%s chronicle_starts_collapsed=%s chronicle_expands=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong, no_current_location_title, chronicle_starts_collapsed, chronicle_expands])
 	quit(0 if valid else 22)

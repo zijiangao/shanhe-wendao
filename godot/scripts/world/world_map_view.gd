@@ -32,11 +32,6 @@ func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, av
 	var side := VBoxContainer.new()
 	side.add_theme_constant_override("separation", 12)
 	side_panel.add_child(side)
-	var location := Label.new()
-	location.text = "当前所在 · %s" % PLACE_NAMES.get(str(state.location), str(state.location))
-	location.add_theme_font_size_override("font_size", 27)
-	location.add_theme_color_override("font_color", Color("#f2dfb3"))
-	side.add_child(location)
 	var objective := Label.new()
 	objective.text = "主线：%s\n\n本周：%s\n气血：%d/%d\n修为：%d\n声望：%d" % [objective_text, "已行动，可结束本周" if bool(state.get("acted_this_week", false)) else "尚未行动", state.hp, state.max_hp, state.xp, state.renown]
 	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -53,23 +48,30 @@ func setup(map_texture: Texture2D, state: Dictionary, objective_text: String, av
 	for id in available_places:
 		_add_marker(PLACE_NAMES.get(id, id), MARKERS.get(id, Vector2.ZERO), id, id == str(state.location))
 
-	var chronicle := Label.new()
-	var chronicle_height: float = minf(175.0, 58.0 + float(state.log.size()) * 26.0)
-	chronicle.anchor_top = 1.0
-	chronicle.anchor_bottom = 1.0
-	chronicle.offset_left = 35
-	chronicle.offset_top = -10.0 - chronicle_height
-	chronicle.offset_right = 795
-	chronicle.offset_bottom = -10
-	chronicle.z_index = 1
-	chronicle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	chronicle.text = "江湖纪事\n· " + "\n· ".join(PackedStringArray(state.log))
-	chronicle.add_theme_font_size_override("font_size", 18)
-	chronicle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	chronicle.clip_text = true
-	chronicle.add_theme_stylebox_override("normal", _box(Color("#172820e8")))
-	chronicle.add_theme_color_override("font_color", Color("#f6f0e4"))
-	add_child(chronicle)
+	# 江湖纪事 (0.97.0): moved from a fixed overlay in the bottom-left corner
+	# into a collapsible section at the bottom of the side panel, collapsed
+	# by default -- click the header button to expand/collapse in place.
+	var chronicle_separator := HSeparator.new()
+	side.add_child(chronicle_separator)
+	var chronicle_toggle := Button.new()
+	chronicle_toggle.flat = true
+	chronicle_toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	chronicle_toggle.add_theme_font_size_override("font_size", 18)
+	chronicle_toggle.add_theme_color_override("font_color", Color("#dfbf74"))
+	chronicle_toggle.add_theme_color_override("font_hover_color", Color("#ffe9b8"))
+	side.add_child(chronicle_toggle)
+	var chronicle_label := Label.new()
+	chronicle_label.text = "· " + "\n· ".join(PackedStringArray(state.log))
+	chronicle_label.add_theme_font_size_override("font_size", 16)
+	chronicle_label.add_theme_color_override("font_color", Color("#e5ddc8"))
+	chronicle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	chronicle_label.visible = false
+	side.add_child(chronicle_label)
+	chronicle_toggle.text = "▸ 江湖纪事"
+	chronicle_toggle.pressed.connect(func():
+		chronicle_label.visible = not chronicle_label.visible
+		chronicle_toggle.text = "%s 江湖纪事" % ("▾" if chronicle_label.visible else "▸")
+	)
 
 const MARKER_WIDTH := 78.0
 
@@ -120,6 +122,3 @@ func _add_marker(label_text: String, at: Vector2, id: String, current: bool) -> 
 
 func _action_button(text_value: String, color: Color) -> Button:
 	return UI_THEME.action_button(text_value, color)
-
-func _box(color: Color) -> StyleBoxFlat:
-	return UI_THEME.box(color)
