@@ -41,6 +41,14 @@ The six `ui-source/*.png` files above were generated on a flat chroma backdrop (
 | `assets/ui/nav_icon_map.png`, `nav_icon_quest.png`, `nav_icon_character.png`, `nav_icon_achievement.png`, `nav_icon_save.png`, `nav_icon_settings.png` | `ui-source/top-nav-icons-black.png` (6-way split) |
 | `assets/ui/item_iron_sword.png`, `item_cold_crow_blade.png`, `item_dragon_etched_sword.png`, `item_hedgehog_mail.png`, `item_dark_iron_armor.png`, `item_cold_jade_armor.png`, `item_herbs.png`, `item_ore.png`, `item_healing_powder.png`, `item_thunder_stone.png` | `ui-source/item-icons-sheet-black.png` (10-way split) |
 
+## Font assets
+
+| Shipping files | Source | License |
+| --- | --- | --- |
+| `assets/fonts/LXGWWenKai-Regular.ttf` | [LXGW WenKai](https://github.com/lxgw/LxgwWenKai) v1.522, downloaded from the project's official GitHub release | SIL Open Font License 1.1 (`assets/fonts/LXGWWenKai-OFL.txt`) — permits embedding/redistribution in commercial software |
+
+Set as the project's global default font (`project.godot`'s `DefaultTheme` / `theme/default_font`), replacing Godot's built-in fallback font, which lacked a curated CJK glyph set and read inconsistently across screens. See [[THIRD_PARTY_NOTICES.md]] for the full license notice.
+
 ## Audio assets
 
 The current build does not ship third-party music or sound-effect libraries. Runtime ambience and feedback cues are synthesized by `scripts/audio/cue_synth.gd` and coordinated by `autoload/audio_feedback.gd`.

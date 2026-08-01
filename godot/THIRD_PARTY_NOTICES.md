@@ -14,3 +14,12 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Godot Engine is not affiliated with or endorsed by this project. Godot and its logos are the property of their respective owners.
+
+## LXGW WenKai (霞鹜文楷)
+
+Shanhe Wendao uses the LXGW WenKai font (`assets/fonts/LXGWWenKai-Regular.ttf`) as its global default font. LXGW WenKai is licensed under the SIL Open Font License, Version 1.1. Full license text: `assets/fonts/LXGWWenKai-OFL.txt`.
+
+Copyright 2021-2026 LXGW (https://github.com/lxgw/LxgwWenKai), with Reserved Font Name '霞鹜', '霞鶩', '落霞孤鹜', '落霞孤鶩' and 'LXGW'.
+Copyright 2020 The Klee Project Authors (https://github.com/fontworks-fonts/Klee)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1, which permits use, modification, and redistribution (including embedding in commercial software) provided the font itself is not sold on its own.
