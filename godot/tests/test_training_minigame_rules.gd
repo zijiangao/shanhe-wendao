@@ -11,17 +11,37 @@ func _init() -> void:
 	assert(not RULES.gathering_options().any(func(o): return str(o[2]) == "swordsmanship" or str(o[2]) == "bladesmanship"), "后山 must not offer the combat disciplines.")
 	assert(RULES.weekly_focus(1) == "swordsmanship" and RULES.weekly_focus(4) == "mining" and RULES.weekly_focus(5) == "swordsmanship", "Weekly training focus should rotate deterministically across all disciplines.")
 	assert(RULES.discipline_short_name("herbalism") == "采药", "Weekly-focus labels should reuse the shipping discipline names.")
-	assert(RULES.specialty_rank_name(0) == "初学" and RULES.specialty_rank_name(3) == "熟手", "Early specialty thresholds should have stable names.")
-	assert(RULES.specialty_rank_name(6) == "精通" and RULES.specialty_rank_name(10) == "大成", "Advanced specialty thresholds should have stable names.")
-	assert(RULES.next_specialty_level(5) == 6 and RULES.next_specialty_level(10) == -1, "Specialty progress should expose the next threshold and cap cleanly.")
-	assert(RULES.gathering_bonus(5) == 0 and RULES.gathering_bonus(6) == 1 and RULES.gathering_bonus(10) == 2, "Gathering yield bonuses should unlock only at mastery milestones.")
-	assert(RULES.cloud_qi_cost(9) == 8 and RULES.cloud_qi_cost(10) == 6, "Sword mastery should reduce Flowing Cloud Sword's qi cost only at level ten.")
-	assert(RULES.attack_exposure_gain(9) == 1 and RULES.attack_exposure_gain(10) == 2, "Blade mastery should double normal-attack exposure at level ten.")
-	assert(RULES.medicine_mastery_bonus(10) == 5 and RULES.craft_ore_discount(10) == 3, "Gathering mastery should expose stable medicine and forging perks.")
-	var ranked_options := RULES.options({"week": 2, "swordsmanship": 3, "mining": 10})
-	var ranked_gathering := RULES.gathering_options({"week": 2, "swordsmanship": 3, "mining": 10})
-	assert("熟手 3级" in str(ranked_options[0][1]) and "已达大成" in str(ranked_gathering[1][1]), "Training choices should explain current rank and next milestone.")
+	# 专精改为等级制、100级满 (0.105.0) -- 熟手/精通/大成门槛等比放大10倍到30/60/100。
+	assert(RULES.specialty_rank_name(0) == "初学" and RULES.specialty_rank_name(30) == "熟手", "Early specialty thresholds should have stable names.")
+	assert(RULES.specialty_rank_name(60) == "精通" and RULES.specialty_rank_name(100) == "大成", "Advanced specialty thresholds should have stable names.")
+	assert(RULES.next_specialty_level(50) == 60 and RULES.next_specialty_level(100) == -1, "Specialty progress should expose the next threshold and cap cleanly.")
+	assert(RULES.gathering_bonus(50) == 0 and RULES.gathering_bonus(60) == 1 and RULES.gathering_bonus(100) == 2, "Gathering yield bonuses should unlock only at mastery milestones.")
+	assert(RULES.cloud_qi_cost(99) == 8 and RULES.cloud_qi_cost(100) == 6, "Sword mastery should reduce Flowing Cloud Sword's qi cost only at the level-100 cap.")
+	assert(RULES.attack_exposure_gain(99) == 1 and RULES.attack_exposure_gain(100) == 2, "Blade mastery should double normal-attack exposure only at the level-100 cap.")
+	assert(RULES.medicine_mastery_bonus(100) == 5 and RULES.craft_ore_discount(100) == 3, "Gathering mastery should expose stable medicine and forging perks.")
+
+	# MAX_SPECIALTY_LEVEL/specialty_xp_needed()/train_specialty() are the new
+	# leveling machinery (0.105.0), mirroring WuxueRules._train()'s pattern
+	# but with its own 100-level curve.
+	assert(RULES.MAX_SPECIALTY_LEVEL == 100, "The specialty level cap must be exactly 100.")
+	assert(RULES.specialty_xp_needed(0) == 2 and RULES.specialty_xp_needed(25) == 3 and RULES.specialty_xp_needed(50) == 4 and RULES.specialty_xp_needed(75) == 5, "The xp curve should step up every 25 levels.")
+	var train_state := {"swordsmanship": 0}
+	var first_train: Dictionary = RULES.train_specialty(train_state, "swordsmanship", 1)
+	assert(bool(first_train.ok) and not bool(first_train.leveled_up) and int(train_state.swordsmanship) == 0 and int(first_train.xp) == 1, "One xp point below the level-0 threshold (2) should not level up yet.")
+	var second_train: Dictionary = RULES.train_specialty(train_state, "swordsmanship", 1)
+	assert(bool(second_train.leveled_up) and int(train_state.swordsmanship) == 1 and int(second_train.xp) == 0, "Reaching the xp threshold should level up and consume the accumulated xp.")
+	var overflow_state := {"swordsmanship": 99, "specialty_xp": {"swordsmanship": 0}}
+	var overflow_train: Dictionary = RULES.train_specialty(overflow_state, "swordsmanship", 5000)
+	assert(bool(overflow_train.leveled_up) and int(overflow_state.swordsmanship) == 100 and int(overflow_train.xp) == 0, "An enormous xp gain should cap at level 100 rather than overshooting, with no leftover xp.")
+	var maxed_train: Dictionary = RULES.train_specialty(overflow_state, "swordsmanship", 50)
+	assert(bool(maxed_train.ok) and not bool(maxed_train.leveled_up) and int(overflow_state.swordsmanship) == 100, "Training a specialty already at the level cap must be a safe no-op, not an error.")
+	assert(RULES.train_specialty({}, "invalid_discipline", 10).ok == false, "Training an unknown discipline must be rejected.")
+
+	var ranked_options := RULES.options({"week": 2, "swordsmanship": 30, "mining": 100})
+	var ranked_gathering := RULES.gathering_options({"week": 2, "swordsmanship": 30, "mining": 100})
+	assert("熟手 30级" in str(ranked_options[0][1]) and "已达大成" in str(ranked_gathering[1][1]), "Training choices should explain current rank and next milestone.")
 	assert("本周专精" not in str(ranked_options[0][1]) and "本周专精 · 额外修为 +3" in str(ranked_options[1][1]), "Only the rotating weekly focus should advertise its cultivation bonus.")
+	assert("已满级" in str(ranked_gathering[1][1]), "A level-100 discipline's option text should read as maxed rather than showing a fake xp progress fraction.")
 	assert(RULES.MAX_TOTAL_SCORE == 315, "The displayed maximum must match three perfect rounds plus capped streak bonuses.")
 	assert(RULES.score_round(true, 500) == 100, "Fast correct reactions should earn full points.")
 	assert(RULES.score_round(true, 1200) == 70, "Slower correct reactions should receive partial points.")

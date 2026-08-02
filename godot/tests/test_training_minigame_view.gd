@@ -37,7 +37,7 @@ func _capture() -> void:
 		"discipline": "mining", "grade": "S", "specialty_gain": 3,
 		"xp": 12, "silver": 12, "item": "", "herbs": 0, "ore": 3,
 		"score": 315, "best_streak": 3,
-		"specialty_level": 6, "specialty_rank": "精通", "rank_up": true,
+		"specialty_level": 60, "specialty_rank": "精通", "rank_up": true,
 		"record": {"new_best": true, "best_score": 315, "best_grade": "S", "best_streak": 3, "attempts": 2},
 		"mineral_discovery": {"id": "star_marrow", "name": "星陨髓", "rarity": "奇珍", "description": "陨铁深处凝成的银蓝结晶，落锤时声如清钟。", "first_discovery": true, "count": 1, "silver": 2},
 		"event": {"title": "古炉残火", "body": "你沿着热流掘开石壁，发现一座尚有余温的旧炉。", "reward": "额外矿石 +2"}

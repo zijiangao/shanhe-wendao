@@ -78,7 +78,8 @@ func _test_player_skills_and_resources() -> void:
 	battle.enemies[0].hp = 100
 	battle.enemies[0].max_hp = 100
 	player = _player_fixture()
-	player.bladesmanship = 6
+	# 专精改为等级制、100级满 (0.105.0) -- 精通门槛从6级放大到60级。
+	player.bladesmanship = 60
 	var blade: Dictionary = ENGINE.player_action(battle, player, "blade_skill", Vector2i(2, 1), _seeded_rng())
 	assert(bool(blade.ok) and int(player.qi) == 14 and int(battle.ap) == 1, "Mountain-Breaking Blade should consume six qi and one action point.")
 	assert(int(battle.enemies[0].armor) == 0 and int(battle.enemies[0].exposure) == 2, "Trained blade technique should permanently remove two armor and expose a surviving target.")
@@ -215,8 +216,9 @@ func _test_specialty_mastery_perks() -> void:
 	sword_battle.enemies[0].y = 4
 	sword_battle.ally.x = 0
 	sword_battle.ally.y = 3
+	# 专精改为等级制、100级满 (0.105.0) -- 大成门槛从10级放大到100级(封顶)。
 	var sword_master := _player_fixture()
-	sword_master.swordsmanship = 10
+	sword_master.swordsmanship = 100
 	sword_master.qi = 6
 	var sword_result: Dictionary = ENGINE.player_action(sword_battle, sword_master, "skill", Vector2i(1, 4), _seeded_rng())
 	assert(bool(sword_result.ok) and int(sword_master.qi) == 0, "Sword mastery should allow Flowing Cloud Sword at its reduced six-qi cost.")
@@ -229,7 +231,7 @@ func _test_specialty_mastery_perks() -> void:
 	blade_battle.enemies[0].y = 1
 	blade_battle.enemies[0].hp = 100
 	var blade_master := _player_fixture()
-	blade_master.bladesmanship = 10
+	blade_master.bladesmanship = 100
 	var blade_result: Dictionary = ENGINE.player_action(blade_battle, blade_master, "attack", Vector2i(2, 1), _seeded_rng())
 	assert(bool(blade_result.ok) and int(blade_battle.enemies[0].exposure) == 2, "Blade mastery should create two exposure layers with a surviving normal attack.")
 
@@ -237,14 +239,14 @@ func _test_specialty_mastery_perks() -> void:
 	medicine_battle.active_unit = "hero"
 	medicine_battle.ap = 2
 	var herbal_master := _player_fixture()
-	herbal_master.herbalism = 10
+	herbal_master.herbalism = 100
 	herbal_master.hp = 10
-	herbal_master.max_hp = 45
+	herbal_master.max_hp = 90
 	herbal_master.consumables = {"healing_powder": 1}
 	var medicine_result: Dictionary = ENGINE.player_action(medicine_battle, herbal_master, "heal")
-	assert(bool(medicine_result.ok) and int(medicine_result.healed) == 22, "Herbalism mastery should add five healing on top of its continuous level bonus.")
-	var help_text := ENGINE.hero_action_help({"strength": 4, "xp": 0, "bladesmanship": 10, "swordsmanship": 10, "insight": 4, "skill_mastery": {"cloud": 0}, "herbalism": 10})
-	assert("制造2层破绽" in help_text and "剑法" in help_text and "永久破甲2" in help_text and "恢复22气血" in help_text, "The tactical action preview should expose all active mastery values and the trained blade break.")
+	assert(bool(medicine_result.ok) and int(medicine_result.healed) == 67, "Herbalism mastery should add five healing on top of its continuous level bonus (12 base + 100/2 level bonus + 5 mastery = 67).")
+	var help_text := ENGINE.hero_action_help({"strength": 4, "xp": 0, "bladesmanship": 100, "swordsmanship": 100, "insight": 4, "skill_mastery": {"cloud": 0}, "herbalism": 100})
+	assert("制造2层破绽" in help_text and "剑法" in help_text and "永久破甲2" in help_text and "恢复67气血" in help_text, "The tactical action preview should expose all active mastery values and the trained blade break.")
 
 func _test_armor_and_exposure_combo() -> void:
 	var armored := _fixture()

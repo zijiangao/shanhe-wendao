@@ -12,7 +12,8 @@ func _capture() -> void:
 	game_state.new_game()
 	game_state.data.materials = {"herbs": 4, "ore": 5}
 	game_state.data.consumables.healing_powder = 2
-	game_state.data.mining = 10
+	# 专精改为等级制、100级满 (0.105.0) -- 大成门槛从10级放大到100级。
+	game_state.data.mining = 100
 
 	# 炼药坊 (alchemy) offers the herb-based recipes only -- no forged gear,
 	# no ore-discount rows (those belong to 锻造坊 now).

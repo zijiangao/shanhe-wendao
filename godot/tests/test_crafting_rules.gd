@@ -100,7 +100,8 @@ func _initialize() -> void:
 	# additionally needs a named 流银砂 specimen from the 矿谱 collection (0.85.0).
 	var master_smith := _state()
 	master_smith.materials = {"herbs": 0, "ore": 7}
-	master_smith.mining = 10
+	# 专精改为等级制、100级满 (0.105.0) -- 大成门槛从10级放大到100级。
+	master_smith.mining = 100
 	assert(RULES.effective_cost(master_smith, "twin_edge_saber").ore == 7, "Mining mastery should reduce the pricier saber's ore cost from ten to seven.")
 	assert(not RULES.can_craft(master_smith, "twin_edge_saber"), "Even with the ore discount, the saber should still be blocked without a 流银砂 specimen.")
 	master_smith.mineralogy = {"silver_sand": 1}

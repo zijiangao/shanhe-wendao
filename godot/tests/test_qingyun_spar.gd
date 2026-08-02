@@ -14,7 +14,8 @@ func _initialize() -> void:
 	valid = _check(str(state.data.quest_stage) == quest_stage and "玄铁令" not in state.data.items and "villain_revealed" not in state.data.flags, "Optional sparring must not advance or contaminate the main story.") and valid
 	valid = _check(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 8, "S-grade sparring should grant its base and performance rewards together.") and valid
 	valid = _check(str(state.data.pending_reward.grade) == "S" and int(state.data.pending_reward.performance_xp) == 4 and state.data.pending_reward.new_best, "Sparring should grade the victory, reward performance, and expose a new record.") and valid
-	valid = _check(str(state.data.pending_reward.discipline) == "bladesmanship" and int(state.data.bladesmanship) == 2, "An S-grade blade spar should improve bladesmanship twice.") and valid
+	# 专精改为等级制、100级满 (0.105.0) -- S-grade宗师2点经验，刚好够0级(需2经验)升到1级。
+	valid = _check(str(state.data.pending_reward.discipline) == "bladesmanship" and int(state.data.bladesmanship) == 1, "An S-grade blade spar should grant enough xp to level bladesmanship up once.") and valid
 	valid = _check(state.claim_pending_reward("fellowship") and int(state.data.faction_relations.qingyun) == 2, "Sparring should add the selected reward to the starting Qingyun relationship.") and valid
 
 	state.new_game()

@@ -46,6 +46,7 @@ func new_game() -> void:
 		"bladesmanship": 0,
 		"herbalism": 0,
 		"mining": 0,
+		"specialty_xp": {},
 		"training_records": TRAINING_RULES.empty_records(),
 		"sparring_record": SPARRING_RULES.empty_record(),
 		"skills": ["cloud"],
@@ -187,8 +188,8 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 	outcome.best_streak = clampi(best_streak, 0, TRAINING_RULES.ROUND_COUNT)
 	outcome.record = TRAINING_RULES.record_attempt(data.training_records, discipline, safe_score, best_streak)
 	var previous_level := int(data.get(discipline, 0))
-	data[discipline] = previous_level + int(outcome.specialty_gain)
-	var current_level := int(data[discipline])
+	var train_result := TRAINING_RULES.train_specialty(data, discipline, int(outcome.specialty_gain))
+	var current_level := int(train_result.new_level)
 	outcome.specialty_level = current_level
 	outcome.specialty_rank = TRAINING_RULES.specialty_rank_name(current_level)
 	outcome.rank_up = TRAINING_RULES.specialty_rank_index(current_level) > TRAINING_RULES.specialty_rank_index(previous_level)
@@ -385,7 +386,7 @@ func finish_battle(victory: bool) -> void:
 			data.sparring_record = spar_result.record
 			GROWTH_RULES.grant_xp(data, int(spar_result.bonus_xp))
 			var skill_gain := SPARRING_RULES.skill_gain_for_grade(str(spar_result.grade))
-			data[spar_discipline] = int(data.get(spar_discipline, 0)) + skill_gain
+			TRAINING_RULES.train_specialty(data, spar_discipline, skill_gain)
 			data.pending_reward.grade = spar_result.grade
 			data.pending_reward.performance_xp = spar_result.bonus_xp
 			data.pending_reward.discipline = spar_discipline
@@ -668,7 +669,11 @@ func _migrate_and_validate() -> void:
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
 	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:
-		data[specialty] = maxi(0, int(data.get(specialty, 0)))
+		data[specialty] = clampi(int(data.get(specialty, 0)), 0, TRAINING_RULES.MAX_SPECIALTY_LEVEL)
+	if not data.has("specialty_xp") or typeof(data.specialty_xp) != TYPE_DICTIONARY:
+		data.specialty_xp = {}
+	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:
+		data.specialty_xp[specialty] = maxi(0, int(data.specialty_xp.get(specialty, 0)))
 	if str(data.location) not in ["qingyun", "blackreed", "luoyang", "huashan", "emei"]:
 		data.location = "qingyun"
 	if not data.battle.is_empty() and data.battle_retry.is_empty():

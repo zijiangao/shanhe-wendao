@@ -8,11 +8,14 @@ const MAX_COMBO_BONUS := 10
 const MAX_TOTAL_SCORE := 315
 const WEEKLY_FOCUS_XP_BONUS := 3
 const WEEKLY_FOCUS_ORDER := ["swordsmanship", "bladesmanship", "herbalism", "mining"]
+## 专精改为等级制、100级满 (0.105.0) -- 熟手/精通/大成门槛原为3/6/10
+## （专为无上限的旧数值设计），等比放大10倍到30/60/100。
+const MAX_SPECIALTY_LEVEL := 100
 const SPECIALTY_RANKS := [
 	{"level": 0, "name": "初学"},
-	{"level": 3, "name": "熟手"},
-	{"level": 6, "name": "精通"},
-	{"level": 10, "name": "大成"}
+	{"level": 30, "name": "熟手"},
+	{"level": 60, "name": "精通"},
+	{"level": 100, "name": "大成"}
 ]
 const DIRECTIONS := ["up", "right", "down", "left"]
 const DIRECTION_LABELS := {"up": "上", "right": "右", "down": "下", "left": "左"}
@@ -70,16 +73,47 @@ static func gathering_bonus(level: int) -> int:
 	return maxi(0, specialty_rank_index(maxi(0, level)) - 1)
 
 static func cloud_qi_cost(level: int) -> int:
-	return 6 if maxi(0, level) >= 10 else 8
+	return 6 if maxi(0, level) >= 100 else 8
 
 static func attack_exposure_gain(level: int) -> int:
-	return 2 if maxi(0, level) >= 10 else 1
+	return 2 if maxi(0, level) >= 100 else 1
 
 static func medicine_mastery_bonus(level: int) -> int:
-	return 5 if maxi(0, level) >= 10 else 0
+	return 5 if maxi(0, level) >= 100 else 0
 
 static func craft_ore_discount(level: int) -> int:
-	return 3 if maxi(0, level) >= 10 else 0
+	return 3 if maxi(0, level) >= 100 else 0
+
+## 专精等级所需经验的曲线 (0.105.0) -- 越高级需要的经验越多，1~24级每级2点，
+## 25~49级3点，50~74级4点，75~99级5点，总计约350经验练满100级。跟
+## WuxueRules.xp_needed() 是同类概念，但服务于100级的更长曲线，数值刻意
+## 调得平缓（不是指数级），保持"可打完但需要认真磨"的节奏。
+static func specialty_xp_needed(level: int) -> int:
+	return 2 + level / 25
+
+static func specialty_xp(state: Dictionary, discipline: String) -> int:
+	return maxi(0, int(Dictionary(state.get("specialty_xp", {})).get(discipline, 0)))
+
+## 专精训练/切磋共用的升级入口 (0.105.0)，结构照抄 WuxueRules._train()：
+## 经验攒够 specialty_xp_needed(当前等级) 就升一级，循环直到经验不够或到达
+## MAX_SPECIALTY_LEVEL 封顶（封顶后多余经验直接丢弃，不再累积）。
+static func train_specialty(state: Dictionary, discipline: String, xp_gain: int) -> Dictionary:
+	if not is_valid_discipline(discipline):
+		return {"ok": false}
+	if not state.has("specialty_xp") or typeof(state.specialty_xp) != TYPE_DICTIONARY:
+		state.specialty_xp = {}
+	var level := clampi(int(state.get(discipline, 0)), 0, MAX_SPECIALTY_LEVEL)
+	if level >= MAX_SPECIALTY_LEVEL:
+		return {"ok": true, "leveled_up": false, "new_level": level, "xp": 0, "xp_needed": 0}
+	var xp := specialty_xp(state, discipline) + maxi(0, xp_gain)
+	var leveled_up := false
+	while level < MAX_SPECIALTY_LEVEL and xp >= specialty_xp_needed(level):
+		xp -= specialty_xp_needed(level)
+		level += 1
+		leveled_up = true
+	state[discipline] = level
+	state.specialty_xp[discipline] = 0 if level >= MAX_SPECIALTY_LEVEL else xp
+	return {"ok": true, "leveled_up": leveled_up, "new_level": level, "xp": int(state.specialty_xp[discipline]), "xp_needed": specialty_xp_needed(level) if level < MAX_SPECIALTY_LEVEL else 0}
 
 static func perk_text(discipline: String, level: int) -> String:
 	match discipline:
@@ -145,11 +179,12 @@ static func _discipline_options(state: Dictionary, disciplines: Array) -> Array:
 	var result: Array = []
 	var focus := weekly_focus(int(state.get("week", 1)))
 	for discipline in disciplines:
-		var level := maxi(0, int(state.get(discipline, 0)))
+		var level := clampi(int(state.get(discipline, 0)), 0, MAX_SPECIALTY_LEVEL)
 		var next_level := next_specialty_level(level)
 		var progress := "已达大成" if next_level < 0 else "距下境界 %d级" % (next_level - level)
+		var xp_progress := "已满级" if level >= MAX_SPECIALTY_LEVEL else "%d/%d 经验" % [specialty_xp(state, discipline), specialty_xp_needed(level)]
 		var focus_text := "【本周专精 · 额外修为 +%d】\n" % WEEKLY_FOCUS_XP_BONUS if discipline == focus else ""
-		result.append([str(titles[discipline]), "%s%s %d级 · %s · %s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, progress, perk_text(discipline, level)], discipline])
+		result.append([str(titles[discipline]), "%s%s %d级（%s） · %s · %s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, xp_progress, progress, perk_text(discipline, level)], discipline])
 	return result
 
 static func score_round(correct: bool, elapsed_ms: int) -> int:

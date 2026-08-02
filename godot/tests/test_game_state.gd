@@ -2,6 +2,7 @@ extends SceneTree
 
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
+const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 
 func _initialize() -> void:
 	var state = load("res://autoload/game_state.gd").new()
@@ -48,8 +49,12 @@ func _initialize() -> void:
 	future_save.save_version = state.SAVE_VERSION + 1
 	assert(not state.import_data(future_save), "Saves from newer versions must be rejected.")
 	state.new_game()
+	# 专精改为等级制、100级满 (0.105.0) -- an S-grade result grants 3 xp
+	# toward the current level, not a direct +3 to the level itself. A fresh
+	# level-0 swordsmanship needs 2 xp (TrainingMinigameRules.specialty_xp_needed(0)),
+	# so 3 xp levels it up to 1 with 1 leftover xp.
 	var training: Dictionary = state.complete_training("swordsmanship", 315, -1, 3)
-	assert(training.grade == "S" and training.score == 315 and int(state.data.swordsmanship) == 3 and int(state.data.xp) == 15, "An S-grade combo result on its weekly focus should preserve all 315 points and grant the focus bonus.")
+	assert(training.grade == "S" and training.score == 315 and int(state.data.swordsmanship) == 1 and int(state.data.xp) == 15, "An S-grade combo result on its weekly focus should preserve all 315 points, grant the focus bonus, and level swordsmanship up via its xp curve.")
 	assert(bool(training.weekly_focus) and int(training.weekly_focus_bonus) == 3, "The matching weekly discipline should expose its bonus in the result card.")
 	assert(training.record.new_best and training.record.best_score == 315 and training.record.best_streak == 3 and state.data.training_records.swordsmanship.attempts == 1, "Training should persist its exact score, streak, and attempt count.")
 	assert(state.end_week(), "Ending the week should free up next week's action for a repeat attempt.")
@@ -58,15 +63,21 @@ func _initialize() -> void:
 	assert(not lower_training.record.new_best and lower_training.record.best_score == 315 and lower_training.record.attempts == 2, "A lower repeat must preserve the personal best while incrementing attempts.")
 	assert(int(state.data.week) == spent_week and bool(state.data.acted_this_week), "A recorded repeat must still use up its own week's action without advancing the week by itself.")
 	assert(not bool(lower_training.get("weekly_focus", false)), "The weekly focus should rotate after time advances instead of rewarding every repeat.")
+	# 专精改为等级制、100级满 (0.105.0) -- 熟手/精通/大成门槛等比放大到30/60/100.
+	# Seed the level just below a rank threshold with just enough leftover xp
+	# that one S-grade training (3 xp) exactly crosses it, so the rank_up
+	# still triggers deterministically in a single complete_training() call.
 	state.new_game()
-	state.data.herbalism = 5
+	state.data.herbalism = 59
+	state.data.specialty_xp.herbalism = TRAINING_RULES.specialty_xp_needed(59) - 3
 	var mastery_herbs: Dictionary = state.complete_training("herbalism", 300, 99, 3)
-	assert(mastery_herbs.rank_up and mastery_herbs.specialty_rank == "精通" and int(state.data.herbalism) == 8, "Crossing level six should announce herbalism mastery.")
+	assert(mastery_herbs.rank_up and mastery_herbs.specialty_rank == "精通" and int(state.data.herbalism) == 60, "Crossing level sixty should announce herbalism mastery.")
 	assert(int(mastery_herbs.herbs) == 4 and int(state.data.materials.herbs) == 4, "Master herbalism should add one material to the normal score reward.")
 	state.new_game()
-	state.data.mining = 8
+	state.data.mining = 99
+	state.data.specialty_xp.mining = TRAINING_RULES.specialty_xp_needed(99) - 3
 	var mastery_mining: Dictionary = state.complete_training("mining", 300, 99, 3)
-	assert(mastery_mining.rank_up and mastery_mining.specialty_rank == "大成" and int(state.data.mining) == 11, "Crossing level ten should announce mining mastery.")
+	assert(mastery_mining.rank_up and mastery_mining.specialty_rank == "大成" and int(state.data.mining) == 100, "Crossing level one hundred should announce mining mastery.")
 	assert(int(mastery_mining.ore) == 5 and int(state.data.materials.ore) == 5, "Great mining mastery should add two materials to the normal score reward.")
 	state.new_game()
 	var event_training: Dictionary = state.complete_training("herbalism", 300, 0)
@@ -116,6 +127,16 @@ func _initialize() -> void:
 	assert(state.data.location == "qingyun" and state.data.log.is_empty(), "Invalid location and log data should be repaired.")
 	assert(state.data.battle.is_empty(), "Incomplete battle data should be discarded.")
 
+	# 专精改为等级制、100级满 (0.105.0) -- a save whose specialty value somehow
+	# exceeded the new cap (from before the cap existed) must be clamped down
+	# on migration, and a malformed specialty_xp field must be repaired.
+	var overleveled_save: Dictionary = state.data.duplicate(true)
+	overleveled_save.swordsmanship = 500
+	overleveled_save.specialty_xp = "not even a dictionary"
+	assert(state.import_data(overleveled_save), "A save with an out-of-range specialty level must still load.")
+	assert(int(state.data.swordsmanship) == TRAINING_RULES.MAX_SPECIALTY_LEVEL, "A specialty level beyond the new 100-level cap must be clamped down on migration.")
+	assert(typeof(state.data.specialty_xp) == TYPE_DICTIONARY and int(state.data.specialty_xp.get("swordsmanship", -1)) == 0, "A malformed specialty_xp field must be repaired to a clean dictionary rather than crashing.")
+
 	var legacy_battle_save: Dictionary = state.data.duplicate(true)
 	legacy_battle_save.battle = {"width": 4, "height": 3, "player_x": 0, "player_y": 1, "ap": 2, "turn": 1, "blocked": [], "enemies": [{"name": "弓手喽啰", "hp": 10, "x": 3, "y": 1}]}
 	assert(state.import_data(legacy_battle_save), "A structurally valid legacy battle should migrate.")
@@ -134,7 +155,10 @@ func _initialize() -> void:
 	assert(str(state.data.quest_stage) == spar_stage and "玄铁令" not in state.data.items and "villain_revealed" not in state.data.flags, "Optional sparring must not advance or contaminate the main story.")
 	assert(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 8, "An S-grade spar should combine its light base reward with the performance bonus.")
 	assert(str(state.data.pending_reward.grade) == "S" and int(state.data.pending_reward.performance_xp) == 4 and state.data.pending_reward.new_best and int(state.data.sparring_record.best_turns) == 1, "A sparring victory should persist its grade, bonus, and first personal best.")
-	assert(str(state.data.pending_reward.discipline) == "swordsmanship" and int(state.data.swordsmanship) == 2, "The default S-grade sword spar should improve swordsmanship twice.")
+	# 专精改为等级制、100级满 (0.105.0) -- an S-grade spar grants 2 xp
+	# (SparringRules.skill_gain_for_grade), which exactly meets a fresh
+	# level-0 swordsmanship's 2-xp threshold and levels it up to 1.
+	assert(str(state.data.pending_reward.discipline) == "swordsmanship" and int(state.data.swordsmanship) == 1, "The default S-grade sword spar should grant enough xp to level swordsmanship up once.")
 	assert("spar_s_grade" in state.data.flags, "An S-grade spar should persist its Steam achievement milestone.")
 	assert(state.claim_pending_reward("fellowship") and int(state.data.faction_relations.qingyun) == 2, "Sparring should add the selected reward to the starting Qingyun relationship.")
 
