@@ -159,6 +159,8 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 			actions.append(["裂石拳 · %d真气" % BATTLE_ENGINE.STONE_FIST_QI_COST, "stone_splitting_fist"])
 		if "night_triple_blade" in learned_moves:
 			actions.append(["暗夜三刀 · %d真气" % BATTLE_ENGINE.NIGHT_BLADE_QI_COST, "night_triple_blade"])
+		if "armor_splitting_spear" in learned_moves:
+			actions.append(["裂甲枪 · %d真气" % BATTLE_ENGINE.SPEAR_QI_COST, "armor_splitting_spear"])
 		actions.append(["运气护体 · 回3气", "brace"])
 		actions.append(["回春散 · 回%d" % BATTLE_ENGINE.healing_amount(player), "heal"])
 		actions.append(["霹雳石 ×%d" % int(player.get("consumables", {}).get("thunder_stone", 0)), "thunder_stone"])
@@ -166,7 +168,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	for action in actions:
 		var button := _action_button(action[0], Color("#8b493b") if mode == action[1] else Color("#315f4b"))
 		button.custom_minimum_size.x = 174
-		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "blade_skill" and int(player.qi) < BATTLE_ENGINE.BLADE_QI_COST) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp))) or (action[1] == "thunder_stone" and int(player.get("consumables", {}).get("thunder_stone", 0)) <= 0) or (action[1] == "stone_splitting_fist" and int(player.qi) < BATTLE_ENGINE.STONE_FIST_QI_COST) or (action[1] == "night_triple_blade" and int(player.qi) < BATTLE_ENGINE.NIGHT_BLADE_QI_COST)
+		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "blade_skill" and int(player.qi) < BATTLE_ENGINE.BLADE_QI_COST) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp))) or (action[1] == "thunder_stone" and int(player.get("consumables", {}).get("thunder_stone", 0)) <= 0) or (action[1] == "stone_splitting_fist" and int(player.qi) < BATTLE_ENGINE.STONE_FIST_QI_COST) or (action[1] == "night_triple_blade" and int(player.qi) < BATTLE_ENGINE.NIGHT_BLADE_QI_COST) or (action[1] == "armor_splitting_spear" and int(player.qi) < BATTLE_ENGINE.SPEAR_QI_COST)
 		button.pressed.connect(_emit_mode.bind(str(action[1])))
 		action_grid.add_child(button)
 	var end_button := _action_button("结束回合", Color("#806c4f"))

@@ -851,7 +851,7 @@ func _location_actions(location_id: String) -> Array:
 	if location_id == "qingyun":
 		var weekly_focus := TRAINING_RULES.weekly_focus(int(GameState.data.week))
 		var weekly_focus_name := TRAINING_RULES.discipline_short_name(weekly_focus)
-		var train_text := "演武场 · 本周%s" % weekly_focus_name if weekly_focus in ["swordsmanship", "bladesmanship"] else "演武场 · 剑法与刀法"
+		var train_text := "演武场 · 本周%s" % weekly_focus_name if weekly_focus in ["swordsmanship", "bladesmanship", "fistsmanship", "staffsmanship"] else "演武场 · 拳掌·剑法·刀法·枪棍"
 		var gathering_text := "后山 · 本周%s" % weekly_focus_name if weekly_focus in ["herbalism", "mining"] else "后山 · 采药与挖矿"
 		return [
 			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
@@ -1803,7 +1803,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.105.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.106.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2622,6 +2622,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 			var frost_valid: bool = battle_mode == "frost_dash" and BATTLE_RULES.can_frost_dash(battle, cell)
 			var stone_fist_valid: bool = battle_mode == "stone_splitting_fist" and int(GameState.data.qi) >= BATTLE_ENGINE.STONE_FIST_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var night_blade_valid: bool = battle_mode == "night_triple_blade" and int(GameState.data.qi) >= BATTLE_ENGINE.NIGHT_BLADE_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
+			var spear_valid: bool = battle_mode == "armor_splitting_spear" and int(GameState.data.qi) >= BATTLE_ENGINE.SPEAR_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			if move_valid:
 				data.color = "#28678aee"
 			elif attack_valid:
@@ -2638,6 +2639,8 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				data.color = "#6a4f9dee"
 			elif night_blade_valid:
 				data.color = "#3c3c5aee"
+			elif spear_valid:
+				data.color = "#5c7a3fee"
 			elif boss_danger:
 				data.color = "#8f2f24ee"
 			if BATTLE_RULES.is_blocked(battle, cell):

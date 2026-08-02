@@ -15,14 +15,13 @@ const TRAIN_XP_MAX := 15
 ## every learned move is usable in battle immediately.
 ##
 ## "category" (0.102.0) sorts moves into 藏经阁's four weapon-style
-## groupings -- purely a display grouping, no gameplay effect. No 枪棍
-## move exists yet, so that category simply never appears in 藏经阁 until
-## one is added (see CATEGORIES below).
+## groupings -- purely a display grouping, no gameplay effect.
 const MOVES := {
 	"cloud_sword": {"title": "流云剑法", "description": "直线三格，无视护甲，引爆破绽。", "price": 120, "qi_cost": 8, "upgrade_base": 35, "level_damage_bonus": 1, "category": "sword"},
 	"blade_technique": {"title": "断岳刀法", "description": "相邻重击，永久破甲并制造2层破绽。", "price": 120, "qi_cost": 6, "upgrade_base": 35, "level_damage_bonus": 1, "category": "blade"},
 	"stone_splitting_fist": {"title": "裂石拳", "description": "内力贯拳，无视护甲。", "price": 150, "qi_cost": 5, "upgrade_base": 30, "level_damage_bonus": 1, "category": "fist"},
 	"night_triple_blade": {"title": "暗夜三刀", "description": "三刀连斩，刀刀见血。", "price": 260, "qi_cost": 9, "upgrade_base": 50, "level_damage_bonus": 1, "category": "blade"},
+	"armor_splitting_spear": {"title": "裂甲枪", "description": "相邻突刺，护甲减半（枪棍大成后无视护甲）。", "price": 150, "qi_cost": 6, "upgrade_base": 30, "level_damage_bonus": 1, "category": "staff"},
 }
 
 ## Display order for 藏经阁's move groupings -- categories with no learned

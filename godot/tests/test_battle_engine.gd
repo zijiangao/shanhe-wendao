@@ -17,6 +17,7 @@ func _initialize() -> void:
 	_test_equipped_gear_bonuses()
 	_test_wuxue_moves_require_learning()
 	_test_wuxue_move_damage()
+	_test_armor_splitting_spear()
 	_test_wuxue_internal_and_lightness_bonuses()
 	_test_wuxue_leveling()
 	_test_invalid_action_preserves_resources()
@@ -485,6 +486,95 @@ func _test_wuxue_move_damage() -> void:
 	armored_blade_player.qi = 20
 	var armored_blade_result: Dictionary = ENGINE.player_action(armored_blade_battle, armored_blade_player, "night_triple_blade", Vector2i(2, 1), _seeded_rng())
 	assert(int(armored_blade_result.damage) < int(blade_result.damage), "Unlike Stone Splitting Fist, Night Triple Blade should subtract the enemy's armor from every one of its three hits.")
+
+## 演武场新增拳掌/枪棍 (0.106.0) -- 裂甲枪是新增的枪棍类招式：护甲减半，
+## 枪棍大成(100级)后升级为完全无视护甲。同时验证 fistsmanship/staffsmanship
+## 的每2级+1伤害加成，跟剑法/刀法完全同款写法。
+func _test_armor_splitting_spear() -> void:
+	var unlearned_battle := _fixture()
+	unlearned_battle.erase("ally")
+	unlearned_battle.active_unit = "hero"
+	unlearned_battle.ap = 2
+	unlearned_battle.enemies[0].x = 2
+	unlearned_battle.enemies[0].y = 1
+	var unlearned_player := _player_fixture()
+	var unlearned_attempt: Dictionary = ENGINE.player_action(unlearned_battle, unlearned_player, "armor_splitting_spear", Vector2i(2, 1), _seeded_rng())
+	assert(not bool(unlearned_attempt.ok) and int(unlearned_battle.ap) == 2, "Using an unlearned 裂甲枪 must fail without consuming an action point.")
+
+	var half_pierce_battle := _fixture()
+	half_pierce_battle.erase("ally")
+	half_pierce_battle.active_unit = "hero"
+	half_pierce_battle.ap = 2
+	half_pierce_battle.enemies[0].x = 2
+	half_pierce_battle.enemies[0].y = 1
+	half_pierce_battle.enemies[0].hp = 100
+	half_pierce_battle.enemies[0].max_hp = 100
+	half_pierce_battle.enemies[0].armor = 10
+	var half_pierce_player := _player_fixture()
+	half_pierce_player.learned_moves = ["armor_splitting_spear"]
+	half_pierce_player.qi = 20
+	var half_pierce_result: Dictionary = ENGINE.player_action(half_pierce_battle, half_pierce_player, "armor_splitting_spear", Vector2i(2, 1), _seeded_rng())
+	var expected_spear := ENGINE.spear_damage_range(half_pierce_player)
+	assert(bool(half_pierce_result.ok) and int(half_pierce_player.qi) == 14, "A legal 裂甲枪 should hit and consume six qi.")
+	assert(int(half_pierce_result.damage) >= expected_spear.x - 5 and int(half_pierce_result.damage) <= expected_spear.y - 5, "裂甲枪 should only subtract half the enemy's ten armor (five), not the full amount.")
+
+	var full_pierce_battle := _fixture()
+	full_pierce_battle.erase("ally")
+	full_pierce_battle.active_unit = "hero"
+	full_pierce_battle.ap = 2
+	full_pierce_battle.enemies[0].x = 2
+	full_pierce_battle.enemies[0].y = 1
+	full_pierce_battle.enemies[0].hp = 100
+	full_pierce_battle.enemies[0].max_hp = 100
+	full_pierce_battle.enemies[0].armor = 10
+	var full_pierce_player := _player_fixture()
+	full_pierce_player.learned_moves = ["armor_splitting_spear"]
+	full_pierce_player.qi = 20
+	full_pierce_player.staffsmanship = 100
+	var full_pierce_result: Dictionary = ENGINE.player_action(full_pierce_battle, full_pierce_player, "armor_splitting_spear", Vector2i(2, 1), _seeded_rng())
+	var expected_full_spear := ENGINE.spear_damage_range(full_pierce_player)
+	assert(int(full_pierce_result.damage) >= expected_full_spear.x and int(full_pierce_result.damage) <= expected_full_spear.y, "At 枪棍 level 100, 裂甲枪 should ignore the enemy's armor entirely, matching its unarmored damage range.")
+
+	# fistsmanship/staffsmanship should add +1 damage per two levels, the
+	# exact same shape as swordsmanship/bladesmanship's existing bonus.
+	var fist_battle := _fixture()
+	fist_battle.erase("ally")
+	fist_battle.active_unit = "hero"
+	fist_battle.ap = 2
+	fist_battle.enemies[0].x = 2
+	fist_battle.enemies[0].y = 1
+	fist_battle.enemies[0].hp = 100
+	var fist_player := _player_fixture()
+	fist_player.learned_moves = ["stone_splitting_fist"]
+	fist_player.fistsmanship = 6
+	fist_player.qi = 20
+	var fist_result: Dictionary = ENGINE.player_action(fist_battle, fist_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	var baseline_fist_battle := _fixture()
+	baseline_fist_battle.erase("ally")
+	baseline_fist_battle.active_unit = "hero"
+	baseline_fist_battle.ap = 2
+	baseline_fist_battle.enemies[0].x = 2
+	baseline_fist_battle.enemies[0].y = 1
+	baseline_fist_battle.enemies[0].hp = 100
+	var baseline_fist_player := _player_fixture()
+	baseline_fist_player.learned_moves = ["stone_splitting_fist"]
+	baseline_fist_player.qi = 20
+	var baseline_fist_result: Dictionary = ENGINE.player_action(baseline_fist_battle, baseline_fist_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	assert(int(fist_result.damage) == int(baseline_fist_result.damage) + 3, "拳掌 level 6 should add exactly three damage (6/2) to 裂石拳, mirroring 剑法/刀法's bonus shape.")
+
+	# 拳掌大成 (100级)：裂石拳真气消耗从5降到3.
+	var fist_master_battle := _fixture()
+	fist_master_battle.erase("ally")
+	fist_master_battle.active_unit = "hero"
+	fist_master_battle.ap = 2
+	fist_master_battle.enemies[0].x = 2
+	fist_master_battle.enemies[0].y = 1
+	var fist_master_player := _player_fixture()
+	fist_master_player.learned_moves = ["stone_splitting_fist"]
+	fist_master_player.fistsmanship = 100
+	fist_master_player.qi = 3
+	var fist_master_result: Dictionary = ENGINE.player_action(fist_master_battle, fist_master_player, "stone_splitting_fist", Vector2i(2, 1), _seeded_rng())
+	assert(bool(fist_master_result.ok) and int(fist_master_player.qi) == 0, "拳掌大成 should let 裂石拳 land with only three qi (a five-qi hero would otherwise be short).")
 
 func _test_wuxue_internal_and_lightness_bonuses() -> void:
 	var plain_battle := _fixture()

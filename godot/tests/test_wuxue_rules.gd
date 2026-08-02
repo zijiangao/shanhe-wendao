@@ -198,6 +198,11 @@ func _initialize() -> void:
 	var internal_rows: Array = RULES.options_library_category(learned, "internal")
 	assert(internal_rows.size() == 1 and "紫霞神功" in str(internal_rows[0][0]), "内功 should show the learned internal art.")
 
+	# 新增枪棍招式裂甲枪 (0.106.0) -- 枪棍分类不再永远是空占位行。
+	RULES.learn_move(learned, "armor_splitting_spear")
+	var staff_rows: Array = RULES.options_library_category(learned, "staff")
+	assert(staff_rows.size() == 1 and str(staff_rows[0][0]).begins_with("裂甲枪"), "枪棍 should now show the learned 裂甲枪 instead of the empty placeholder.")
+
 	print("Wuxue rules tests passed.")
 	quit()
 

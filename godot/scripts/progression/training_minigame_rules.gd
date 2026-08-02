@@ -7,7 +7,9 @@ const COMBO_BONUS_PER_STEP := 5
 const MAX_COMBO_BONUS := 10
 const MAX_TOTAL_SCORE := 315
 const WEEKLY_FOCUS_XP_BONUS := 3
-const WEEKLY_FOCUS_ORDER := ["swordsmanship", "bladesmanship", "herbalism", "mining"]
+## 演武场新增拳掌/枪棍 (0.106.0) -- 轮换加入这两项，本周专精修为加成覆盖全部
+## 六项专精，不再只轮转原来的四项。
+const WEEKLY_FOCUS_ORDER := ["swordsmanship", "bladesmanship", "fistsmanship", "staffsmanship", "herbalism", "mining"]
 ## 专精改为等级制、100级满 (0.105.0) -- 熟手/精通/大成门槛原为3/6/10
 ## （专为无上限的旧数值设计），等比放大10倍到30/60/100。
 const MAX_SPECIALTY_LEVEL := 100
@@ -31,6 +33,18 @@ const DISCIPLINES := {
 		"description": "不要抢刀；蓄势约一秒，在金色窗口内斩击。",
 		"mechanic": "蓄势",
 		"accent": Color("#b56750")
+	},
+	"fistsmanship": {
+		"title": "拳掌 · 寸劲淬体",
+		"description": "屏息蓄力约一秒，在金色窗口内寸劲出拳。",
+		"mechanic": "蓄势",
+		"accent": Color("#c98a4b")
+	},
+	"staffsmanship": {
+		"title": "枪棍 · 连枪如龙",
+		"description": "记住两式枪路，依次完成三组连枪。",
+		"mechanic": "连招",
+		"accent": Color("#8a7a5c")
 	},
 	"herbalism": {
 		"title": "采药 · 寻香识草",
@@ -84,6 +98,14 @@ static func medicine_mastery_bonus(level: int) -> int:
 static func craft_ore_discount(level: int) -> int:
 	return 3 if maxi(0, level) >= 100 else 0
 
+## 拳掌大成 (0.106.0)：裂石拳真气消耗从5降到3。
+static func fist_qi_discount(level: int) -> int:
+	return 2 if maxi(0, level) >= 100 else 0
+
+## 枪棍大成 (0.106.0)：裂甲枪从"护甲减半"升级为"完全无视护甲"。
+static func spear_full_pierce(level: int) -> bool:
+	return maxi(0, level) >= 100
+
 ## 专精等级所需经验的曲线 (0.105.0) -- 越高级需要的经验越多，1~24级每级2点，
 ## 25~49级3点，50~74级4点，75~99级5点，总计约350经验练满100级。跟
 ## WuxueRules.xp_needed() 是同类概念，但服务于100级的更长曲线，数值刻意
@@ -119,6 +141,8 @@ static func perk_text(discipline: String, level: int) -> String:
 	match discipline:
 		"swordsmanship": return "每2级剑伤 +1；大成后流云剑法只耗6真气"
 		"bladesmanship": return "每2级普攻 +1；大成后普攻制造2层破绽"
+		"fistsmanship": return "每2级拳伤 +1；大成后裂石拳只耗3真气"
+		"staffsmanship": return "每2级枪伤 +1；大成后裂甲枪无视全部护甲"
 		"herbalism": return "回春散随等级增强；大成再加5治疗，采药增产 +%d" % gathering_bonus(level)
 		"mining": return "采矿增产 +%d；大成后打造兵刃/护具少花3矿石" % gathering_bonus(level)
 	return ""
@@ -159,23 +183,24 @@ static func record_attempt(records: Dictionary, discipline: String, score: int, 
 static func records_text(records: Variant) -> String:
 	var normalized := normalize_records(records)
 	var entries: Array[String] = []
-	for entry in [["swordsmanship", "剑"], ["bladesmanship", "刀"], ["herbalism", "药"], ["mining", "矿"]]:
+	for entry in [["swordsmanship", "剑"], ["bladesmanship", "刀"], ["fistsmanship", "拳"], ["staffsmanship", "枪"], ["herbalism", "药"], ["mining", "矿"]]:
 		var record: Dictionary = normalized[entry[0]]
 		entries.append("%s %s·%d（%d次）" % [entry[1], grade(int(record.best_score)) if int(record.attempts) > 0 else "—", int(record.best_score), int(record.attempts)])
 	return " · ".join(entries)
 
-## 演武场 (combat technique training) covers only swordsmanship/bladesmanship
-## now -- herbalism/mining were split out to 后山 (gathering_options()) since
-## gathering materials is thematically distinct from martial-arts practice,
-## even though both still share the exact same minigame/specialty machinery.
+## 演武场 (combat technique training) covers the four combat disciplines
+## (剑法/刀法/拳掌/枪棍, 0.106.0 added fistsmanship/staffsmanship) -- herbalism/
+## mining were split out to 后山 (gathering_options()) since gathering
+## materials is thematically distinct from martial-arts practice, even
+## though both still share the exact same minigame/specialty machinery.
 static func options(state: Dictionary = {}) -> Array:
-	return _discipline_options(state, ["swordsmanship", "bladesmanship"])
+	return _discipline_options(state, ["swordsmanship", "bladesmanship", "fistsmanship", "staffsmanship"])
 
 static func gathering_options(state: Dictionary = {}) -> Array:
 	return _discipline_options(state, ["herbalism", "mining"])
 
 static func _discipline_options(state: Dictionary, disciplines: Array) -> Array:
-	var titles := {"swordsmanship": "剑法 · 听风辨势", "bladesmanship": "刀法 · 破阵斩隙", "herbalism": "采药 · 寻香识草", "mining": "挖矿 · 听音寻脉"}
+	var titles := {"swordsmanship": "剑法 · 听风辨势", "bladesmanship": "刀法 · 破阵斩隙", "fistsmanship": "拳掌 · 寸劲淬体", "staffsmanship": "枪棍 · 连枪如龙", "herbalism": "采药 · 寻香识草", "mining": "挖矿 · 听音寻脉"}
 	var result: Array = []
 	var focus := weekly_focus(int(state.get("week", 1)))
 	for discipline in disciplines:
@@ -216,6 +241,17 @@ static func challenge(discipline: String, primary: String, secondary: String = "
 			var blade_target := opposite(primary) if advanced else primary
 			var blade_ideal := 1400 if advanced else 1000
 			return {"discipline": discipline, "advanced": advanced, "targets": [blade_target], "prompt": "%s：%s" % ["识破虚招，回斩" if advanced else "蓄势斩向", DIRECTION_LABELS[blade_target]], "timing": "最佳窗口 %.2f–%.2f 秒" % [float(blade_ideal - 150) / 1000.0, float(blade_ideal + 150) / 1000.0], "ideal_ms": blade_ideal}
+		"fistsmanship":
+			var fist_target := opposite(primary) if advanced else primary
+			var fist_ideal := 1400 if advanced else 1000
+			return {"discipline": discipline, "advanced": advanced, "targets": [fist_target], "prompt": "%s：%s" % ["屏息后发，寸劲反打" if advanced else "蓄力出拳", DIRECTION_LABELS[fist_target]], "timing": "最佳窗口 %.2f–%.2f 秒" % [float(fist_ideal - 150) / 1000.0, float(fist_ideal + 150) / 1000.0], "ideal_ms": fist_ideal}
+		"staffsmanship":
+			var staff_follow := secondary if secondary in DIRECTIONS else opposite(primary)
+			var staff_targets := [primary, staff_follow, opposite(staff_follow)] if advanced else [primary, staff_follow]
+			var staff_labels: Array[String] = []
+			for target in staff_targets:
+				staff_labels.append(str(DIRECTION_LABELS[target]))
+			return {"discipline": discipline, "advanced": advanced, "targets": staff_targets, "prompt": "枪谱：%s" % " → ".join(staff_labels), "timing": "进阶三式枪路" if advanced else "迅速依次出枪"}
 		"herbalism":
 			var herb_targets := [opposite(primary), opposite(secondary)] if advanced and secondary in DIRECTIONS else [opposite(primary)]
 			var herb_prompt := "两株叶尖朝%s、%s，依次寻根" % [DIRECTION_LABELS[primary], DIRECTION_LABELS[secondary]] if herb_targets.size() > 1 else "叶尖朝%s，药根在……" % DIRECTION_LABELS[primary]
@@ -239,6 +275,17 @@ static func score_challenge(discipline: String, correct: bool, elapsed_ms: int) 
 			if blade_delta <= 150: return 100
 			if blade_delta <= 300: return 85
 			if blade_delta <= 550: return 70
+			return 55
+		"fistsmanship":
+			var fist_delta := absi(elapsed_ms - 1000)
+			if fist_delta <= 150: return 100
+			if fist_delta <= 300: return 85
+			if fist_delta <= 550: return 70
+			return 55
+		"staffsmanship":
+			if elapsed_ms <= 1200: return 100
+			if elapsed_ms <= 1800: return 85
+			if elapsed_ms <= 2600: return 70
 			return 55
 		"herbalism":
 			if elapsed_ms <= 1800: return 100
@@ -271,7 +318,7 @@ static func score_challenge_variant(discipline: String, correct: bool, elapsed_m
 	if not bool(challenge_data.get("advanced", false)):
 		return score_challenge(discipline, correct, elapsed_ms)
 	match discipline:
-		"swordsmanship":
+		"swordsmanship", "staffsmanship":
 			if elapsed_ms <= 1800: return 100
 			if elapsed_ms <= 2600: return 85
 			if elapsed_ms <= 3600: return 70
@@ -280,8 +327,8 @@ static func score_challenge_variant(discipline: String, correct: bool, elapsed_m
 			if elapsed_ms <= 2600: return 100
 			if elapsed_ms <= 4000: return 85
 			return 70
-		"bladesmanship", "mining":
-			var ideal := int(challenge_data.get("ideal_ms", 1000 if discipline == "bladesmanship" else 1200))
+		"bladesmanship", "mining", "fistsmanship":
+			var ideal := int(challenge_data.get("ideal_ms", 1000 if discipline in ["bladesmanship", "fistsmanship"] else 1200))
 			var delta := absi(elapsed_ms - ideal)
 			if delta <= 150: return 100
 			if delta <= 300: return 85
@@ -292,7 +339,7 @@ static func score_challenge_variant(discipline: String, correct: bool, elapsed_m
 static func timing_feedback_variant(discipline: String, elapsed_ms: int, correct: bool, challenge_data: Dictionary) -> String:
 	if not correct:
 		return "失误"
-	if discipline in ["bladesmanship", "mining"] and challenge_data.has("ideal_ms"):
+	if discipline in ["bladesmanship", "mining", "fistsmanship"] and challenge_data.has("ideal_ms"):
 		var ideal := int(challenge_data.ideal_ms)
 		if elapsed_ms < ideal - 300: return "过早"
 		if elapsed_ms > ideal + 300: return "过晚"
@@ -311,12 +358,12 @@ static func score_quality(base_score: int) -> String:
 static func timing_feedback(discipline: String, elapsed_ms: int, correct: bool) -> String:
 	if not correct:
 		return "失误"
-	if discipline in ["bladesmanship", "mining"]:
-		var ideal := 1000 if discipline == "bladesmanship" else 1200
+	if discipline in ["bladesmanship", "mining", "fistsmanship"]:
+		var ideal := 1200 if discipline == "mining" else 1000
 		if elapsed_ms < ideal - 300: return "过早"
 		if elapsed_ms > ideal + 300: return "过晚"
 		return "正中时机"
-	return "连贯" if discipline == "swordsmanship" else "辨识正确"
+	return "连贯" if discipline in ["swordsmanship", "staffsmanship"] else "辨识正确"
 
 static func grade(total_score: int) -> String:
 	if total_score >= 270:

@@ -9,6 +9,7 @@ const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const BLADE_QI_COST := 6
 const STONE_FIST_QI_COST := 5
 const NIGHT_BLADE_QI_COST := 9
+const SPEAR_QI_COST := 6
 
 static func is_victory(battle: Dictionary) -> bool:
 	if str(battle.get("objective", {}).get("type", "eliminate")) == "survive":
@@ -44,7 +45,11 @@ static func blade_armor_break(player: Dictionary) -> int:
 	return 2 if int(player.get("bladesmanship", 0)) >= 60 else 1
 
 static func stone_fist_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "stone_splitting_fist")
+	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("fistsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "stone_splitting_fist")
+	return Vector2i(base, base + 2)
+
+static func spear_damage_range(player: Dictionary) -> Vector2i:
+	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("staffsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "armor_splitting_spear")
 	return Vector2i(base, base + 2)
 
 static func night_blade_hit_range(player: Dictionary) -> Vector2i:
@@ -75,6 +80,10 @@ static func hero_action_help(player: Dictionary) -> String:
 	if "night_triple_blade" in learned_moves:
 		var night := night_blade_hit_range(player)
 		text += "\n暗夜三刀 · 相邻连击3次，每次 %d–%d（护甲前）· %d真气" % [night.x, night.y, NIGHT_BLADE_QI_COST]
+	if "armor_splitting_spear" in learned_moves:
+		var spear := spear_damage_range(player)
+		var pierce_note := "无视护甲" if TRAINING_RULES.spear_full_pierce(int(player.get("staffsmanship", 0))) else "护甲减半"
+		text += "\n裂甲枪 %d–%d（相邻，%s）· %d真气" % [spear.x, spear.y, pierce_note, SPEAR_QI_COST]
 	var move_bonus := WUXUE_RULES.lightness_move_bonus(player)
 	if move_bonus > 0:
 		text += "\n轻功身法：移动范围 +%d" % move_bonus
@@ -106,6 +115,8 @@ static func player_action(battle: Dictionary, player: Dictionary, action: String
 			return _stone_splitting_fist(battle, player, target, rng)
 		"night_triple_blade":
 			return _night_triple_blade(battle, player, target, rng)
+		"armor_splitting_spear":
+			return _armor_splitting_spear(battle, player, target, rng)
 		_:
 			return _failure("未知战斗行动：%s" % action)
 
@@ -194,12 +205,13 @@ static func _stone_splitting_fist(battle: Dictionary, player: Dictionary, target
 		return _failure("林清霜不会裂石拳。")
 	if "stone_splitting_fist" not in Array(player.get("learned_moves", [])):
 		return _failure("尚未习得裂石拳，请先在秘籍阁学习。")
-	if int(player.get("qi", 0)) < STONE_FIST_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
-		return _failure("裂石拳需要%d点真气，并只能攻击相邻敌人。" % STONE_FIST_QI_COST)
+	var fist_qi_cost := STONE_FIST_QI_COST - TRAINING_RULES.fist_qi_discount(int(player.get("fistsmanship", 0)))
+	if int(player.get("qi", 0)) < fist_qi_cost or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
+		return _failure("裂石拳需要%d点真气，并只能攻击相邻敌人。" % fist_qi_cost)
 	var enemy_index := RULES.enemy_at(battle, target)
 	var damage_range := stone_fist_damage_range(player)
 	var damage := maxi(1, damage_range.x + _roll_range(rng, 0, damage_range.y - damage_range.x))
-	player.qi = int(player.qi) - STONE_FIST_QI_COST
+	player.qi = int(player.qi) - fist_qi_cost
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
 	battle.ap = int(battle.ap) - 1
 	battle.result = "裂石拳内力贯穿，无视护甲对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
@@ -228,6 +240,28 @@ static func _night_triple_blade(battle: Dictionary, player: Dictionary, target: 
 	battle.skill_flash = true
 	battle.skill_name = "暗 夜 三 刀"
 	return _success(battle, total_damage)
+
+static func _armor_splitting_spear(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) == "ally":
+		return _failure("林清霜不会裂甲枪。")
+	if "armor_splitting_spear" not in Array(player.get("learned_moves", [])):
+		return _failure("尚未习得裂甲枪，请先在秘籍阁学习。")
+	if int(player.get("qi", 0)) < SPEAR_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
+		return _failure("裂甲枪需要%d点真气，并只能攻击相邻敌人。" % SPEAR_QI_COST)
+	var enemy_index := RULES.enemy_at(battle, target)
+	var armor := RULES.enemy_armor(battle.enemies[enemy_index])
+	var full_pierce := TRAINING_RULES.spear_full_pierce(int(player.get("staffsmanship", 0)))
+	var effective_armor := 0 if full_pierce else armor / 2
+	var damage_range := spear_damage_range(player)
+	var damage := maxi(1, damage_range.x + _roll_range(rng, 0, damage_range.y - damage_range.x) - effective_armor)
+	player.qi = int(player.qi) - SPEAR_QI_COST
+	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
+	battle.ap = int(battle.ap) - 1
+	var pierce_note := "无视护甲" if full_pierce else "护甲减半"
+	battle.result = "裂甲枪突刺而出，%s对%s造成%d点伤害！" % [pierce_note, battle.enemies[enemy_index].name, damage]
+	battle.skill_flash = true
+	battle.skill_name = "裂 甲 枪"
+	return _success(battle, damage)
 
 static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if not RULES.can_frost_dash(battle, target):

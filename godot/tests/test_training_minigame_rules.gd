@@ -3,13 +3,14 @@ extends SceneTree
 const RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 
 func _init() -> void:
-	assert(RULES.options().size() == 2, "演武场 should offer only the two combat specialties now that gathering has its own menu.")
+	# 演武场新增拳掌/枪棍 (0.106.0) -- 现在演武场覆盖四项战斗专精。
+	assert(RULES.options().size() == 4, "演武场 should now offer all four combat specialties (剑法/刀法/拳掌/枪棍).")
 	assert(RULES.gathering_options().size() == 2, "后山 should offer exactly the two gathering specialties.")
-	assert(RULES.options().any(func(o): return str(o[2]) == "swordsmanship") and RULES.options().any(func(o): return str(o[2]) == "bladesmanship"), "演武场 must still cover both combat disciplines.")
+	assert(RULES.options().any(func(o): return str(o[2]) == "swordsmanship") and RULES.options().any(func(o): return str(o[2]) == "bladesmanship") and RULES.options().any(func(o): return str(o[2]) == "fistsmanship") and RULES.options().any(func(o): return str(o[2]) == "staffsmanship"), "演武场 must cover all four combat disciplines.")
 	assert(RULES.gathering_options().any(func(o): return str(o[2]) == "herbalism") and RULES.gathering_options().any(func(o): return str(o[2]) == "mining"), "后山 must cover both gathering disciplines.")
 	assert(not RULES.options().any(func(o): return str(o[2]) == "herbalism" or str(o[2]) == "mining"), "演武场 must no longer offer herbalism or mining directly.")
-	assert(not RULES.gathering_options().any(func(o): return str(o[2]) == "swordsmanship" or str(o[2]) == "bladesmanship"), "后山 must not offer the combat disciplines.")
-	assert(RULES.weekly_focus(1) == "swordsmanship" and RULES.weekly_focus(4) == "mining" and RULES.weekly_focus(5) == "swordsmanship", "Weekly training focus should rotate deterministically across all disciplines.")
+	assert(not RULES.gathering_options().any(func(o): return str(o[2]) == "swordsmanship" or str(o[2]) == "bladesmanship" or str(o[2]) == "fistsmanship" or str(o[2]) == "staffsmanship"), "后山 must not offer the combat disciplines.")
+	assert(RULES.weekly_focus(1) == "swordsmanship" and RULES.weekly_focus(2) == "bladesmanship" and RULES.weekly_focus(3) == "fistsmanship" and RULES.weekly_focus(4) == "staffsmanship" and RULES.weekly_focus(5) == "herbalism" and RULES.weekly_focus(6) == "mining" and RULES.weekly_focus(7) == "swordsmanship", "Weekly training focus should rotate deterministically across all six disciplines.")
 	assert(RULES.discipline_short_name("herbalism") == "采药", "Weekly-focus labels should reuse the shipping discipline names.")
 	# 专精改为等级制、100级满 (0.105.0) -- 熟手/精通/大成门槛等比放大10倍到30/60/100。
 	assert(RULES.specialty_rank_name(0) == "初学" and RULES.specialty_rank_name(30) == "熟手", "Early specialty thresholds should have stable names.")
@@ -19,6 +20,8 @@ func _init() -> void:
 	assert(RULES.cloud_qi_cost(99) == 8 and RULES.cloud_qi_cost(100) == 6, "Sword mastery should reduce Flowing Cloud Sword's qi cost only at the level-100 cap.")
 	assert(RULES.attack_exposure_gain(99) == 1 and RULES.attack_exposure_gain(100) == 2, "Blade mastery should double normal-attack exposure only at the level-100 cap.")
 	assert(RULES.medicine_mastery_bonus(100) == 5 and RULES.craft_ore_discount(100) == 3, "Gathering mastery should expose stable medicine and forging perks.")
+	assert(RULES.fist_qi_discount(99) == 0 and RULES.fist_qi_discount(100) == 2, "Fist mastery should discount 裂石拳's qi cost only at the level-100 cap.")
+	assert(not RULES.spear_full_pierce(99) and RULES.spear_full_pierce(100), "Staff mastery should upgrade 裂甲枪 to full armor pierce only at the level-100 cap.")
 
 	# MAX_SPECIALTY_LEVEL/specialty_xp_needed()/train_specialty() are the new
 	# leveling machinery (0.105.0), mirroring WuxueRules._train()'s pattern
@@ -63,7 +66,7 @@ func _init() -> void:
 	var lower_record := RULES.record_attempt(records, "swordsmanship", 200, 1)
 	assert(not lower_record.new_best and lower_record.best_score == 315 and lower_record.best_streak == 3 and lower_record.attempts == 2, "A lower repeat should increment attempts without replacing stronger records.")
 	var repaired_records := RULES.normalize_records({"swordsmanship": {"best_score": 999, "best_streak": -4, "attempts": -2}, "invalid": {"best_score": 100}})
-	assert(repaired_records.size() == 4 and repaired_records.swordsmanship.best_score == 315 and repaired_records.swordsmanship.attempts == 0, "Record migration should clamp damaged values and discard unknown disciplines.")
+	assert(repaired_records.size() == 6 and repaired_records.swordsmanship.best_score == 315 and repaired_records.swordsmanship.attempts == 0, "Record migration should clamp damaged values, discard unknown disciplines, and cover all six current disciplines.")
 	assert("剑 S·315（2次）" in RULES.records_text(records) and "刀 —·0（0次）" in RULES.records_text(records), "The character summary should distinguish established and untouched records.")
 	var sword := RULES.challenge("swordsmanship", "up", "right")
 	assert(sword.targets == ["up", "right"], "Sword training should require an ordered two-step combo.")
@@ -81,6 +84,21 @@ func _init() -> void:
 	assert(RULES.score_challenge("bladesmanship", true, 200) == 55, "Swinging too early should reduce blade training score.")
 	assert(RULES.score_challenge("mining", true, 1200) == 100, "Mining should reward striking on the resonance beat.")
 	assert(RULES.timing_feedback("mining", 500, true) == "过早", "Timing feedback should explain an early mining strike.")
+
+	# 演武场新增拳掌/枪棍 (0.106.0) -- 拳掌复用刀法的蓄势计时机制，枪棍复用剑法的方向连招机制。
+	var fist := RULES.challenge("fistsmanship", "up", "", false)
+	assert(fist.targets == ["up"] and fist.ideal_ms == 1000, "Fist training should reuse blade's timing-charge structure with its own ideal window.")
+	var staff := RULES.challenge("staffsmanship", "up", "right")
+	assert(staff.targets == ["up", "right"], "Staff training should reuse sword's ordered two-step combo structure.")
+	var advanced_staff := RULES.challenge("staffsmanship", "up", "right", true)
+	assert(advanced_staff.targets == ["up", "right", "left"] and advanced_staff.advanced, "Advanced staff training should require a three-technique sequence, same as advanced sword.")
+	assert(RULES.score_challenge("fistsmanship", true, 1000) == 100, "Fist training should reward its centered charge window.")
+	assert(RULES.score_challenge("fistsmanship", true, 200) == 55, "Punching too early should reduce fist training score.")
+	assert(RULES.score_challenge("staffsmanship", true, 1200) == 100, "Staff training should reward a swift combo, same threshold as sword.")
+	assert(RULES.timing_feedback("fistsmanship", 500, true) == "过早", "Timing feedback should explain an early fist strike.")
+	assert(RULES.timing_feedback("staffsmanship", 900, true) == "连贯", "Staff training should share sword's 连贯 feedback text.")
+	assert(RULES.perk_text("fistsmanship", 100) == "每2级拳伤 +1；大成后裂石拳只耗3真气", "Fist mastery perk text should describe its qi-discount capstone.")
+	assert(RULES.perk_text("staffsmanship", 100) == "每2级枪伤 +1；大成后裂甲枪无视全部护甲", "Staff mastery perk text should describe its full-pierce capstone.")
 	var opening := RULES.evaluate_challenge("swordsmanship", true, 900, 0)
 	assert(opening.score == 100 and opening.streak == 1 and opening.combo_bonus == 0 and opening.quality == "perfect", "The first perfect round should start a streak without a bonus.")
 	var chained := RULES.evaluate_challenge("swordsmanship", true, 1500, 1)

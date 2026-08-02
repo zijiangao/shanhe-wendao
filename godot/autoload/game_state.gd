@@ -44,6 +44,8 @@ func new_game() -> void:
 		"constitution": 4,
 		"swordsmanship": 0,
 		"bladesmanship": 0,
+		"fistsmanship": 0,
+		"staffsmanship": 0,
 		"herbalism": 0,
 		"mining": 0,
 		"specialty_xp": {},
@@ -90,7 +92,7 @@ func new_game() -> void:
 	state_changed.emit()
 
 func power() -> int:
-	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
+	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("fistsmanship", 0)) + int(data.get("staffsmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
 	var equipment_power := SHOP_RULES.weapon_attack_bonus(data) + SHOP_RULES.armor_defense_bonus(data)
 	var learned_move_power := 0
 	for move_id in Array(data.get("learned_moves", [])):
@@ -668,11 +670,11 @@ func _migrate_and_validate() -> void:
 	data.wuxue_xp = cleaned_xp
 	for stat in ["strength", "agility", "insight", "constitution"]:
 		data[stat] = maxi(1, int(data.get(stat, 1)))
-	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:
+	for specialty in ["swordsmanship", "bladesmanship", "fistsmanship", "staffsmanship", "herbalism", "mining"]:
 		data[specialty] = clampi(int(data.get(specialty, 0)), 0, TRAINING_RULES.MAX_SPECIALTY_LEVEL)
 	if not data.has("specialty_xp") or typeof(data.specialty_xp) != TYPE_DICTIONARY:
 		data.specialty_xp = {}
-	for specialty in ["swordsmanship", "bladesmanship", "herbalism", "mining"]:
+	for specialty in ["swordsmanship", "bladesmanship", "fistsmanship", "staffsmanship", "herbalism", "mining"]:
 		data.specialty_xp[specialty] = maxi(0, int(data.specialty_xp.get(specialty, 0)))
 	if str(data.location) not in ["qingyun", "blackreed", "luoyang", "huashan", "emei"]:
 		data.location = "qingyun"

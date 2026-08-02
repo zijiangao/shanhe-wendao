@@ -118,7 +118,8 @@ func _initialize() -> void:
 	assert(int(state.data.materials.herbs) == 2 and "上品药材" not in state.data.items, "Legacy herb items should become two material units without polluting story items.")
 	assert(typeof(state.data.herbarium) == TYPE_DICTIONARY and state.data.herbarium.is_empty(), "Version-six saves should gain an empty herbarium.")
 	assert(typeof(state.data.mineralogy) == TYPE_DICTIONARY and state.data.mineralogy.is_empty(), "Older saves should gain an empty mineral ledger.")
-	assert(state.data.training_records.size() == 4 and state.data.training_records.swordsmanship.attempts == 0, "Older saves should gain normalized empty training records.")
+	# 演武场新增拳掌/枪棍 (0.106.0) -- training_records 现在覆盖六项专精。
+	assert(state.data.training_records.size() == 6 and state.data.training_records.swordsmanship.attempts == 0, "Older saves should gain normalized empty training records.")
 
 	var damaged_save := {"save_version": 1, "week": -20, "acted_this_week": "not a bool", "max_hp": 0, "hp": -5, "location": "nowhere", "log": "invalid", "battle": {"width": 8}}
 	assert(state.import_data(damaged_save), "Older saves should be migrated.")
@@ -136,6 +137,14 @@ func _initialize() -> void:
 	assert(state.import_data(overleveled_save), "A save with an out-of-range specialty level must still load.")
 	assert(int(state.data.swordsmanship) == TRAINING_RULES.MAX_SPECIALTY_LEVEL, "A specialty level beyond the new 100-level cap must be clamped down on migration.")
 	assert(typeof(state.data.specialty_xp) == TYPE_DICTIONARY and int(state.data.specialty_xp.get("swordsmanship", -1)) == 0, "A malformed specialty_xp field must be repaired to a clean dictionary rather than crashing.")
+
+	# 演武场新增拳掌/枪棍 (0.106.0) -- a save from before these fields existed
+	# must migrate to level 0, not crash on a missing key.
+	var pre_fist_staff_save: Dictionary = state.data.duplicate(true)
+	pre_fist_staff_save.erase("fistsmanship")
+	pre_fist_staff_save.erase("staffsmanship")
+	assert(state.import_data(pre_fist_staff_save), "A save from before 拳掌/枪棍 existed must still load.")
+	assert(int(state.data.fistsmanship) == 0 and int(state.data.staffsmanship) == 0, "Missing fistsmanship/staffsmanship fields must default to level 0 on migration.")
 
 	var legacy_battle_save: Dictionary = state.data.duplicate(true)
 	legacy_battle_save.battle = {"width": 4, "height": 3, "player_x": 0, "player_y": 1, "ap": 2, "turn": 1, "blocked": [], "enemies": [{"name": "弓手喽啰", "hp": 10, "x": 3, "y": 1}]}

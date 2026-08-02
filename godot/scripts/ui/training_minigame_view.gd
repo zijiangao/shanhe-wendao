@@ -82,7 +82,7 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	mechanic.add_theme_font_size_override("font_size", 17)
 	mechanic.add_theme_color_override("font_color", Color("#dfbf74"))
 	page.add_child(mechanic)
-	if discipline in ["bladesmanship", "mining"]:
+	if discipline in ["bladesmanship", "mining", "fistsmanship"]:
 		_add_timing_meter(page, spec)
 
 	var grid := GridContainer.new()

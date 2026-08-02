@@ -24,14 +24,15 @@ func _capture() -> void:
 		await process_frame
 	var top_prompt_ok: bool = "100" in str(main_scene.choice_prompt) and str(main_scene.choice_event) == "market_manuals"
 
-	# 100 silver affords none of the eight purchasable manuals (cheapest is
-	# 120, for 流云剑法/断岳刀法 which became normal learnable moves in 0.95.0)
-	# -- every "学习" row should be disabled, proving the gating really
-	# reflects WuxueRules' affordability check rather than always being open.
-	# 基础内功/基础身法 are pre-learned by default, so they show "卸下" rows
-	# instead of "学习" here and aren't counted in this total.
+	# 100 silver affords none of the nine purchasable manuals (cheapest is
+	# 120, for 流云剑法/断岳刀法 which became normal learnable moves in 0.95.0;
+	# 裂甲枪 added 0.106.0 brings the move count to five) -- every "学习" row
+	# should be disabled, proving the gating really reflects WuxueRules'
+	# affordability check rather than always being open. 基础内功/基础身法
+	# are pre-learned by default, so they show "卸下" rows instead of "学习"
+	# here and aren't counted in this total.
 	var learn_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return b.text.begins_with("学习"))
-	var poor_gating_ok: bool = learn_buttons.size() == 8
+	var poor_gating_ok: bool = learn_buttons.size() == 9
 	for button in learn_buttons:
 		poor_gating_ok = poor_gating_ok and (button as Button).disabled
 
