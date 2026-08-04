@@ -7,6 +7,7 @@ const LUOYANG_TEXTURE := preload("res://assets/art/locations/luoyang-market.png"
 const HUASHAN_TEXTURE := preload("res://assets/art/locations/huashan-terrace.png")
 const EMEI_TEXTURE := preload("res://assets/art/locations/emei-summit.png")
 const HERO_TEXTURE := preload("res://assets/art/portrait-shen-yu.png")
+const LIN_TEXTURE := preload("res://assets/art/portrait-lin-qingshuang.png")
 const TOKEN_ATLAS := preload("res://assets/art/battle-tokens.png")
 const DIALOGUE_VIEW := preload("res://scenes/ui/dialogue_view.tscn")
 const CHOICE_VIEW := preload("res://scenes/ui/choice_view.tscn")
@@ -50,6 +51,9 @@ var toast_label: Label
 var end_week_button: Button
 var battle_mode: String = "move"
 var library_category: String = "fist"
+## 人物界面左右分栏浏览器 (0.111.0) -- "hero" 是沈羽本人，其余是
+## COMPANION_RULES.is_valid_companion() 认得的同伴id。
+var character_roster_selection: String = "hero"
 var last_rewards: Dictionary = {}
 var dialogue_event: String = ""
 var dialogue_index: int = 0
@@ -1839,7 +1843,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.110.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.111.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2034,20 +2038,49 @@ func _show_character() -> void:
 	page.offset_top = 28
 	page.offset_right = -48
 	page.offset_bottom = -28
-	page.add_theme_constant_override("separation", 22)
+	page.add_theme_constant_override("separation", 16)
 	content.add_child(page)
 
-	# 左侧只负责人物形象与身份，裁切由父容器控制，绝不侵入信息区。
+	# 左侧同伴名单 (0.111.0)：沈羽固定第一位，其后是已加入门派的同伴（林清霜
+	# 若已加入，以及全部已招募的客栈弟子，不只是当前随行的那一个）。点击
+	# 切换右侧人像与信息卡展示的对象。
+	var roster := VBoxContainer.new()
+	roster.custom_minimum_size.x = 150
+	roster.add_theme_constant_override("separation", 8)
+	page.add_child(roster)
+	var roster_ids: Array = ["hero"]
+	roster_ids.append_array(COMPANION_RULES.roster(GameState.data))
+	if character_roster_selection not in roster_ids:
+		character_roster_selection = "hero"
+	for roster_id in roster_ids:
+		var roster_name: String = "沈羽" if roster_id == "hero" else str(COMPANION_RULES.companion_entry(roster_id).title)
+		var roster_button := UI_THEME.action_button(roster_name, Color("#8b493b") if character_roster_selection == roster_id else Color("#315f4b"))
+		roster_button.custom_minimum_size.y = 46
+		roster_button.pressed.connect(func(): character_roster_selection = roster_id; _rebuild())
+		roster.add_child(roster_button)
+	var roster_spacer := Control.new()
+	roster_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	roster.add_child(roster_spacer)
+
+	var body := HBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 22)
+	page.add_child(body)
+
+	var is_hero := character_roster_selection == "hero"
+	var selected_entry: Dictionary = {} if is_hero else COMPANION_RULES.companion_entry(character_roster_selection)
+
+	# 人像区：形象与身份，裁切由父容器控制，绝不侵入信息区。
 	var portrait_frame := PanelContainer.new()
 	portrait_frame.custom_minimum_size.x = 355
 	portrait_frame.clip_contents = true
 	portrait_frame.add_theme_stylebox_override("panel", UI_THEME.panel_box(UI_THEME.DARK_TINT))
-	page.add_child(portrait_frame)
+	body.add_child(portrait_frame)
 	var portrait_stack := Control.new()
 	portrait_stack.clip_contents = true
 	portrait_frame.add_child(portrait_stack)
 	var portrait := TextureRect.new()
-	portrait.texture = HERO_TEXTURE
+	portrait.texture = HERO_TEXTURE if is_hero else LIN_TEXTURE
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2060,7 +2093,7 @@ func _show_character() -> void:
 	identity_shade.offset_top = -112
 	portrait_stack.add_child(identity_shade)
 	var identity := Label.new()
-	identity.text = "沈 羽\n青云门 · 入门弟子"
+	identity.text = "沈 羽\n青云门 · 入门弟子" if is_hero else "%s\n同行侠客" % str(selected_entry.get("title", character_roster_selection))
 	identity.position = Vector2(22, 18)
 	identity.add_theme_font_size_override("font_size", 22)
 	identity.add_theme_color_override("font_color", Color("#f2dfb3"))
@@ -2070,7 +2103,7 @@ func _show_character() -> void:
 	var info_panel := PanelContainer.new()
 	info_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info_panel.add_theme_stylebox_override("panel", UI_THEME.panel_box(UI_THEME.DARK_TINT))
-	page.add_child(info_panel)
+	body.add_child(info_panel)
 	var info_scroll := ScrollContainer.new()
 	info_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	info_panel.add_child(info_scroll)
@@ -2080,6 +2113,11 @@ func _show_character() -> void:
 	# than rely on it fitting a fixed panel height at 1280x720.
 	info.add_theme_constant_override("separation", 6)
 	info_scroll.add_child(info)
+
+	if not is_hero:
+		_show_companion_info(info, character_roster_selection, selected_entry)
+		return
+
 	var heading := Label.new()
 	heading.text = "人物总览"
 	heading.add_theme_font_size_override("font_size", 27)
@@ -2161,6 +2199,75 @@ func _show_character() -> void:
 	mastery.add_theme_font_size_override("font_size", 15)
 	mastery.add_theme_color_override("font_color", Color("#cfc8b8"))
 	info.add_child(mastery)
+	var bottom_spacer := Control.new()
+	bottom_spacer.custom_minimum_size.y = 16
+	info.add_child(bottom_spacer)
+
+## 同伴信息卡 (0.111.0)：跟沈羽本人的面板同样的板块结构（综合数值/基础属性/
+## 武学/装备），但数值来自 COMPANION_RULES 的固定目录，不是存档里持续成长的
+## 数据——同伴不修炼、不购置装备，这份面板纯粹是"这位同伴长什么样"的展示。
+func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) -> void:
+	var heading := Label.new()
+	heading.text = "%s · 概览" % str(entry.get("title", id))
+	heading.add_theme_font_size_override("font_size", 27)
+	heading.add_theme_color_override("font_color", Color("#f2dfb3"))
+	info.add_child(heading)
+
+	var summary := Label.new()
+	summary.text = "%s\n气血 %d    真气 %d    攻击 %d    护卫 %d" % [str(entry.get("description", "")), int(entry.get("hp", 0)), int(entry.get("max_qi", 0)), int(entry.get("attack", 0)), int(entry.get("guard", 0))]
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.add_theme_font_size_override("font_size", 18)
+	summary.add_theme_color_override("font_color", Color("#e9e1cf"))
+	info.add_child(summary)
+
+	var stat_grid := GridContainer.new()
+	stat_grid.columns = 4
+	stat_grid.add_theme_constant_override("h_separation", 10)
+	info.add_child(stat_grid)
+	for stat_entry in [["臂力", int(entry.get("strength", 0)), "攻击"], ["身法", int(entry.get("agility", 0)), "综合战力"], ["悟性", int(entry.get("insight", 0)), "临阵机变"], ["根骨", int(entry.get("constitution", 0)), "护卫气血"]]:
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.add_theme_stylebox_override("panel", _box(Color("#294438")))
+		var value := Label.new()
+		value.text = "%s  %d\n%s" % [stat_entry[0], stat_entry[1], stat_entry[2]]
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		value.add_theme_font_size_override("font_size", 20)
+		value.add_theme_color_override("font_color", Color("#fff4dc"))
+		card.add_child(value)
+		stat_grid.add_child(card)
+
+	var skill_title := Label.new()
+	skill_title.text = "武 学"
+	skill_title.add_theme_font_size_override("font_size", 20)
+	skill_title.add_theme_color_override("font_color", Color("#dfbf74"))
+	info.add_child(skill_title)
+	var skill_card := Label.new()
+	skill_card.text = str(entry.get("skills_text", "暂无武学记录。"))
+	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	skill_card.add_theme_font_size_override("font_size", 17)
+	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))
+	skill_card.add_theme_stylebox_override("normal", _box(Color("#223a30")))
+	info.add_child(skill_card)
+
+	var gear_title := Label.new()
+	gear_title.text = "装 备"
+	gear_title.add_theme_font_size_override("font_size", 20)
+	gear_title.add_theme_color_override("font_color", Color("#dfbf74"))
+	info.add_child(gear_title)
+	var gear_card := Label.new()
+	gear_card.text = str(entry.get("gear_text", "暂无装备记录。"))
+	gear_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	gear_card.add_theme_font_size_override("font_size", 17)
+	gear_card.add_theme_color_override("font_color", Color("#f4eee2"))
+	gear_card.add_theme_stylebox_override("normal", _box(Color("#223a30")))
+	info.add_child(gear_card)
+
+	var note := Label.new()
+	note.text = "同伴数值固定，不随修炼、购置成长。%s" % ("华山剧情战斗与武库天门终战随行出战。" if id == "lin_qingshuang" else "仅在青云门切磋中随行出战。")
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.add_theme_font_size_override("font_size", 14)
+	note.add_theme_color_override("font_color", Color("#cfc8b8"))
+	info.add_child(note)
 	var bottom_spacer := Control.new()
 	bottom_spacer.custom_minimum_size.y = 16
 	info.add_child(bottom_spacer)

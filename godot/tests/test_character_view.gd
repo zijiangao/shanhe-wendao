@@ -51,6 +51,38 @@ func _capture() -> void:
 	var valid := has_scroll and mastery_label_found and reachable
 	valid = valid and no_inventory_shown and no_records_shown and no_tempering_shown
 
+	# 人物界面左右分栏浏览器 (0.111.0): a solo hero should show exactly one
+	# roster button ("沈羽"), no companions to browse yet.
+	var solo_roster_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return (b as Button).text in ["沈羽", "林清霜", "周慕白", "柳如烟"])
+	var solo_roster_ok := solo_roster_buttons.size() == 1 and (solo_roster_buttons[0] as Button).text == "沈羽"
+
+	var game_state: Node = root.get_node("GameState")
+	game_state.data.silver = 1000
+	game_state.data.companions.append("lin_qingshuang")
+	var companion_rules = load("res://scripts/progression/companion_rules.gd")
+	companion_rules.recruit(game_state.data, "zhou_mubai")
+	main_scene._rebuild()
+	for frame in range(3):
+		await process_frame
+	var full_roster_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return (b as Button).text in ["沈羽", "林清霜", "周慕白"])
+	var full_roster_ok := full_roster_buttons.size() == 3
+
+	var zhou_button: Button = null
+	for b in full_roster_buttons:
+		if (b as Button).text == "周慕白":
+			zhou_button = b
+	var switch_ok := false
+	if zhou_button != null:
+		zhou_button.pressed.emit()
+		for frame in range(3):
+			await process_frame
+		labels = main_scene.find_children("*", "Label", true, false)
+		# The same panel shape as 沈羽's own (基础属性/武学/装备), but reading
+		# 周慕白's fixed catalog stats instead of live save data.
+		switch_ok = main_scene.character_roster_selection == "zhou_mubai" and labels.any(func(l): return "周慕白 · 概览" in str((l as Label).text)) and labels.any(func(l): return "霜华刺" in str((l as Label).text)) and labels.any(func(l): return "随身青锋" in str((l as Label).text))
+
+	valid = valid and solo_roster_ok and full_roster_ok and switch_ok
+
 	if not valid:
-		push_error("Character screen regression: has_scroll=%s mastery_label_found=%s reachable=%s no_inventory_shown=%s no_records_shown=%s no_tempering_shown=%s" % [has_scroll, mastery_label_found, reachable, no_inventory_shown, no_records_shown, no_tempering_shown])
+		push_error("Character screen regression: has_scroll=%s mastery_label_found=%s reachable=%s no_inventory_shown=%s no_records_shown=%s no_tempering_shown=%s solo_roster_ok=%s full_roster_ok=%s switch_ok=%s" % [has_scroll, mastery_label_found, reachable, no_inventory_shown, no_records_shown, no_tempering_shown, solo_roster_ok, full_roster_ok, switch_ok])
 	quit(0 if valid else 11)

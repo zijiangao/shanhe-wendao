@@ -7,13 +7,46 @@ extends RefCounted
 ## that only accompanies the hero in repeatable 青云门切磋 (qingyun_spar)
 ## sparring battles, never the story battles -- keeps this feature additive
 ## and never touches 林清霜's hardcoded quest integration.
+## strength/agility/insight/constitution and skills_text/gear_text (0.111.0)
+## are display-only flavor for 人物界面's roster browser -- they feed no
+## growth/shopping system of their own (companions don't train or shop),
+## they just let every roster member show the same panel shape (基础属性/
+## 武学/装备) as 沈羽's own panel, filled with fixed catalog values instead
+## of live save data.
 const DISCIPLES := {
-	"zhou_mubai": {"title": "周慕白", "description": "青云新晋剑客，出手稳健，长于协同守御。", "price": 300, "hp": 28, "max_qi": 14, "attack": 5, "guard": 0},
-	"liu_ruyan": {"title": "柳如烟", "description": "身法灵动的女弟子，擅长游走牵制。", "price": 380, "hp": 24, "max_qi": 16, "attack": 6, "guard": 0},
+	"zhou_mubai": {"title": "周慕白", "description": "青云新晋剑客，出手稳健，长于协同守御。", "price": 300, "hp": 28, "max_qi": 14, "attack": 5, "guard": 0, "strength": 5, "agility": 4, "insight": 4, "constitution": 5, "skills_text": "霜华刺 · 突进两格攻击\n寒锋守势 · 获得护卫并回气", "gear_text": "随身青锋 · 稳健守御路数"},
+	"liu_ruyan": {"title": "柳如烟", "description": "身法灵动的女弟子，擅长游走牵制。", "price": 380, "hp": 24, "max_qi": 16, "attack": 6, "guard": 0, "strength": 4, "agility": 6, "insight": 5, "constitution": 3, "skills_text": "霜华刺 · 突进两格攻击\n寒锋守势 · 获得护卫并回气", "gear_text": "软剑轻装 · 游走牵制路数"},
+}
+
+## 林清霜是免费的剧情同伴 (0.74.0起)，在华山剧情固定加入，只在华山论剑试炼/
+## 武库天门终战出战 -- 这里的数值纯粹是人物界面的展示用途，不影响那两场
+## 战斗里 game_state.gd 各自硬编码的 battle.ally 数值。
+const STORY_COMPANIONS := {
+	"lin_qingshuang": {"title": "林清霜", "description": "华山女侠，剑法凌厉，与沈羽并肩闯荡江湖。", "hp": 34, "max_qi": 15, "attack": 6, "guard": 0, "strength": 5, "agility": 6, "insight": 5, "constitution": 4, "skills_text": "霜华刺 · 突进两格攻击\n寒锋守势 · 获得护卫并回气", "gear_text": "华山佩剑 · 凌厉剑路"},
 }
 
 static func is_valid_disciple(id: String) -> bool:
 	return DISCIPLES.has(id)
+
+## 人物界面左右分栏浏览器 (0.111.0) 统一读取入口，覆盖 STORY_COMPANIONS 和
+## DISCIPLES 两个目录 -- 沈羽本人不在这里，由 main.gd 单独处理（他是玩家
+## 实时成长的存档数据，不是固定目录）。
+static func is_valid_companion(id: String) -> bool:
+	return DISCIPLES.has(id) or STORY_COMPANIONS.has(id)
+
+static func companion_entry(id: String) -> Dictionary:
+	return STORY_COMPANIONS.get(id, DISCIPLES.get(id, {}))
+
+## 已加入门派的同伴列表 (0.111.0)，用于人物界面左侧名单 -- 林清霜(若已加入)
+## 排在最前，其后是全部已招募弟子（不只是当前随行的那一个）。
+static func roster(state: Dictionary) -> Array:
+	var ids := []
+	if "lin_qingshuang" in Array(state.get("companions", [])):
+		ids.append("lin_qingshuang")
+	for id in Array(state.get("companions", [])):
+		if is_valid_disciple(str(id)):
+			ids.append(str(id))
+	return ids
 
 static func is_recruited(state: Dictionary, id: String) -> bool:
 	return id in Array(state.get("companions", []))

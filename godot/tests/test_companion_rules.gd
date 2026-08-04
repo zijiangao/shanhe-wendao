@@ -40,6 +40,25 @@ func _initialize() -> void:
 	var liu_ally := RULES.active_disciple_ally(state)
 	assert(str(liu_ally.name) == "柳如烟" and int(liu_ally.hp) == int(liu_ally.max_hp) and int(liu_ally.hp) == int(RULES.DISCIPLES.liu_ruyan.hp), "The active disciple's ally dict should start at full hp matching the catalog.")
 
+	# 人物界面左右分栏浏览器 (0.111.0) -- roster()/companion_entry()/
+	# is_valid_companion() feed that screen's left-column roster and each
+	# selected companion's static display panel.
+	var empty_roster: Array = RULES.roster(_state())
+	assert(empty_roster.is_empty(), "A hero with no companions joined should have an empty roster.")
+	assert(RULES.is_valid_companion("lin_qingshuang") and RULES.is_valid_companion("zhou_mubai") and not RULES.is_valid_companion("nobody"), "is_valid_companion() should recognize both the story companion and recruitable disciples.")
+	var full_roster := _state()
+	full_roster.silver = 1000
+	full_roster.companions = ["lin_qingshuang"]
+	RULES.recruit(full_roster, "zhou_mubai")
+	RULES.recruit(full_roster, "liu_ruyan")
+	var roster_ids: Array = RULES.roster(full_roster)
+	assert(roster_ids == ["lin_qingshuang", "zhou_mubai", "liu_ruyan"], "roster() should list 林清霜 first (if joined), then every recruited disciple in join order -- not just the currently active one.")
+	var lin_entry: Dictionary = RULES.companion_entry("lin_qingshuang")
+	assert(str(lin_entry.title) == "林清霜" and int(lin_entry.strength) > 0, "companion_entry() should resolve the story companion's display stats from STORY_COMPANIONS.")
+	var zhou_entry: Dictionary = RULES.companion_entry("zhou_mubai")
+	assert(str(zhou_entry.title) == "周慕白" and int(zhou_entry.strength) > 0, "companion_entry() should resolve a recruited disciple's display stats from DISCIPLES.")
+	assert(RULES.companion_entry("nobody").is_empty(), "An unknown id should resolve to an empty entry rather than crash.")
+
 	print("Companion rules tests passed.")
 	quit()
 
