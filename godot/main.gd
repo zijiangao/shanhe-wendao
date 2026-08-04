@@ -1659,7 +1659,7 @@ func _show_quests() -> void:
 	if _emei_unlocked():
 		main_task.text = "主线 · 峨眉迷踪\n%s\n\n峨眉关系：%d\n入山方式：%s" % [_quest_objective(), GameState.data.faction_relations.emei, _emei_entry_name(str(GameState.data.emei_entry))]
 	elif _huashan_unlocked():
-		main_task.text = "主线 · 华山剑会\n%s\n\n队伍：%s\n华山关系：%d" % [_quest_objective(), "沈羽、林清霜" if "lin_qingshuang" in GameState.data.companions else "沈羽", GameState.data.faction_relations.huashan]
+		main_task.text = "主线 · 华山剑会\n%s\n\n华山关系：%d" % [_quest_objective(), GameState.data.faction_relations.huashan]
 	elif _luoyang_unlocked():
 		main_task.text = "主线 · 洛阳风云\n%s\n\n行事倾向\n侠义 %d    谋略 %d    威势 %d" % [_quest_objective(), GameState.data.alignment.heroism, GameState.data.alignment.strategy, GameState.data.alignment.authority]
 	else:
@@ -1669,6 +1669,16 @@ func _show_quests() -> void:
 	main_task.add_theme_color_override("font_color", Color("#f4eee2"))
 	main_task.add_theme_stylebox_override("normal", _box(Color("#294438")))
 	box.add_child(main_task)
+
+	# 同行侠客面板 (0.110.0) -- same panel as 人物界面, so a recruited 客栈
+	# disciple shows up here too, not just 林清霜's quest-specific mention.
+	var party_panel := Label.new()
+	party_panel.text = _party_panel_text()
+	party_panel.add_theme_font_size_override("font_size", 17)
+	party_panel.add_theme_color_override("font_color", Color("#f4eee2"))
+	party_panel.add_theme_stylebox_override("normal", _box(Color("#223a30")))
+	box.add_child(party_panel)
+
 	var hint := Label.new()
 	hint.text = "提示：在天下舆图点击当前地点即可进入场景。场景中的人物与地点会推进任务。"
 	hint.add_theme_font_size_override("font_size", 16)
@@ -1829,7 +1839,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.109.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.110.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -1910,6 +1920,22 @@ func _clue_list() -> String:
 	for clue in GameState.data.investigations:
 		lines.append("· " + {"secret_route": "芦荡暗道", "archer": "寨中弓手", "herbs": "破船药材"}.get(clue, clue))
 	return "尚未取得线索" if lines.is_empty() else "\n".join(lines)
+
+## Shared by 人物/任务界面 (0.110.0) so both screens show the exact same
+## party roster in an identical panel -- 林清霜 (story companion) plus
+## whichever 客栈-recruited disciple is currently active, if any.
+func _party_names() -> Array[String]:
+	var names: Array[String] = []
+	if "lin_qingshuang" in GameState.data.companions:
+		names.append("林清霜")
+	var active_disciple_id := str(GameState.data.get("active_disciple", ""))
+	if COMPANION_RULES.is_valid_disciple(active_disciple_id):
+		names.append(str(COMPANION_RULES.DISCIPLES[active_disciple_id].title))
+	return names
+
+func _party_panel_text() -> String:
+	var names := _party_names()
+	return "同行侠客：%s\n门派关系：青云 %d · 华山 %d" % ["、".join(names) if not names.is_empty() else "暂无", GameState.data.faction_relations.qingyun, GameState.data.faction_relations.huashan]
 
 func _show_dev_menu() -> void:
 	_clear_content()
@@ -2125,15 +2151,10 @@ func _show_character() -> void:
 	info.add_child(skill_card)
 
 	var party := Label.new()
-	var party_names: Array[String] = []
-	if "lin_qingshuang" in GameState.data.companions:
-		party_names.append("林清霜")
-	var active_disciple_id := str(GameState.data.get("active_disciple", ""))
-	if COMPANION_RULES.is_valid_disciple(active_disciple_id):
-		party_names.append(str(COMPANION_RULES.DISCIPLES[active_disciple_id].title))
-	party.text = "同行侠客：%s\n门派关系：青云 %d · 华山 %d" % ["、".join(party_names) if not party_names.is_empty() else "暂无", GameState.data.faction_relations.qingyun, GameState.data.faction_relations.huashan]
+	party.text = _party_panel_text()
 	party.add_theme_font_size_override("font_size", 17)
-	party.add_theme_color_override("font_color", Color("#dfbf74"))
+	party.add_theme_color_override("font_color", Color("#f4eee2"))
+	party.add_theme_stylebox_override("normal", _box(Color("#223a30")))
 	info.add_child(party)
 	var mastery := Label.new()
 	mastery.text = "武学熟练度：流云剑法 %d · 霜华刺 %d · 寒锋守势 %d\n每使用3次，对应武学伤害或护卫值 +1。" % [GameState.data.skill_mastery.cloud, GameState.data.skill_mastery.frost, GameState.data.skill_mastery.frost_guard]
