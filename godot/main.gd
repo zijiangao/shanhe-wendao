@@ -1803,7 +1803,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.106.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.107.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2038,6 +2038,7 @@ func _show_character() -> void:
 	var next_rank := GROWTH_RULES.next_rank_xp(int(GameState.data.xp))
 	var rank_progress := "已达最高境界" if next_rank < 0 else "距下境界 %d 修为" % (next_rank - int(GameState.data.xp))
 	summary.text = "综合战力  %d     气血  %d/%d     真气  %d     声望  %d\n修为  %d · %s · %s · 伤害加成 +%d\n角色等级 Lv.%d（距下一级 %d 修为，每级四项基础属性各 +1）" % [GameState.power(), GameState.data.hp, GameState.data.max_hp, GameState.data.qi, GameState.data.renown, GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp)), rank_progress, GROWTH_RULES.combat_bonus(int(GameState.data.xp)), GROWTH_RULES.character_level(int(GameState.data.xp)), GROWTH_RULES.LEVEL_XP_STEP - GROWTH_RULES.xp_into_level(int(GameState.data.xp))]
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.add_theme_font_size_override("font_size", 18)
 	summary.add_theme_color_override("font_color", Color("#e9e1cf"))
 	info.add_child(summary)
@@ -2064,7 +2065,8 @@ func _show_character() -> void:
 	specialty_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(specialty_title)
 	var specialties := Label.new()
-	specialties.text = "本周专精：%s（完成额外修为 +%d）\n剑法 %d·%s  ·  刀法 %d·%s  ·  采药 %d·%s  ·  挖矿 %d·%s\n修炼战绩：%s\n实战切磋：%s\n剑法强化流云剑法，刀法强化普通攻击；采集精通后提高材料产量。" % [TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week))), TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS, GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining)), TRAINING_RULES.records_text(GameState.data.training_records), SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))]
+	specialties.text = "本周专精：%s（完成额外修为 +%d）\n剑法 %d·%s  ·  刀法 %d·%s  ·  拳掌 %d·%s  ·  枪棍 %d·%s\n采药 %d·%s  ·  挖矿 %d·%s\n修炼战绩：%s\n实战切磋：%s\n剑法强化流云剑法，刀法强化普通攻击，拳掌强化裂石拳，枪棍强化裂甲枪；采集精通后提高材料产量。" % [TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week))), TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS, GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.get("fistsmanship", 0), TRAINING_RULES.specialty_rank_name(int(GameState.data.get("fistsmanship", 0))), GameState.data.get("staffsmanship", 0), TRAINING_RULES.specialty_rank_name(int(GameState.data.get("staffsmanship", 0))), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining)), TRAINING_RULES.records_text(GameState.data.training_records), SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))]
+	specialties.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	specialties.add_theme_font_size_override("font_size", 15)
 	specialties.add_theme_color_override("font_color", Color("#f4eee2"))
 	specialties.add_theme_stylebox_override("normal", _box(Color("#223a30")))
