@@ -7,7 +7,6 @@ func _capture() -> void:
 	var main_scene: Control = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main_scene)
 	await process_frame
-	var game_state: Node = root.get_node("GameState")
 	main_scene.get_window().size = Vector2i(1280, 720)
 	main_scene.screen = "character"
 	main_scene._rebuild()
@@ -39,29 +38,19 @@ func _capture() -> void:
 		var label_rect := mastery_label.get_global_rect()
 		reachable = visible_rect.intersects(Rect2(label_rect.position, Vector2(1, 1)))
 
-	# A fresh save must read as bare-handed/unarmored, not silently claim
-	# "青锋剑" (the legacy tempering flavor weapon) is already equipped.
-	# 淬炼/forge_level was removed entirely (0.94.0) -- it must no longer
-	# appear anywhere on the character sheet.
-	var shows_bare_default := labels.any(func(l): return "已装备：赤手" in str((l as Label).text))
-	var shows_qingfeng_as_equipped := labels.any(func(l): return "已装备：青锋剑" in str((l as Label).text))
+	# 行囊 (0.108.0 removed) duplicated 背包 -- equipped gear/materials/items
+	# must no longer appear here at all, only on the dedicated backpack
+	# screen. 修炼战绩/实战切磋 (0.108.0 removed) likewise must be gone from
+	# 江湖技艺.
+	var no_inventory_shown := not labels.any(func(l): return "行 囊" in str((l as Label).text) or "已装备：" in str((l as Label).text) or "剧情物品" in str((l as Label).text))
+	var no_records_shown := not labels.any(func(l): return "修炼战绩" in str((l as Label).text) or "实战切磋" in str((l as Label).text))
+	# 淬炼/forge_level was removed entirely (0.94.0) -- it must never
+	# reappear anywhere on the character sheet.
 	var no_tempering_shown := not labels.any(func(l): return "淬炼" in str((l as Label).text))
 
 	var valid := has_scroll and mastery_label_found and reachable
-	valid = valid and shows_bare_default and not shows_qingfeng_as_equipped and no_tempering_shown
-
-	# A workshop-crafted weapon (an id that was never in ShopRules.WEAPONS at
-	# all) must still show its real title here, not a blank name -- this is
-	# the exact lookup the character sheet shares with the backpack row.
-	game_state.data.owned_weapons = ["forged_iron_blade"]
-	game_state.data.equipped_weapon = "forged_iron_blade"
-	main_scene._rebuild()
-	for frame in range(3):
-		await process_frame
-	var crafted_labels: Array = main_scene.find_children("*", "Label", true, false)
-	var shows_crafted_weapon := crafted_labels.any(func(l): return "已装备：自铸铁刃" in str((l as Label).text))
-	valid = valid and shows_crafted_weapon
+	valid = valid and no_inventory_shown and no_records_shown and no_tempering_shown
 
 	if not valid:
-		push_error("Character screen regression: has_scroll=%s mastery_label_found=%s reachable=%s shows_bare_default=%s shows_qingfeng_as_equipped=%s no_tempering_shown=%s shows_crafted_weapon=%s" % [has_scroll, mastery_label_found, reachable, shows_bare_default, shows_qingfeng_as_equipped, no_tempering_shown, shows_crafted_weapon])
+		push_error("Character screen regression: has_scroll=%s mastery_label_found=%s reachable=%s no_inventory_shown=%s no_records_shown=%s no_tempering_shown=%s" % [has_scroll, mastery_label_found, reachable, no_inventory_shown, no_records_shown, no_tempering_shown])
 	quit(0 if valid else 11)

@@ -1803,7 +1803,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.107.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.108.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2065,7 +2065,7 @@ func _show_character() -> void:
 	specialty_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(specialty_title)
 	var specialties := Label.new()
-	specialties.text = "本周专精：%s（完成额外修为 +%d）\n剑法 %d·%s  ·  刀法 %d·%s  ·  拳掌 %d·%s  ·  枪棍 %d·%s\n采药 %d·%s  ·  挖矿 %d·%s\n修炼战绩：%s\n实战切磋：%s\n剑法强化流云剑法，刀法强化普通攻击，拳掌强化裂石拳，枪棍强化裂甲枪；采集精通后提高材料产量。" % [TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week))), TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS, GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.get("fistsmanship", 0), TRAINING_RULES.specialty_rank_name(int(GameState.data.get("fistsmanship", 0))), GameState.data.get("staffsmanship", 0), TRAINING_RULES.specialty_rank_name(int(GameState.data.get("staffsmanship", 0))), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining)), TRAINING_RULES.records_text(GameState.data.training_records), SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))]
+	specialties.text = "本周专精：%s（完成额外修为 +%d）\n剑法 %d·%s  ·  刀法 %d·%s  ·  拳掌 %d·%s  ·  枪棍 %d·%s\n采药 %d·%s  ·  挖矿 %d·%s\n剑法强化流云剑法，刀法强化普通攻击，拳掌强化裂石拳，枪棍强化裂甲枪；采集精通后提高材料产量。" % [TRAINING_RULES.discipline_short_name(TRAINING_RULES.weekly_focus(int(GameState.data.week))), TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS, GameState.data.swordsmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.swordsmanship)), GameState.data.bladesmanship, TRAINING_RULES.specialty_rank_name(int(GameState.data.bladesmanship)), GameState.data.get("fistsmanship", 0), TRAINING_RULES.specialty_rank_name(int(GameState.data.get("fistsmanship", 0))), GameState.data.get("staffsmanship", 0), TRAINING_RULES.specialty_rank_name(int(GameState.data.get("staffsmanship", 0))), GameState.data.herbalism, TRAINING_RULES.specialty_rank_name(int(GameState.data.herbalism)), GameState.data.mining, TRAINING_RULES.specialty_rank_name(int(GameState.data.mining))]
 	specialties.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	specialties.add_theme_font_size_override("font_size", 15)
 	specialties.add_theme_color_override("font_color", Color("#f4eee2"))
@@ -2098,24 +2098,6 @@ func _show_character() -> void:
 	skill_card.add_theme_stylebox_override("normal", _box(Color("#223a30")))
 	info.add_child(skill_card)
 
-	var item_title := Label.new()
-	item_title.text = "行 囊"
-	item_title.add_theme_font_size_override("font_size", 20)
-	item_title.add_theme_color_override("font_color", Color("#dfbf74"))
-	info.add_child(item_title)
-	var items := Label.new()
-	var weapon_id := str(GameState.data.get("equipped_weapon", ""))
-	var weapon_entry: Dictionary = SHOP_RULES.WEAPONS.get(weapon_id, CRAFTING_RULES.RECIPES.get(weapon_id, {}))
-	var weapon_title: String = str(weapon_entry.get("item_name", weapon_entry.get("title", "")))
-	var weapon_text := "赤手" if weapon_id == "" else "%s（攻击+%d）" % [weapon_title, SHOP_RULES.weapon_attack_bonus(GameState.data)]
-	var armor_id := str(GameState.data.get("equipped_armor", ""))
-	var armor_entry: Dictionary = SHOP_RULES.ARMORS.get(armor_id, CRAFTING_RULES.RECIPES.get(armor_id, {}))
-	var armor_title: String = str(armor_entry.get("item_name", armor_entry.get("title", "")))
-	var armor_text := "无护具" if armor_id == "" else "%s（防御+%d）" % [armor_title, SHOP_RULES.armor_defense_bonus(GameState.data)]
-	items.text = "已装备：%s · %s\n材料：药材 %d · 矿石 %d · 回春散 %d · 霹雳石 %d\n药谱 %d/%d：%s\n矿谱 %d/%d：%s\n剧情物品：%s" % [weapon_text, armor_text, GameState.data.materials.herbs, GameState.data.materials.ore, GameState.data.consumables.healing_powder, GameState.data.consumables.thunder_stone, HERBARIUM_RULES.discovered_count(GameState.data.herbarium), HERBARIUM_RULES.SPECIMENS.size(), HERBARIUM_RULES.collection_text(GameState.data.herbarium), MINERALOGY_RULES.discovered_count(GameState.data.mineralogy), MINERALOGY_RULES.SPECIMENS.size(), MINERALOGY_RULES.collection_text(GameState.data.mineralogy), "、".join(PackedStringArray(GameState.data.items))]
-	items.add_theme_font_size_override("font_size", 17)
-	items.add_theme_color_override("font_color", Color("#f4eee2"))
-	info.add_child(items)
 	var party := Label.new()
 	party.text = "同行侠客：%s\n门派关系：青云 %d · 华山 %d" % ["林清霜" if "lin_qingshuang" in GameState.data.companions else "暂无", GameState.data.faction_relations.qingyun, GameState.data.faction_relations.huashan]
 	party.add_theme_font_size_override("font_size", 17)
