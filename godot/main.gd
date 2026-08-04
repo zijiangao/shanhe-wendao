@@ -1843,7 +1843,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.111.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.112.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2090,11 +2090,15 @@ func _show_character() -> void:
 	identity_shade.anchor_top = 1.0
 	identity_shade.anchor_right = 1.0
 	identity_shade.anchor_bottom = 1.0
-	identity_shade.offset_top = -112
+	identity_shade.offset_top = -128
 	portrait_stack.add_child(identity_shade)
 	var identity := Label.new()
 	identity.text = "沈 羽\n青云门 · 入门弟子" if is_hero else "%s\n同行侠客" % str(selected_entry.get("title", character_roster_selection))
-	identity.position = Vector2(22, 18)
+	identity.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	identity.offset_left = 22
+	identity.offset_top = 18
+	identity.offset_right = -16
+	identity.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	identity.add_theme_font_size_override("font_size", 22)
 	identity.add_theme_color_override("font_color", Color("#f2dfb3"))
 	identity_shade.add_child(identity)
