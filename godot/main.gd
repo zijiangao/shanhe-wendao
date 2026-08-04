@@ -32,6 +32,7 @@ const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
+const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 ## 藏经阁 (0.103.0): left-column category buttons, in display order. The
 ## first four match WuxueRules.MOVES' "category" field; 内功/轻功 aren't
 ## move categories at all, so they're handled separately in
@@ -860,6 +861,7 @@ func _location_actions(location_id: String) -> Array:
 			{"id": "workshop", "text": "炼药坊 · 丹药炼制", "x": 710, "y": 330},
 			{"id": "forge", "text": "锻造坊 · 兵刃甲胄打造", "x": 500, "y": 420},
 			{"id": "gathering", "text": gathering_text, "x": 150, "y": 350},
+			{"id": "qingyun_tavern", "text": "客栈 · 招募弟子", "x": 300, "y": 490},
 			{"id": "map", "text": "山门 · 返回舆图", "x": 910, "y": 420}
 		]
 	if location_id == "blackreed":
@@ -922,6 +924,16 @@ func _show_gathering_menu() -> void:
 	choice_prompt = "选择本周的采集方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
 	choice_options = TRAINING_RULES.gathering_options(GameState.data)
 	choice_options.append(["暂不采集", "不消耗行动点，返回青云门。", "leave"])
+	screen = "choice"
+	_rebuild()
+
+## 客栈 (0.109.0): 花银两招募门下弟子，不消耗本周行动点（不同于炼药坊/锻造坊/
+## 演武场等——招募是纯交易行为，跟秘籍阁买招式一个道理）。招募来的弟子只
+## 在青云门切磋(qingyun_spar)里随行，不影响 林清霜 参与的主线战斗。
+func _show_qingyun_tavern() -> void:
+	choice_event = "qingyun_tavern"
+	choice_prompt = "客栈 · 银两 %d" % int(GameState.data.silver)
+	choice_options = COMPANION_RULES.options_inn(GameState.data)
 	screen = "choice"
 	_rebuild()
 
@@ -1036,6 +1048,7 @@ func _location_action_requested(action_id: String) -> void:
 		"fight": _begin_blackreed_battle()
 		"gate": _start_dialogue("luoyang_gate", [["守城军士", "近日太守府戒备森严，夜里还有禁军出入。"], ["沈羽", "玄铁令的消息恐怕已经传进官府。"]])
 		"inn": _start_dialogue("luoyang_inn", [["说书人", "厉千秋尚未出关，他的义子却已在洛阳搜寻前朝武库。"], ["沈羽", "看来必须赶在他们之前找到下一枚钥匙。"]])
+		"qingyun_tavern": _show_qingyun_tavern()
 		"market": _show_market()
 		"temple": _baima_event()
 		"palace": _enter_palace()
@@ -1255,6 +1268,19 @@ func _resolve_choice(route: String) -> void:
 		screen = "battle"
 		SaveManager.save_auto()
 		_rebuild()
+		return
+	elif choice_event == "qingyun_tavern":
+		if route == "leave":
+			screen = "location"
+			_rebuild()
+			return
+		if route.begins_with("recruit_"):
+			if not COMPANION_RULES.recruit(GameState.data, route.trim_prefix("recruit_")):
+				_toast("银两不足，或这位弟子已经加入门派。")
+				return
+			_toast("弟子已加入门派，随行出战青云门切磋。")
+			SaveManager.save_auto()
+			_show_qingyun_tavern()
 		return
 	elif choice_event == "market":
 		match route:
@@ -1803,7 +1829,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.108.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.109.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2099,7 +2125,13 @@ func _show_character() -> void:
 	info.add_child(skill_card)
 
 	var party := Label.new()
-	party.text = "同行侠客：%s\n门派关系：青云 %d · 华山 %d" % ["林清霜" if "lin_qingshuang" in GameState.data.companions else "暂无", GameState.data.faction_relations.qingyun, GameState.data.faction_relations.huashan]
+	var party_names: Array[String] = []
+	if "lin_qingshuang" in GameState.data.companions:
+		party_names.append("林清霜")
+	var active_disciple_id := str(GameState.data.get("active_disciple", ""))
+	if COMPANION_RULES.is_valid_disciple(active_disciple_id):
+		party_names.append(str(COMPANION_RULES.DISCIPLES[active_disciple_id].title))
+	party.text = "同行侠客：%s\n门派关系：青云 %d · 华山 %d" % ["、".join(party_names) if not party_names.is_empty() else "暂无", GameState.data.faction_relations.qingyun, GameState.data.faction_relations.huashan]
 	party.add_theme_font_size_override("font_size", 17)
 	party.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(party)
@@ -2827,7 +2859,7 @@ func _tactical_cell(x: int, y: int) -> void:
 		return
 	if BATTLE_RULES.is_ally_at(battle, Vector2i(x, y)):
 		battle.active_unit = "ally"
-		battle.result = "当前由林清霜行动。"
+		battle.result = "当前由%s行动。" % str(battle.get("ally", {}).get("name", "同伴"))
 		GameState.data.battle = battle
 		_rebuild()
 		return

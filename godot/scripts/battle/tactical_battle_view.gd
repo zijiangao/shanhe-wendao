@@ -115,10 +115,11 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	side_box.add_theme_constant_override("separation", 4)
 	side.add_child(side_box)
 	var status := Label.new()
-	var active_name: String = "林清霜" if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
-	var active_hp: int = int(battle.ally.hp) if active_name == "林清霜" else int(player.hp)
-	var active_max_hp: int = int(battle.ally.max_hp) if active_name == "林清霜" else int(player.max_hp)
-	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if active_name == "林清霜" else "真气 %d/20 · 护体 %d" % [player.qi, int(battle.get("hero_guard", 0))]
+	var is_ally_turn := str(battle.get("active_unit", "hero")) == "ally"
+	var active_name: String = str(battle.get("ally", {}).get("name", "同伴")) if is_ally_turn else "沈羽"
+	var active_hp: int = int(battle.ally.hp) if is_ally_turn else int(player.hp)
+	var active_max_hp: int = int(battle.ally.max_hp) if is_ally_turn else int(player.max_hp)
+	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if is_ally_turn else "真气 %d/20 · 护体 %d" % [player.qi, int(battle.get("hero_guard", 0))]
 	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.ap, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
 	if str(battle.get("battle_id", "")) == "qingyun_spar":
 		status.text += "\n演武课题：%s · 兵器方向：%s" % [battle.get("name", "青云切磋"), SPARRING_RULES.discipline_name(str(battle.get("discipline", "swordsmanship")))]
@@ -145,7 +146,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	action_grid.add_theme_constant_override("v_separation", 6)
 	side_box.add_child(action_grid)
 	var actions: Array = [["移动", "move"], ["普通攻击", "attack"]]
-	if active_name == "林清霜":
+	if is_ally_turn:
 		actions.append(["霜华刺 · 6真气", "frost_dash"])
 		actions.append(["寒锋守势", "frost_guard"])
 	else:

@@ -155,7 +155,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 
 static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
-		return _failure("林清霜无法施展流云剑法。")
+		return _failure("%s无法施展流云剑法。" % _active_name(battle))
 	if "cloud_sword" not in Array(player.get("learned_moves", [])):
 		return _failure("尚未习得流云剑法，请先在秘籍阁学习。")
 	var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
@@ -178,7 +178,7 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 
 static func _blade_skill(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
-		return _failure("林清霜无法施展断岳刀法。")
+		return _failure("%s无法施展断岳刀法。" % _active_name(battle))
 	if "blade_technique" not in Array(player.get("learned_moves", [])):
 		return _failure("尚未习得断岳刀法，请先在秘籍阁学习。")
 	if int(player.get("qi", 0)) < BLADE_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
@@ -202,7 +202,7 @@ static func _blade_skill(battle: Dictionary, player: Dictionary, target: Vector2
 
 static func _stone_splitting_fist(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
-		return _failure("林清霜不会裂石拳。")
+		return _failure("%s不会裂石拳。" % _active_name(battle))
 	if "stone_splitting_fist" not in Array(player.get("learned_moves", [])):
 		return _failure("尚未习得裂石拳，请先在秘籍阁学习。")
 	var fist_qi_cost := STONE_FIST_QI_COST - TRAINING_RULES.fist_qi_discount(int(player.get("fistsmanship", 0)))
@@ -221,7 +221,7 @@ static func _stone_splitting_fist(battle: Dictionary, player: Dictionary, target
 
 static func _night_triple_blade(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
-		return _failure("林清霜不会暗夜三刀。")
+		return _failure("%s不会暗夜三刀。" % _active_name(battle))
 	if "night_triple_blade" not in Array(player.get("learned_moves", [])):
 		return _failure("尚未习得暗夜三刀，请先在秘籍阁学习。")
 	if int(player.get("qi", 0)) < NIGHT_BLADE_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
@@ -243,7 +243,7 @@ static func _night_triple_blade(battle: Dictionary, player: Dictionary, target: 
 
 static func _armor_splitting_spear(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) == "ally":
-		return _failure("林清霜不会裂甲枪。")
+		return _failure("%s不会裂甲枪。" % _active_name(battle))
 	if "armor_splitting_spear" not in Array(player.get("learned_moves", [])):
 		return _failure("尚未习得裂甲枪，请先在秘籍阁学习。")
 	if int(player.get("qi", 0)) < SPEAR_QI_COST or not RULES.can_attack_cell(battle, target, false, int(player.get("qi", 0))):
@@ -276,19 +276,19 @@ static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i
 		battle.ally.x = path[path.size() - 2].x
 		battle.ally.y = path[path.size() - 2].y
 	battle.ap = int(battle.ap) - 1
-	battle.result = "林清霜踏雪突进，以霜华刺对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
+	battle.result = "%s踏雪突进，以霜华刺对%s造成%d点伤害！" % [_active_name(battle), battle.enemies[enemy_index].name, damage]
 	battle.skill_flash = true
 	battle.skill_name = "霜 华 刺"
 	return _success(battle, damage)
 
 static func _frost_guard(battle: Dictionary, player: Dictionary) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) != "ally" or not battle.has("ally") or int(battle.ally.hp) <= 0:
-		return _failure("需要由林清霜行动才能施展寒锋守势。")
+		return _failure("需要由%s行动才能施展寒锋守势。" % str(battle.get("ally", {}).get("name", "同伴")))
 	battle.ally.guard = 8 + int(player.skill_mastery.frost_guard / 3)
 	battle.ally.qi = mini(int(battle.ally.max_qi), int(battle.ally.qi) + 3)
 	player.skill_mastery.frost_guard = int(player.skill_mastery.frost_guard) + 1
 	battle.ap = int(battle.ap) - 1
-	battle.result = "林清霜横剑凝神，获得%d点护卫并恢复3点真气。" % battle.ally.guard
+	battle.result = "%s横剑凝神，获得%d点护卫并恢复3点真气。" % [_active_name(battle), battle.ally.guard]
 	_clear_effect(battle)
 	battle.skill_flash = true
 	battle.skill_name = "寒 锋 守 势"
@@ -437,7 +437,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		battle.turn = int(battle.turn) + 1
 		battle.ap = 1 if suppressed else 2
 		battle.active_unit = "hero"
-		battle.result = _turn_result(total_hurt, ally_defeated, special_notes)
+		battle.result = _turn_result(total_hurt, ally_defeated, special_notes, str(battle.get("ally", {}).get("name", "同伴")))
 		battle.skill_flash = boss_transition
 		battle.skill_name = "断 岳 刀 势" if boss_transition else ""
 	return {
@@ -464,7 +464,7 @@ static func _roll_range(rng: RandomNumberGenerator, minimum: int, maximum: int) 
 	return rng.randi_range(minimum, maximum) if rng != null else randi_range(minimum, maximum)
 
 static func _active_name(battle: Dictionary) -> String:
-	return "林清霜" if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
+	return str(battle.get("ally", {}).get("name", "同伴")) if str(battle.get("active_unit", "hero")) == "ally" else "沈羽"
 
 static func _apply_enemy_damage(battle: Dictionary, enemy_index: int, target: Vector2i, damage: int, effect_type: String) -> void:
 	battle.enemies[enemy_index].hp = maxi(0, int(battle.enemies[enemy_index].hp) - damage)
@@ -502,10 +502,10 @@ static func _success(battle: Dictionary, damage: int) -> Dictionary:
 static func _failure(message: String) -> Dictionary:
 	return {"ok": false, "error": message}
 
-static func _turn_result(total_hurt: int, ally_defeated: bool, special_notes: PackedStringArray) -> String:
+static func _turn_result(total_hurt: int, ally_defeated: bool, special_notes: PackedStringArray, ally_name: String = "同伴") -> String:
 	var message := "敌方行动结束。你方受到%d点伤害。" % total_hurt
 	if not special_notes.is_empty():
 		message += " %s。" % "；".join(special_notes)
 	if ally_defeated:
-		message += " 林清霜力竭倒地，本场战斗无法继续行动。"
+		message += " %s力竭倒地，本场战斗无法继续行动。" % ally_name
 	return message

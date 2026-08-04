@@ -3,6 +3,7 @@ extends SceneTree
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 
 func _initialize() -> void:
 	var state = load("res://autoload/game_state.gd").new()
@@ -146,6 +147,15 @@ func _initialize() -> void:
 	assert(state.import_data(pre_fist_staff_save), "A save from before 拳掌/枪棍 existed must still load.")
 	assert(int(state.data.fistsmanship) == 0 and int(state.data.staffsmanship) == 0, "Missing fistsmanship/staffsmanship fields must default to level 0 on migration.")
 
+	# 客栈招募的随行弟子 (0.109.0) -- a stale active_disciple pointing at a
+	# disciple no longer (or never) on the roster must be cleared, not left
+	# dangling.
+	var stale_disciple_save: Dictionary = state.data.duplicate(true)
+	stale_disciple_save.companions = []
+	stale_disciple_save.active_disciple = "zhou_mubai"
+	assert(state.import_data(stale_disciple_save), "A save with a stale active_disciple must still load.")
+	assert(str(state.data.active_disciple) == "", "An active_disciple not present in companions must be cleared on migration.")
+
 	var legacy_battle_save: Dictionary = state.data.duplicate(true)
 	legacy_battle_save.battle = {"width": 4, "height": 3, "player_x": 0, "player_y": 1, "ap": 2, "turn": 1, "blocked": [], "enemies": [{"name": "弓手喽啰", "hp": 10, "x": 3, "y": 1}]}
 	assert(state.import_data(legacy_battle_save), "A structurally valid legacy battle should migrate.")
@@ -160,6 +170,7 @@ func _initialize() -> void:
 	assert(state.start_qingyun_spar_battle(), "Qingyun sparring should be available as repeatable training.")
 	assert(str(state.data.battle.battle_id) == "qingyun_spar" and state.data.battle.enemies.size() == 2, "Sparring should use its short two-opponent encounter.")
 	assert(int(state.data.week) == 1 and bool(state.data.acted_this_week), "Sparring should use up this week's one action without advancing the week by itself.")
+	assert(not state.data.battle.has("ally"), "A hero with no recruited disciple should spar solo, matching the pre-0.109.0 default.")
 	state.finish_battle(true)
 	assert(str(state.data.quest_stage) == spar_stage and "玄铁令" not in state.data.items and "villain_revealed" not in state.data.flags, "Optional sparring must not advance or contaminate the main story.")
 	assert(str(state.data.pending_reward.battle_id) == "qingyun_spar" and int(state.data.xp) == 8, "An S-grade spar should combine its light base reward with the performance bonus.")
@@ -170,6 +181,15 @@ func _initialize() -> void:
 	assert(str(state.data.pending_reward.discipline) == "swordsmanship" and int(state.data.swordsmanship) == 1, "The default S-grade sword spar should grant enough xp to level swordsmanship up once.")
 	assert("spar_s_grade" in state.data.flags, "An S-grade spar should persist its Steam achievement milestone.")
 	assert(state.claim_pending_reward("fellowship") and int(state.data.faction_relations.qingyun) == 2, "Sparring should add the selected reward to the starting Qingyun relationship.")
+
+	# 客栈招募的随行弟子 (0.109.0) -- only ever accompanies 切磋, never the
+	# story battles 林清霜 fights in, so start_huashan_trial_battle()/
+	# start_final_battle() are deliberately not covered here.
+	state.new_game()
+	state.data.silver = 1000
+	assert(COMPANION_RULES.recruit(state.data, "zhou_mubai"), "A well-funded fresh save should be able to recruit at 客栈.")
+	assert(state.start_qingyun_spar_battle(), "Sparring should still start normally once a disciple is recruited.")
+	assert(str(state.data.battle.ally.name) == "周慕白", "A recruited disciple should accompany the hero into 切磋 as the battle ally.")
 
 	state.new_game()
 	state.data.investigations = ["archer", "herbs"]

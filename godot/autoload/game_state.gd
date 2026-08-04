@@ -12,6 +12,7 @@ const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
+const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 
 signal state_changed
 signal battle_started
@@ -80,6 +81,7 @@ func new_game() -> void:
 		"palace_alert": 0,
 		"faction_relations": {"qingyun": 1, "huashan": 0, "emei": 0, "shaolin": 0},
 		"companions": [],
+		"active_disciple": "",
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
 		"emei_entry": "",
 		"ending": {},
@@ -301,6 +303,11 @@ func start_qingyun_spar_battle(discipline: String = "swordsmanship") -> bool:
 		"blocked": rotation.blocked,
 		"enemies": rotation.enemies
 	}
+	# 客栈招募的随行弟子 (0.109.0) -- only ever accompanies 切磋 sparring, never
+	# the story battles that 林清霜 fights in.
+	var disciple_ally := COMPANION_RULES.active_disciple_ally(data)
+	if not disciple_ally.is_empty():
+		data.battle.ally = disciple_ally
 	_apply_current_difficulty()
 	capture_battle_checkpoint()
 	battle_started.emit()
@@ -565,6 +572,8 @@ func _migrate_and_validate() -> void:
 		data.faction_relations = {"qingyun": 1, "huashan": 0, "emei": 0, "shaolin": 0}
 	if typeof(data.companions) != TYPE_ARRAY:
 		data.companions = []
+	if str(data.get("active_disciple", "")) not in Array(data.companions):
+		data.active_disciple = ""
 	if typeof(data.skills) != TYPE_ARRAY:
 		data.skills = ["cloud"]
 	if typeof(data.log) != TYPE_ARRAY:
