@@ -13,6 +13,7 @@ const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
+const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
 
 signal state_changed
 signal battle_started
@@ -86,6 +87,9 @@ func new_game() -> void:
 		"companion_move": {},
 		"companion_internal": {},
 		"companion_lightness": {},
+		"weekly_task_hero": "",
+		"companion_tasks": {},
+		"companion_growth": {},
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
 		"emei_entry": "",
 		"ending": {},
@@ -126,14 +130,53 @@ func spend_action() -> bool:
 ## Ending the week also restores hp/qi to full (0.101.0) -- the standalone
 ## 调息 (rest) action was removed, so recovery now happens automatically
 ## whenever a week passes, rather than requiring a dedicated action.
+##
+## 分派任务 (0.115.0) -- 沈羽本周分派的任务 (weekly_task_hero, 一次性) 和每位
+## 已加入门派同伴的持续任务 (companion_tasks) 都在这里结算，正对应"只要本周
+## 休息，就会根据各自选择自动结算收益"这句需求原话——分派本身不产生收益，
+## 收益在结束本周时才真正发放。
 func end_week() -> bool:
 	if deadline_reached():
 		return false
+	var hero_result := WEEKLY_TASK_RULES.resolve_hero(data)
+	if not hero_result.is_empty():
+		add_log(str(hero_result.get("text", "")))
+	for companion_id in COMPANION_RULES.roster(data):
+		var companion_entry: Dictionary = COMPANION_RULES.companion_entry(companion_id)
+		var companion_attack := int(companion_entry.get("attack", 0)) + WEEKLY_TASK_RULES.companion_attack_growth(data, companion_id)
+		var companion_result := WEEKLY_TASK_RULES.resolve_companion(data, companion_id, companion_attack)
+		if not companion_result.is_empty():
+			var companion_title := str(companion_entry.get("title", companion_id))
+			match str(companion_result.get("task", "")):
+				"earn": add_log("%s跑了一趟买卖，赚回%d两银子。" % [companion_title, int(companion_result.get("silver", 0))])
+				"train": add_log("%s潜心修炼，战力更进一层。" % companion_title if int(companion_result.get("attack_bonus_gained", 0)) > 0 else "%s潜心修炼，但已到当前的成长上限。" % companion_title)
+				"gather": add_log("%s采回%d份药材、%d份矿石。" % [companion_title, int(companion_result.get("herbs", 0)), int(companion_result.get("ore", 0))])
 	data.week = mini(FINAL_WEEK, int(data.week) + 1)
 	data.acted_this_week = false
 	data.hp = data.max_hp
 	data.qi = 20
 	add_log("本周结束，气血与真气自然恢复。")
+	state_changed.emit()
+	return true
+
+## 分派任务 (0.115.0)：沈羽这份是一次性的，跟其余每周一次的行动一样占用
+## acted_this_week，实际收益要等 end_week() 才发放。
+func assign_hero_task(task_id: String) -> bool:
+	if not WEEKLY_TASK_RULES.is_valid_task(task_id) or not spend_action():
+		return false
+	data.weekly_task_hero = task_id
+	add_log("沈羽本周分派任务：%s，将在本周结束时结算。" % str(WEEKLY_TASK_RULES.TASKS[task_id].title))
+	state_changed.emit()
+	return true
+
+## 同伴那份是持续性的，不占用沈羽的每周行动，也不需要每周重新分派——设成
+## 空字符串即可取消。
+func assign_companion_task(id: String, task_id: String) -> bool:
+	if id not in COMPANION_RULES.roster(data) or (task_id != "" and not WEEKLY_TASK_RULES.is_valid_task(task_id)):
+		return false
+	if not data.has("companion_tasks") or typeof(data.companion_tasks) != TYPE_DICTIONARY:
+		data.companion_tasks = {}
+	data.companion_tasks[id] = task_id
 	state_changed.emit()
 	return true
 
@@ -591,6 +634,12 @@ func _migrate_and_validate() -> void:
 		data.companion_internal = {}
 	if typeof(data.get("companion_lightness", {})) != TYPE_DICTIONARY:
 		data.companion_lightness = {}
+	if not WEEKLY_TASK_RULES.is_valid_task(str(data.get("weekly_task_hero", ""))):
+		data.weekly_task_hero = ""
+	if typeof(data.get("companion_tasks", {})) != TYPE_DICTIONARY:
+		data.companion_tasks = {}
+	if typeof(data.get("companion_growth", {})) != TYPE_DICTIONARY:
+		data.companion_growth = {}
 	if typeof(data.skills) != TYPE_ARRAY:
 		data.skills = ["cloud"]
 	if typeof(data.log) != TYPE_ARRAY:

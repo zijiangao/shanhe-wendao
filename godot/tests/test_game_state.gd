@@ -4,6 +4,7 @@ const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
+const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
 
 func _initialize() -> void:
 	var state = load("res://autoload/game_state.gd").new()
@@ -203,6 +204,25 @@ func _initialize() -> void:
 	assert(state.start_huashan_trial_battle(), "The 华山 trial should still start normally with 林清霜 geared up.")
 	assert(str(state.data.battle.ally.move_id) == "blade_technique", "林清霜's ally dict in the 华山 trial should carry her chosen move id.")
 	assert(int(state.data.battle.ally.attack) == 7, "林清霜's base 5 attack plus 冷鸦刀's +2 bonus should total 7 in the 华山 trial.")
+
+	# 分派任务 (0.115.0) -- 沈羽's assignment is one-shot (spends his weekly
+	# action, resolves at end_week()); a companion's is persistent (no action
+	# cost, keeps resolving every end_week() until changed).
+	state.new_game()
+	assert(state.assign_hero_task("earn"), "Assigning a task should succeed on a fresh, un-acted week.")
+	assert(bool(state.data.acted_this_week), "Assigning 沈羽's task must spend his one weekly action, same as every other action.")
+	assert(int(state.data.silver) == 10000, "Assigning a task must not grant its reward immediately -- only end_week() settles it.")
+	assert(not state.assign_hero_task("train"), "A second task assignment in the same week must be rejected, matching the one-action-per-week rule.")
+	state.data.silver = 1000
+	assert(COMPANION_RULES.recruit(state.data, "zhou_mubai"), "A well-funded fresh save should be able to recruit a disciple.")
+	assert(state.assign_companion_task("zhou_mubai", "train"), "Assigning a companion's task should succeed without touching acted_this_week.")
+	assert(state.end_week(), "Ending the week should resolve both the hero's one-shot task and the companion's persistent one.")
+	assert(str(state.data.weekly_task_hero) == "", "The hero's task must be cleared after resolving -- it needs to be reassigned each week.")
+	assert(int(state.data.silver) > 700, "Ending the week should have credited 沈羽's 赚钱 task's silver (700 remained after recruiting 周慕白 for 300).")
+	assert(WEEKLY_TASK_RULES.companion_attack_growth(state.data, "zhou_mubai") == 1, "Ending the week should have resolved 周慕白's persistent 修炼 task too.")
+	assert(str(state.data.companion_tasks.zhou_mubai) == "train", "A companion's task assignment must survive end_week() -- it's persistent, unlike 沈羽's.")
+	assert(state.assign_companion_task("zhou_mubai", ""), "A companion's task can be cancelled by assigning an empty task id.")
+	assert(not state.assign_companion_task("liu_ruyan", "earn"), "Assigning a task to a disciple who hasn't even been recruited must be rejected.")
 
 	state.new_game()
 	state.data.investigations = ["archer", "herbs"]

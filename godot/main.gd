@@ -34,6 +34,7 @@ const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
+const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
 ## 藏经阁 (0.103.0): left-column category buttons, in display order. The
 ## first four match WuxueRules.MOVES' "category" field; 内功/轻功 aren't
 ## move categories at all, so they're handled separately in
@@ -1348,6 +1349,33 @@ func _resolve_choice(route: String) -> void:
 		SaveManager.save_auto()
 		_show_companion_lightness(companion_gear_target)
 		return
+	elif choice_event == "hero_task":
+		if route == "leave":
+			screen = "character"
+			character_roster_selection = "hero"
+			_rebuild()
+			return
+		if not GameState.assign_hero_task(route.trim_prefix("assign_hero_")):
+			_toast("本周已经行动过了，请先结束本周。")
+			return
+		_toast("已分派任务，结束本周时自动结算收益。")
+		SaveManager.save_auto()
+		screen = "character"
+		character_roster_selection = "hero"
+		_rebuild()
+		return
+	elif choice_event == "companion_task":
+		if route == "leave":
+			screen = "character"
+			character_roster_selection = companion_gear_target
+			_rebuild()
+			return
+		if not GameState.assign_companion_task(companion_gear_target, route.trim_prefix("assign_companion_")):
+			_toast("无法为这位同伴分派任务。")
+			return
+		SaveManager.save_auto()
+		_show_companion_tasks(companion_gear_target)
+		return
 	elif choice_event == "market":
 		match route:
 			"weapons": _show_market_weapons(); return
@@ -1905,7 +1933,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.114.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.115.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2265,6 +2293,29 @@ func _show_character() -> void:
 	mastery.add_theme_font_size_override("font_size", 15)
 	mastery.add_theme_color_override("font_color", Color("#cfc8b8"))
 	info.add_child(mastery)
+
+	# 分派任务 (0.115.0)：与演武场/后山小游戏并列的另一种花掉本周行动的方式
+	# ——选好任务，等结束本周时自动结算收益，不用玩小游戏。
+	var task_title := Label.new()
+	task_title.text = "本 周 任 务"
+	task_title.add_theme_font_size_override("font_size", 20)
+	task_title.add_theme_color_override("font_color", Color("#dfbf74"))
+	info.add_child(task_title)
+	var current_hero_task_id := str(GameState.data.get("weekly_task_hero", ""))
+	var hero_task_text := "已分派：%s（结束本周时自动结算）" % str(WEEKLY_TASK_RULES.TASKS[current_hero_task_id].title) if WEEKLY_TASK_RULES.is_valid_task(current_hero_task_id) else "尚未分派——可选择赚钱/修炼/采集，作为演武场/后山小游戏之外的另一种行动方式。"
+	var task_card := Label.new()
+	task_card.text = hero_task_text
+	task_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	task_card.add_theme_font_size_override("font_size", 17)
+	task_card.add_theme_color_override("font_color", Color("#f4eee2"))
+	task_card.add_theme_stylebox_override("normal", _box(Color("#223a30")))
+	info.add_child(task_card)
+	var task_button := UI_THEME.action_button("分派任务", Color("#4d5550"))
+	task_button.custom_minimum_size.y = 40
+	task_button.disabled = bool(GameState.data.get("acted_this_week", false))
+	task_button.pressed.connect(func(): _show_hero_tasks())
+	info.add_child(task_button)
+
 	var bottom_spacer := Control.new()
 	bottom_spacer.custom_minimum_size.y = 16
 	info.add_child(bottom_spacer)
@@ -2279,8 +2330,10 @@ func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) ->
 	heading.add_theme_color_override("font_color", Color("#f2dfb3"))
 	info.add_child(heading)
 
+	# 分派任务·修炼 (0.115.0) 是同伴第一次能真正成长的地方，累加进攻击展示。
+	var training_bonus := WEEKLY_TASK_RULES.companion_attack_growth(GameState.data, id)
 	var summary := Label.new()
-	summary.text = "%s\n气血 %d    真气 %d    攻击 %d    护卫 %d" % [str(entry.get("description", "")), int(entry.get("hp", 0)), int(entry.get("max_qi", 0)), int(entry.get("attack", 0)), int(entry.get("guard", 0))]
+	summary.text = "%s\n气血 %d    真气 %d    攻击 %d%s    护卫 %d" % [str(entry.get("description", "")), int(entry.get("hp", 0)), int(entry.get("max_qi", 0)), int(entry.get("attack", 0)) + training_bonus, "（含修炼 +%d）" % training_bonus if training_bonus > 0 else "", int(entry.get("guard", 0))]
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.add_theme_font_size_override("font_size", 18)
 	summary.add_theme_color_override("font_color", Color("#e9e1cf"))
@@ -2376,6 +2429,27 @@ func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) ->
 	armor_button.pressed.connect(func(): _show_companion_armors(id))
 	gear_buttons.add_child(armor_button)
 
+	# 分派任务 (0.115.0)：不占用沈羽的每周行动，一旦分派就持续进行，直到玩家
+	# 改派或取消——每次结束本周都会结算一次。
+	var task_title := Label.new()
+	task_title.text = "分 派 任 务"
+	task_title.add_theme_font_size_override("font_size", 20)
+	task_title.add_theme_color_override("font_color", Color("#dfbf74"))
+	info.add_child(task_title)
+	var current_task_id := str(Dictionary(GameState.data.get("companion_tasks", {})).get(id, ""))
+	var task_text := "持续进行：%s（每周结束时自动结算）" % str(WEEKLY_TASK_RULES.TASKS[current_task_id].title) if WEEKLY_TASK_RULES.is_valid_task(current_task_id) else "尚未分派任务，同伴平时闲置。"
+	var task_card := Label.new()
+	task_card.text = task_text
+	task_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	task_card.add_theme_font_size_override("font_size", 17)
+	task_card.add_theme_color_override("font_color", Color("#f4eee2"))
+	task_card.add_theme_stylebox_override("normal", _box(Color("#223a30")))
+	info.add_child(task_card)
+	var task_button := UI_THEME.action_button("分派任务", Color("#4d5550"))
+	task_button.custom_minimum_size.y = 40
+	task_button.pressed.connect(func(): _show_companion_tasks(id))
+	info.add_child(task_button)
+
 	var note := Label.new()
 	note.text = "%s\n%s" % [str(entry.get("gear_text", "")), "华山剧情战斗与武库天门终战随行出战。" if id == "lin_qingshuang" else "仅在青云门切磋中随行出战。"]
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2385,6 +2459,23 @@ func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) ->
 	var bottom_spacer := Control.new()
 	bottom_spacer.custom_minimum_size.y = 16
 	info.add_child(bottom_spacer)
+
+## 分派任务 (0.115.0)：沈羽那份是一次性的（选完就花掉本周行动，等结束本周
+## 才结算），同伴那份是持续性的（不占行动，选完就一直有效直到改派/取消）。
+func _show_hero_tasks() -> void:
+	choice_event = "hero_task"
+	choice_prompt = "本周任务 · 银两 %d" % int(GameState.data.silver)
+	choice_options = WEEKLY_TASK_RULES.options_hero(GameState.data)
+	screen = "choice"
+	_rebuild()
+
+func _show_companion_tasks(id: String) -> void:
+	companion_gear_target = id
+	choice_event = "companion_task"
+	choice_prompt = "%s · 分派任务" % str(COMPANION_RULES.companion_entry(id).get("title", id))
+	choice_options = WEEKLY_TASK_RULES.options_companion(GameState.data, id)
+	screen = "choice"
+	_rebuild()
 
 func _show_companion_weapons(id: String) -> void:
 	companion_gear_target = id

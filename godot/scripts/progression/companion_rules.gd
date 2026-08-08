@@ -3,6 +3,7 @@ extends RefCounted
 
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
+const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
 
 ## 客栈招募的门下弟子 (0.109.0) -- distinct from the story companion 林清霜
 ## (who joins for free at a fixed quest beat and fights in 华山论剑试炼/
@@ -236,7 +237,8 @@ static func apply_gear_and_move(state: Dictionary, id: String, base_ally: Dictio
 	var weapon_bonus := SHOP_RULES.weapon_attack_bonus({"equipped_weapon": companion_weapon(state, id)})
 	var armor_bonus := SHOP_RULES.armor_defense_bonus({"equipped_armor": companion_armor(state, id)})
 	var internal_bonus := companion_internal_damage_bonus(state, companion_internal(state, id))
-	ally.attack = int(ally.get("attack", 0)) + weapon_bonus + internal_bonus
+	var training_bonus := WEEKLY_TASK_RULES.companion_attack_growth(state, id)
+	ally.attack = int(ally.get("attack", 0)) + weapon_bonus + internal_bonus + training_bonus
 	ally.armor = armor_bonus
 	ally.move_id = companion_move(state, id)
 	ally.lightness_bonus = companion_lightness_move_bonus(state, companion_lightness(state, id))
