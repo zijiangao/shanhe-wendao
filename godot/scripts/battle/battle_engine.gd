@@ -263,12 +263,28 @@ static func _armor_splitting_spear(battle: Dictionary, player: Dictionary, targe
 	battle.skill_name = "裂 甲 枪"
 	return _success(battle, damage)
 
+## 同伴换武学 (0.113.0) -- battle.ally.move_id (来自 CompanionRules.
+## apply_gear_and_move()) 若指向沈羽已学的某个招式，突进技就借用该招式的
+## 名号/真气消耗/等级伤害加成；留空则完全是原来的霜华刺，行为不变。
+static func ally_dash_move(battle: Dictionary) -> Dictionary:
+	return WUXUE_RULES.MOVES.get(str(battle.get("ally", {}).get("move_id", "")), {})
+
+static func ally_dash_qi_cost(battle: Dictionary) -> int:
+	var move := ally_dash_move(battle)
+	return int(move.qi_cost) if not move.is_empty() else 6
+
+static func ally_dash_title(battle: Dictionary) -> String:
+	var move := ally_dash_move(battle)
+	return str(move.title) if not move.is_empty() else "霜华刺"
+
 static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
-	if not RULES.can_frost_dash(battle, target):
-		return _failure("霜华刺需要6点真气，并只能突进攻击两格内的敌人。")
+	var qi_cost := ally_dash_qi_cost(battle)
+	if not RULES.can_frost_dash(battle, target, qi_cost):
+		return _failure("%s需要%d点真气，并只能突进攻击两格内的敌人。" % [ally_dash_title(battle), qi_cost])
+	var move := ally_dash_move(battle)
 	var enemy_index := RULES.enemy_at(battle, target)
-	var damage := int(battle.ally.attack) + 6 + int(player.skill_mastery.frost / 3) + _roll_bonus(rng)
-	battle.ally.qi = int(battle.ally.qi) - 6
+	var damage := int(battle.ally.attack) + 6 + int(move.get("level_damage_bonus", 0)) + int(player.skill_mastery.frost / 3) + _roll_bonus(rng)
+	battle.ally.qi = int(battle.ally.qi) - qi_cost
 	player.skill_mastery.frost = int(player.skill_mastery.frost) + 1
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
 	var path := RULES.find_path(battle, Vector2i(int(battle.ally.x), int(battle.ally.y)), target, true)
@@ -276,9 +292,10 @@ static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i
 		battle.ally.x = path[path.size() - 2].x
 		battle.ally.y = path[path.size() - 2].y
 	battle.ap = int(battle.ap) - 1
-	battle.result = "%s踏雪突进，以霜华刺对%s造成%d点伤害！" % [_active_name(battle), battle.enemies[enemy_index].name, damage]
+	var dash_title := ally_dash_title(battle)
+	battle.result = "%s踏雪突进，以%s对%s造成%d点伤害！" % [_active_name(battle), dash_title, battle.enemies[enemy_index].name, damage]
 	battle.skill_flash = true
-	battle.skill_name = "霜 华 刺"
+	battle.skill_name = "霜 华 刺" if move.is_empty() else dash_title
 	return _success(battle, damage)
 
 static func _frost_guard(battle: Dictionary, player: Dictionary) -> Dictionary:
@@ -404,6 +421,7 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				suppressed = true
 				special_notes.append("%s施展穿云箭，压制下回合行动" % str(enemy.name))
 			if target_is_ally:
+				hurt = maxi(0, hurt - int(battle.ally.get("armor", 0)))
 				var blocked := mini(hurt, int(battle.ally.guard))
 				hurt -= blocked
 				battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)

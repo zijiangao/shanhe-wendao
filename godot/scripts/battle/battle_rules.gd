@@ -105,8 +105,8 @@ static func has_clear_line(battle: Dictionary, from: Vector2i, to: Vector2i) -> 
 			return false
 	return true
 
-static func can_frost_dash(battle: Dictionary, cell: Vector2i) -> bool:
-	if str(battle.get("active_unit", "hero")) != "ally" or enemy_at(battle, cell) < 0 or int(battle.ally.qi) < 6:
+static func can_frost_dash(battle: Dictionary, cell: Vector2i, qi_cost: int = 6) -> bool:
+	if str(battle.get("active_unit", "hero")) != "ally" or enemy_at(battle, cell) < 0 or int(battle.ally.qi) < qi_cost:
 		return false
 	var start := Vector2i(int(battle.ally.x), int(battle.ally.y))
 	if absi(cell.x - start.x) + absi(cell.y - start.y) > 2:

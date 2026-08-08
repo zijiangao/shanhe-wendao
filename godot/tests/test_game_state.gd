@@ -184,12 +184,25 @@ func _initialize() -> void:
 
 	# 客栈招募的随行弟子 (0.109.0) -- only ever accompanies 切磋, never the
 	# story battles 林清霜 fights in, so start_huashan_trial_battle()/
-	# start_final_battle() are deliberately not covered here.
+	# start_final_battle() are deliberately not covered here for recruited
+	# disciples, but 同伴换装备/换武学 (0.113.0) DOES also apply to 林清霜
+	# in those two battles, covered separately below.
 	state.new_game()
 	state.data.silver = 1000
 	assert(COMPANION_RULES.recruit(state.data, "zhou_mubai"), "A well-funded fresh save should be able to recruit at 客栈.")
 	assert(state.start_qingyun_spar_battle(), "Sparring should still start normally once a disciple is recruited.")
 	assert(str(state.data.battle.ally.name) == "周慕白", "A recruited disciple should accompany the hero into 切磋 as the battle ally.")
+
+	# 同伴换装备/换武学 (0.113.0) -- gear/move chosen for 林清霜 must carry
+	# into her hardcoded ally dict in the two story battles she fights in.
+	state.new_game()
+	state.data.owned_weapons = ["cold_crow_blade"]
+	state.data.learned_moves = ["blade_technique"]
+	assert(COMPANION_RULES.equip_companion_weapon(state.data, "lin_qingshuang", "cold_crow_blade"), "The hero should be able to gear up 林清霜 before the 华山 trial.")
+	assert(COMPANION_RULES.equip_companion_move(state.data, "lin_qingshuang", "blade_technique"), "The hero should be able to pick 林清霜's dash move before the 华山 trial.")
+	assert(state.start_huashan_trial_battle(), "The 华山 trial should still start normally with 林清霜 geared up.")
+	assert(str(state.data.battle.ally.move_id) == "blade_technique", "林清霜's ally dict in the 华山 trial should carry her chosen move id.")
+	assert(int(state.data.battle.ally.attack) == 7, "林清霜's base 5 attack plus 冷鸦刀's +2 bonus should total 7 in the 华山 trial.")
 
 	state.new_game()
 	state.data.investigations = ["archer", "herbs"]

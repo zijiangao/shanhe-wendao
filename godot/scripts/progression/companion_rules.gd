@@ -1,6 +1,9 @@
 class_name CompanionRules
 extends RefCounted
 
+const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
+const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
+
 ## 客栈招募的门下弟子 (0.109.0) -- distinct from the story companion 林清霜
 ## (who joins for free at a fixed quest beat and fights in 华山论剑试炼/
 ## 武库天门终战). Recruited disciples are a separate, silver-bought roster
@@ -83,4 +86,92 @@ static func active_disciple_ally(state: Dictionary) -> Dictionary:
 	if not is_recruited(state, id) or not is_valid_disciple(id):
 		return {}
 	var item: Dictionary = DISCIPLES[id]
-	return {"name": str(item.title), "hp": int(item.hp), "max_hp": int(item.hp), "qi": int(item.max_qi), "max_qi": int(item.max_qi), "attack": int(item.attack), "guard": int(item.guard), "x": 1, "y": 4}
+	var ally := {"name": str(item.title), "hp": int(item.hp), "max_hp": int(item.hp), "qi": int(item.max_qi), "max_qi": int(item.max_qi), "attack": int(item.attack), "guard": int(item.guard), "x": 1, "y": 4}
+	return apply_gear_and_move(state, id, ally)
+
+## 同伴换装备/换武学 (0.113.0) -- 同伴与沈羽共用同一份兵器/护具池
+## (owned_weapons/owned_armors)，各自独立选择装备哪一件，不新建单独的
+## 购置渠道；武学则从沈羽已学的 learned_moves 里选一招，替代默认的霜华刺
+## （详见 battle_engine.gd 的 _frost_dash()，未选择时行为与之前完全一致）。
+static func companion_weapon(state: Dictionary, id: String) -> String:
+	return str(Dictionary(state.get("companion_gear", {})).get(id, {}).get("weapon", ""))
+
+static func companion_armor(state: Dictionary, id: String) -> String:
+	return str(Dictionary(state.get("companion_gear", {})).get(id, {}).get("armor", ""))
+
+static func companion_move(state: Dictionary, id: String) -> String:
+	return str(Dictionary(state.get("companion_move", {})).get(id, ""))
+
+static func _companion_gear_slot(state: Dictionary, id: String) -> Dictionary:
+	if not state.has("companion_gear") or typeof(state.companion_gear) != TYPE_DICTIONARY:
+		state.companion_gear = {}
+	if not state.companion_gear.has(id) or typeof(state.companion_gear[id]) != TYPE_DICTIONARY:
+		state.companion_gear[id] = {"weapon": "", "armor": ""}
+	return state.companion_gear[id]
+
+static func equip_companion_weapon(state: Dictionary, id: String, weapon_id: String) -> bool:
+	if not is_valid_companion(id) or (weapon_id != "" and weapon_id not in Array(state.get("owned_weapons", []))):
+		return false
+	_companion_gear_slot(state, id).weapon = weapon_id
+	return true
+
+static func equip_companion_armor(state: Dictionary, id: String, armor_id: String) -> bool:
+	if not is_valid_companion(id) or (armor_id != "" and armor_id not in Array(state.get("owned_armors", []))):
+		return false
+	_companion_gear_slot(state, id).armor = armor_id
+	return true
+
+static func equip_companion_move(state: Dictionary, id: String, move_id: String) -> bool:
+	if not is_valid_companion(id) or (move_id != "" and move_id not in Array(state.get("learned_moves", []))):
+		return false
+	if not state.has("companion_move") or typeof(state.companion_move) != TYPE_DICTIONARY:
+		state.companion_move = {}
+	state.companion_move[id] = move_id
+	return true
+
+## 换装/换武学选项列表，供人物界面的同伴信息卡使用。
+static func options_companion_weapons(state: Dictionary, id: String) -> Array:
+	var options := []
+	var current := companion_weapon(state, id)
+	options.append(["赤手（不装备兵器）", "卸下兵器。", "equip_weapon_", current == ""])
+	for weapon_id in Array(state.get("owned_weapons", [])):
+		var item: Dictionary = SHOP_RULES.WEAPONS.get(str(weapon_id), {})
+		var title := str(item.get("item_name", item.get("title", weapon_id)))
+		options.append(["%s（攻击+%d）" % [title, int(item.get("attack_bonus", 0))], "为同伴换上此兵器。", "equip_weapon_%s" % weapon_id, current == str(weapon_id)])
+	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
+	return options
+
+static func options_companion_armors(state: Dictionary, id: String) -> Array:
+	var options := []
+	var current := companion_armor(state, id)
+	options.append(["无护具", "卸下护具。", "equip_armor_", current == ""])
+	for armor_id in Array(state.get("owned_armors", [])):
+		var item: Dictionary = SHOP_RULES.ARMORS.get(str(armor_id), {})
+		var title := str(item.get("item_name", item.get("title", armor_id)))
+		options.append(["%s（防御+%d）" % [title, int(item.get("defense_bonus", 0))], "为同伴换上此护具。", "equip_armor_%s" % armor_id, current == str(armor_id)])
+	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
+	return options
+
+static func options_companion_moves(state: Dictionary, id: String) -> Array:
+	var options := []
+	var current := companion_move(state, id)
+	options.append(["霜华刺（默认）", "沈羽同伴的默认突进技，不占用沈羽的招式。", "equip_move_", current == ""])
+	for move_id in Array(state.get("learned_moves", [])):
+		var item: Dictionary = WUXUE_RULES.MOVES.get(str(move_id), {})
+		if item.is_empty():
+			continue
+		options.append(["%s · %s" % [str(item.title), str(item.description)], "让同伴在突进攻击时改用此招式的招式名与真气消耗。", "equip_move_%s" % move_id, current == str(move_id)])
+	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
+	return options
+
+## 把换装/换武学的加成叠加到基础 ally 字典上 -- 林清霜（game_state.gd 里
+## 两处硬编码的基础数值）和客栈弟子（active_disciple_ally() 的基础数值）
+## 都调用这个函数叠加，保持两者换装/换武学效果一致。
+static func apply_gear_and_move(state: Dictionary, id: String, base_ally: Dictionary) -> Dictionary:
+	var ally := base_ally.duplicate(true)
+	var weapon_bonus := SHOP_RULES.weapon_attack_bonus({"equipped_weapon": companion_weapon(state, id)})
+	var armor_bonus := SHOP_RULES.armor_defense_bonus({"equipped_armor": companion_armor(state, id)})
+	ally.attack = int(ally.get("attack", 0)) + weapon_bonus
+	ally.armor = armor_bonus
+	ally.move_id = companion_move(state, id)
+	return ally

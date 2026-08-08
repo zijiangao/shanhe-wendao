@@ -59,6 +59,40 @@ func _initialize() -> void:
 	assert(str(zhou_entry.title) == "周慕白" and int(zhou_entry.strength) > 0, "companion_entry() should resolve a recruited disciple's display stats from DISCIPLES.")
 	assert(RULES.companion_entry("nobody").is_empty(), "An unknown id should resolve to an empty entry rather than crash.")
 
+	# 同伴换装备/换武学 (0.113.0) -- companions share the hero's own
+	# owned_weapons/owned_armors pool; equipping requires the hero to
+	# actually own the item, mirroring 秘籍阁/西市's own ownership checks.
+	var gear_state := _state()
+	gear_state.companions = ["zhou_mubai"]
+	gear_state.active_disciple = "zhou_mubai"
+	gear_state.owned_weapons = ["cold_crow_blade"]
+	gear_state.owned_armors = ["cold_jade_armor"]
+	gear_state.learned_moves = ["cloud_sword"]
+	assert(not RULES.equip_companion_weapon(gear_state, "zhou_mubai", "dragon_etched_sword"), "Equipping a weapon the hero doesn't own must be rejected.")
+	assert(RULES.equip_companion_weapon(gear_state, "zhou_mubai", "cold_crow_blade"), "Equipping a weapon the hero owns should succeed.")
+	assert(RULES.companion_weapon(gear_state, "zhou_mubai") == "cold_crow_blade", "companion_weapon() should report the just-equipped weapon.")
+	assert(RULES.equip_companion_armor(gear_state, "zhou_mubai", "cold_jade_armor"), "Equipping an owned armor should succeed.")
+	assert(RULES.equip_companion_move(gear_state, "zhou_mubai", "cloud_sword"), "Equipping a move the hero has learned should succeed.")
+	assert(not RULES.equip_companion_move(gear_state, "zhou_mubai", "blade_technique"), "Equipping a move the hero has NOT learned must be rejected.")
+	assert(RULES.equip_companion_weapon(gear_state, "zhou_mubai", ""), "Unequipping (empty id) should always succeed regardless of ownership.")
+	assert(RULES.companion_weapon(gear_state, "zhou_mubai") == "", "After unequipping, companion_weapon() should report empty.")
+	# The same weapon can accompany multiple people at once (a shared pool,
+	# not exclusive ownership) -- 林清霜 equipping it must not disturb 周慕白.
+	assert(RULES.equip_companion_weapon(gear_state, "lin_qingshuang", "cold_crow_blade"), "A second companion should be able to equip the same shared weapon.")
+
+	var equipped_ally := RULES.active_disciple_ally(gear_state)
+	assert(int(equipped_ally.attack) == int(RULES.DISCIPLES.zhou_mubai.attack) and int(equipped_ally.armor) == 3, "active_disciple_ally() should fold in the armor bonus but not a weapon that was unequipped again.")
+	assert(str(equipped_ally.move_id) == "cloud_sword", "active_disciple_ally() should surface the companion's chosen move id for battle_engine.gd to read.")
+
+	# options_companion_weapons()/armors()/moves() must reflect current
+	# ownership + equip state for the roster-panel UI.
+	var weapon_options: Array = RULES.options_companion_weapons(gear_state, "zhou_mubai")
+	var bare_hand_row := weapon_options.filter(func(o): return str(o[0]).begins_with("赤手"))
+	assert(bare_hand_row.size() == 1 and bool(bare_hand_row[0][3]), "赤手 should be the currently-equipped (disabled) row after unequipping.")
+	var move_options: Array = RULES.options_companion_moves(gear_state, "zhou_mubai")
+	var cloud_row := move_options.filter(func(o): return str(o[0]).begins_with("流云剑法"))
+	assert(cloud_row.size() == 1 and bool(cloud_row[0][3]), "The equipped move's row should show as currently selected (disabled).")
+
 	print("Companion rules tests passed.")
 	quit()
 

@@ -30,6 +30,7 @@ func _initialize() -> void:
 	_test_survival_objective()
 	_test_enemy_movement_and_turn_reset()
 	_test_guard_and_ally_knockout()
+	_test_ally_armor_mitigation()
 	_test_multi_target_feedback()
 	_test_enemy_event_sequence()
 	_test_hero_defeat()
@@ -103,6 +104,34 @@ func _test_player_skills_and_resources() -> void:
 	assert(Vector2i(int(battle.ally.x), int(battle.ally.y)) == Vector2i(3, 1), "Frost Dash should stop beside its target.")
 	assert(int(player.skill_mastery.frost) == 1, "Frost Dash should increase its mastery.")
 	assert(bool(battle.skill_flash) and str(battle.skill_name) == "霜 华 刺", "Frost Dash should expose its own presentation title.")
+
+	# 同伴换武学 (0.113.0) -- a companion with a chosen move_id should borrow
+	# that move's own title/qi cost/damage bonus for the dash, instead of
+	# 霜华刺's fixed defaults.
+	var custom_battle := _fixture()
+	custom_battle.active_unit = "ally"
+	custom_battle.ap = 2
+	custom_battle.ally.x = 2
+	custom_battle.ally.y = 1
+	custom_battle.ally.move_id = "stone_splitting_fist"
+	custom_battle.enemies[0].x = 4
+	custom_battle.enemies[0].y = 1
+	var custom_player := _player_fixture()
+	assert(ENGINE.ally_dash_title(custom_battle) == "裂石拳" and ENGINE.ally_dash_qi_cost(custom_battle) == 5, "ally_dash_title()/ally_dash_qi_cost() should read the companion's chosen move from WuxueRules.MOVES.")
+	var custom_dash: Dictionary = ENGINE.player_action(custom_battle, custom_player, "frost_dash", Vector2i(4, 1), _seeded_rng())
+	assert(bool(custom_dash.ok) and int(custom_battle.ally.qi) == 10, "The dash should spend 裂石拳's own 5-qi cost instead of 霜华刺's default 6.")
+	assert(str(custom_battle.skill_name) == "裂石拳", "The dash's presentation title should match the companion's chosen move.")
+	var default_battle := _fixture()
+	default_battle.active_unit = "ally"
+	default_battle.ap = 2
+	default_battle.ally.x = 2
+	default_battle.ally.y = 1
+	default_battle.enemies[0].x = 4
+	default_battle.enemies[0].y = 1
+	default_battle.enemies[0].hp = 100
+	custom_battle.enemies[0].hp = 100
+	var default_dash: Dictionary = ENGINE.player_action(default_battle, _player_fixture(), "frost_dash", Vector2i(4, 1), _seeded_rng())
+	assert(int(custom_dash.damage) == int(default_dash.damage) + 1, "裂石拳's level_damage_bonus (+1) should be strictly additive on top of the default dash formula, not a full formula replacement.")
 
 	battle.ap = 1
 	battle.ally.qi = 10
@@ -868,6 +897,18 @@ func _test_guard_and_ally_knockout() -> void:
 	assert(int(battle.ally.hp) == 0 and int(battle.ally.guard) == 0, "Guard should absorb damage before ally health and both should be clamped.")
 	assert("倒地" in str(battle.result), "The combat log should clearly communicate an ally knockout.")
 	assert(str(battle.active_unit) == "hero", "Control should return to the hero after an ally knockout.")
+
+## 同伴换装备 (0.113.0) -- battle.ally.armor (来自 CompanionRules.
+## apply_gear_and_move() 的护具加成) 应当跟沈羽自己的护甲一样，在敌方命中
+## 时先行减免，再扣护卫。
+func _test_ally_armor_mitigation() -> void:
+	var unarmored_battle := _fixture()
+	unarmored_battle.ally = {"name": "周慕白", "hp": 30, "max_hp": 30, "guard": 0, "armor": 0, "x": 3, "y": 1}
+	var unarmored_outcome: Dictionary = ENGINE.enemy_turn(unarmored_battle, 20, _seeded_rng())
+	var armored_battle := _fixture()
+	armored_battle.ally = {"name": "周慕白", "hp": 30, "max_hp": 30, "guard": 0, "armor": 3, "x": 3, "y": 1}
+	var armored_outcome: Dictionary = ENGINE.enemy_turn(armored_battle, 20, _seeded_rng())
+	assert(int(armored_battle.ally.hp) == int(unarmored_battle.ally.hp) + 3, "Three points of ally armor should reduce the same seeded strike by exactly three, matching the hero's own armor-mitigation shape.")
 
 func _test_multi_target_feedback() -> void:
 	var battle := _fixture()

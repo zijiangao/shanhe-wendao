@@ -147,7 +147,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	side_box.add_child(action_grid)
 	var actions: Array = [["移动", "move"], ["普通攻击", "attack"]]
 	if is_ally_turn:
-		actions.append(["霜华刺 · 6真气", "frost_dash"])
+		actions.append(["%s · %d真气" % [BATTLE_ENGINE.ally_dash_title(battle), BATTLE_ENGINE.ally_dash_qi_cost(battle)], "frost_dash"])
 		actions.append(["寒锋守势", "frost_guard"])
 	else:
 		var qi_cost := TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))
@@ -169,7 +169,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	for action in actions:
 		var button := _action_button(action[0], Color("#8b493b") if mode == action[1] else Color("#315f4b"))
 		button.custom_minimum_size.x = 174
-		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "blade_skill" and int(player.qi) < BATTLE_ENGINE.BLADE_QI_COST) or (action[1] == "frost_dash" and int(battle.ally.qi) < 6) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp))) or (action[1] == "thunder_stone" and int(player.get("consumables", {}).get("thunder_stone", 0)) <= 0) or (action[1] == "stone_splitting_fist" and int(player.qi) < BATTLE_ENGINE.STONE_FIST_QI_COST) or (action[1] == "night_triple_blade" and int(player.qi) < BATTLE_ENGINE.NIGHT_BLADE_QI_COST) or (action[1] == "armor_splitting_spear" and int(player.qi) < BATTLE_ENGINE.SPEAR_QI_COST)
+		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "blade_skill" and int(player.qi) < BATTLE_ENGINE.BLADE_QI_COST) or (action[1] == "frost_dash" and int(battle.ally.qi) < BATTLE_ENGINE.ally_dash_qi_cost(battle)) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp))) or (action[1] == "thunder_stone" and int(player.get("consumables", {}).get("thunder_stone", 0)) <= 0) or (action[1] == "stone_splitting_fist" and int(player.qi) < BATTLE_ENGINE.STONE_FIST_QI_COST) or (action[1] == "night_triple_blade" and int(player.qi) < BATTLE_ENGINE.NIGHT_BLADE_QI_COST) or (action[1] == "armor_splitting_spear" and int(player.qi) < BATTLE_ENGINE.SPEAR_QI_COST)
 		button.pressed.connect(_emit_mode.bind(str(action[1])))
 		action_grid.add_child(button)
 	var end_button := _action_button("结束回合", Color("#806c4f"))
@@ -177,7 +177,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	end_button.pressed.connect(func(): end_turn_requested.emit())
 	action_grid.add_child(end_button)
 	var help := Label.new()
-	help.text = BATTLE_ENGINE.hero_action_help(player) if active_name == "沈羽" else "霜华刺：突进两格并攻击 · 消耗6真气\n寒锋守势：获得护卫并恢复3真气 · 均消耗1行动点"
+	help.text = BATTLE_ENGINE.hero_action_help(player) if active_name == "沈羽" else "%s：突进两格并攻击 · 消耗%d真气\n寒锋守势：获得护卫并恢复3真气 · 均消耗1行动点" % [BATTLE_ENGINE.ally_dash_title(battle), BATTLE_ENGINE.ally_dash_qi_cost(battle)]
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
 	side_box.add_child(help)

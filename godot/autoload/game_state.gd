@@ -82,6 +82,8 @@ func new_game() -> void:
 		"faction_relations": {"qingyun": 1, "huashan": 0, "emei": 0, "shaolin": 0},
 		"companions": [],
 		"active_disciple": "",
+		"companion_gear": {},
+		"companion_move": {},
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
 		"emei_entry": "",
 		"ending": {},
@@ -338,6 +340,9 @@ func start_huashan_trial_battle() -> bool:
 			{"name": "守擂弟子", "role": "melee", "hp": 25, "max_hp": 25, "attack": 6, "range": 1, "x": 6, "y": 4}
 		]
 	}
+	# 同伴换装备/换武学 (0.113.0) -- 沈羽给林清霜配的兵器/护具/招式同样在
+	# 这场主线战斗里生效，跟客栈弟子共用同一套 CompanionRules 加成逻辑。
+	data.battle.ally = COMPANION_RULES.apply_gear_and_move(data, "lin_qingshuang", data.battle.ally)
 	_apply_current_difficulty()
 	capture_battle_checkpoint()
 	battle_started.emit()
@@ -371,6 +376,8 @@ func start_final_battle() -> bool:
 			{"name": "武库弩手", "role": "archer", "hp": 12 if trusted_su else 17, "max_hp": 12 if trusted_su else 17, "attack": 5, "range": 4, "x": 5, "y": 0}
 		]
 	}
+	# 同伴换装备/换武学 (0.113.0) -- 同上，覆盖终战里的林清霜。
+	data.battle.ally = COMPANION_RULES.apply_gear_and_move(data, "lin_qingshuang", data.battle.ally)
 	_apply_current_difficulty()
 	capture_battle_checkpoint()
 	battle_started.emit()
@@ -574,6 +581,10 @@ func _migrate_and_validate() -> void:
 		data.companions = []
 	if str(data.get("active_disciple", "")) not in Array(data.companions):
 		data.active_disciple = ""
+	if typeof(data.get("companion_gear", {})) != TYPE_DICTIONARY:
+		data.companion_gear = {}
+	if typeof(data.get("companion_move", {})) != TYPE_DICTIONARY:
+		data.companion_move = {}
 	if typeof(data.skills) != TYPE_ARRAY:
 		data.skills = ["cloud"]
 	if typeof(data.log) != TYPE_ARRAY:
