@@ -105,14 +105,14 @@ static func has_clear_line(battle: Dictionary, from: Vector2i, to: Vector2i) -> 
 			return false
 	return true
 
-static func can_frost_dash(battle: Dictionary, cell: Vector2i, qi_cost: int = 6) -> bool:
+static func can_frost_dash(battle: Dictionary, cell: Vector2i, qi_cost: int = 6, bonus_range: int = 0) -> bool:
 	if str(battle.get("active_unit", "hero")) != "ally" or enemy_at(battle, cell) < 0 or int(battle.ally.qi) < qi_cost:
 		return false
 	var start := Vector2i(int(battle.ally.x), int(battle.ally.y))
-	if absi(cell.x - start.x) + absi(cell.y - start.y) > 2:
+	if absi(cell.x - start.x) + absi(cell.y - start.y) > 2 + bonus_range:
 		return false
 	var path := find_path(battle, start, cell, true)
-	return path.size() >= 2 and path.size() <= 3
+	return path.size() >= 2 and path.size() <= 3 + bonus_range
 
 static func find_path(battle: Dictionary, start: Vector2i, goal: Vector2i, allow_goal_occupied: bool) -> Array[Vector2i]:
 	var frontier: Array[Vector2i] = [start]

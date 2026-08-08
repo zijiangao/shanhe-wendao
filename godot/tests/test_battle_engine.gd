@@ -31,6 +31,7 @@ func _initialize() -> void:
 	_test_enemy_movement_and_turn_reset()
 	_test_guard_and_ally_knockout()
 	_test_ally_armor_mitigation()
+	_test_ally_lightness_dash_range()
 	_test_multi_target_feedback()
 	_test_enemy_event_sequence()
 	_test_hero_defeat()
@@ -909,6 +910,31 @@ func _test_ally_armor_mitigation() -> void:
 	armored_battle.ally = {"name": "周慕白", "hp": 30, "max_hp": 30, "guard": 0, "armor": 3, "x": 3, "y": 1}
 	var armored_outcome: Dictionary = ENGINE.enemy_turn(armored_battle, 20, _seeded_rng())
 	assert(int(armored_battle.ally.hp) == int(unarmored_battle.ally.hp) + 3, "Three points of ally armor should reduce the same seeded strike by exactly three, matching the hero's own armor-mitigation shape.")
+
+## 同伴换轻功 (0.114.0) -- battle.ally.lightness_bonus should extend the
+## dash's max range beyond the default two cells, same shape as the hero's
+## own lightness bonus extending can_move_to()'s range.
+func _test_ally_lightness_dash_range() -> void:
+	var grounded_battle := _fixture()
+	grounded_battle.active_unit = "ally"
+	grounded_battle.ap = 2
+	grounded_battle.ally.x = 0
+	grounded_battle.ally.y = 0
+	grounded_battle.enemies[0].x = 3
+	grounded_battle.enemies[0].y = 0
+	var grounded_attempt: Dictionary = ENGINE.player_action(grounded_battle, _player_fixture(), "frost_dash", Vector2i(3, 0), _seeded_rng())
+	assert(not bool(grounded_attempt.ok), "Three cells away should be out of reach for an un-boosted dash (max range two).")
+
+	var winged_battle := _fixture()
+	winged_battle.active_unit = "ally"
+	winged_battle.ap = 2
+	winged_battle.ally.x = 0
+	winged_battle.ally.y = 0
+	winged_battle.ally.lightness_bonus = 1
+	winged_battle.enemies[0].x = 3
+	winged_battle.enemies[0].y = 0
+	var winged_attempt: Dictionary = ENGINE.player_action(winged_battle, _player_fixture(), "frost_dash", Vector2i(3, 0), _seeded_rng())
+	assert(bool(winged_attempt.ok), "A +1 lightness bonus should reach the same cell that was out of range without it.")
 
 func _test_multi_target_feedback() -> void:
 	var battle := _fixture()

@@ -102,6 +102,17 @@ static func companion_armor(state: Dictionary, id: String) -> String:
 static func companion_move(state: Dictionary, id: String) -> String:
 	return str(Dictionary(state.get("companion_move", {})).get(id, ""))
 
+## 同伴换内功/轻功 (0.114.0) -- 同样从沈羽已学的 learned_internal/
+## learned_lightness 里借一门，沿用沈羽自己对那门内功/轻功的等级
+## (WuxueRules.internal_level()/lightness_level())，不是同伴另起炉灶重新
+##练一遍。内功加成叠进 ally.attack；轻功加成叠成 ally.lightness_bonus，
+## 供 _frost_dash() 扩展突进射程使用。
+static func companion_internal(state: Dictionary, id: String) -> String:
+	return str(Dictionary(state.get("companion_internal", {})).get(id, ""))
+
+static func companion_lightness(state: Dictionary, id: String) -> String:
+	return str(Dictionary(state.get("companion_lightness", {})).get(id, ""))
+
 static func _companion_gear_slot(state: Dictionary, id: String) -> Dictionary:
 	if not state.has("companion_gear") or typeof(state.companion_gear) != TYPE_DICTIONARY:
 		state.companion_gear = {}
@@ -127,6 +138,22 @@ static func equip_companion_move(state: Dictionary, id: String, move_id: String)
 	if not state.has("companion_move") or typeof(state.companion_move) != TYPE_DICTIONARY:
 		state.companion_move = {}
 	state.companion_move[id] = move_id
+	return true
+
+static func equip_companion_internal(state: Dictionary, id: String, internal_id: String) -> bool:
+	if not is_valid_companion(id) or (internal_id != "" and internal_id not in Array(state.get("learned_internal", []))):
+		return false
+	if not state.has("companion_internal") or typeof(state.companion_internal) != TYPE_DICTIONARY:
+		state.companion_internal = {}
+	state.companion_internal[id] = internal_id
+	return true
+
+static func equip_companion_lightness(state: Dictionary, id: String, lightness_id: String) -> bool:
+	if not is_valid_companion(id) or (lightness_id != "" and lightness_id not in Array(state.get("learned_lightness", []))):
+		return false
+	if not state.has("companion_lightness") or typeof(state.companion_lightness) != TYPE_DICTIONARY:
+		state.companion_lightness = {}
+	state.companion_lightness[id] = lightness_id
 	return true
 
 ## 换装/换武学选项列表，供人物界面的同伴信息卡使用。
@@ -164,6 +191,43 @@ static func options_companion_moves(state: Dictionary, id: String) -> Array:
 	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
 	return options
 
+static func options_companion_internals(state: Dictionary, id: String) -> Array:
+	var options := []
+	var current := companion_internal(state, id)
+	options.append(["不修炼内功", "卸下内功。", "equip_internal_", current == ""])
+	for internal_id in Array(state.get("learned_internal", [])):
+		var item: Dictionary = WUXUE_RULES.INTERNAL.get(str(internal_id), {})
+		if item.is_empty():
+			continue
+		options.append(["%s Lv.%d · %s" % [str(item.title), WUXUE_RULES.internal_level(state, str(internal_id)), str(item.description)], "让同伴借用此内功（沿用沈羽已修炼的等级）。", "equip_internal_%s" % internal_id, current == str(internal_id)])
+	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
+	return options
+
+static func options_companion_lightness(state: Dictionary, id: String) -> Array:
+	var options := []
+	var current := companion_lightness(state, id)
+	options.append(["不修炼轻功", "卸下轻功。", "equip_lightness_", current == ""])
+	for lightness_id in Array(state.get("learned_lightness", [])):
+		var item: Dictionary = WUXUE_RULES.LIGHTNESS.get(str(lightness_id), {})
+		if item.is_empty():
+			continue
+		options.append(["%s Lv.%d · %s" % [str(item.title), WUXUE_RULES.lightness_level(state, str(lightness_id)), str(item.description)], "让同伴借用此轻功，扩大突进射程（沿用沈羽已修炼的等级）。", "equip_lightness_%s" % lightness_id, current == str(lightness_id)])
+	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
+	return options
+
+static func companion_internal_damage_bonus(state: Dictionary, internal_id: String) -> int:
+	if not WUXUE_RULES.INTERNAL.has(internal_id):
+		return 0
+	var item: Dictionary = WUXUE_RULES.INTERNAL[internal_id]
+	var level := WUXUE_RULES.internal_level(state, internal_id)
+	return int(item.get("damage_bonus", 0)) + (level - 1) * int(item.get("level_damage_bonus", 0))
+
+static func companion_lightness_move_bonus(state: Dictionary, lightness_id: String) -> int:
+	if not WUXUE_RULES.LIGHTNESS.has(lightness_id):
+		return 0
+	var level := WUXUE_RULES.lightness_level(state, lightness_id)
+	return int(WUXUE_RULES.LIGHTNESS[lightness_id].get("move_bonus", 0)) + (level - 1) / WUXUE_RULES.LIGHTNESS_LEVEL_DIVISOR
+
 ## 把换装/换武学的加成叠加到基础 ally 字典上 -- 林清霜（game_state.gd 里
 ## 两处硬编码的基础数值）和客栈弟子（active_disciple_ally() 的基础数值）
 ## 都调用这个函数叠加，保持两者换装/换武学效果一致。
@@ -171,7 +235,9 @@ static func apply_gear_and_move(state: Dictionary, id: String, base_ally: Dictio
 	var ally := base_ally.duplicate(true)
 	var weapon_bonus := SHOP_RULES.weapon_attack_bonus({"equipped_weapon": companion_weapon(state, id)})
 	var armor_bonus := SHOP_RULES.armor_defense_bonus({"equipped_armor": companion_armor(state, id)})
-	ally.attack = int(ally.get("attack", 0)) + weapon_bonus
+	var internal_bonus := companion_internal_damage_bonus(state, companion_internal(state, id))
+	ally.attack = int(ally.get("attack", 0)) + weapon_bonus + internal_bonus
 	ally.armor = armor_bonus
 	ally.move_id = companion_move(state, id)
+	ally.lightness_bonus = companion_lightness_move_bonus(state, companion_lightness(state, id))
 	return ally

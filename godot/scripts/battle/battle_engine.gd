@@ -277,10 +277,17 @@ static func ally_dash_title(battle: Dictionary) -> String:
 	var move := ally_dash_move(battle)
 	return str(move.title) if not move.is_empty() else "霜华刺"
 
+## 同伴换轻功 (0.114.0) -- battle.ally.lightness_bonus (来自 CompanionRules.
+## apply_gear_and_move()) 扩展突进技的最大射程，跟沈羽自己的轻功加成
+## can_move_to() 的 bonus_range 是同一个概念，只是作用在突进技而非普通移动。
+static func ally_dash_bonus_range(battle: Dictionary) -> int:
+	return int(battle.get("ally", {}).get("lightness_bonus", 0))
+
 static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i, rng: RandomNumberGenerator) -> Dictionary:
 	var qi_cost := ally_dash_qi_cost(battle)
-	if not RULES.can_frost_dash(battle, target, qi_cost):
-		return _failure("%s需要%d点真气，并只能突进攻击两格内的敌人。" % [ally_dash_title(battle), qi_cost])
+	var bonus_range := ally_dash_bonus_range(battle)
+	if not RULES.can_frost_dash(battle, target, qi_cost, bonus_range):
+		return _failure("%s需要%d点真气，并只能突进攻击%d格内的敌人。" % [ally_dash_title(battle), qi_cost, 2 + bonus_range])
 	var move := ally_dash_move(battle)
 	var enemy_index := RULES.enemy_at(battle, target)
 	var damage := int(battle.ally.attack) + 6 + int(move.get("level_damage_bonus", 0)) + int(player.skill_mastery.frost / 3) + _roll_bonus(rng)

@@ -1324,6 +1324,30 @@ func _resolve_choice(route: String) -> void:
 		SaveManager.save_auto()
 		_show_companion_moves(companion_gear_target)
 		return
+	elif choice_event == "companion_internal":
+		if route == "leave":
+			screen = "character"
+			character_roster_selection = companion_gear_target
+			_rebuild()
+			return
+		if not COMPANION_RULES.equip_companion_internal(GameState.data, companion_gear_target, route.trim_prefix("equip_internal_")):
+			_toast("无法为同伴更换这门内功。")
+			return
+		SaveManager.save_auto()
+		_show_companion_internals(companion_gear_target)
+		return
+	elif choice_event == "companion_lightness":
+		if route == "leave":
+			screen = "character"
+			character_roster_selection = companion_gear_target
+			_rebuild()
+			return
+		if not COMPANION_RULES.equip_companion_lightness(GameState.data, companion_gear_target, route.trim_prefix("equip_lightness_")):
+			_toast("无法为同伴更换这门轻功。")
+			return
+		SaveManager.save_auto()
+		_show_companion_lightness(companion_gear_target)
+		return
 	elif choice_event == "market":
 		match route:
 			"weapons": _show_market_weapons(); return
@@ -1881,7 +1905,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.113.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.114.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2289,17 +2313,36 @@ func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) ->
 	var current_move_id := COMPANION_RULES.companion_move(GameState.data, id)
 	var current_move: Dictionary = WUXUE_RULES.MOVES.get(current_move_id, {})
 	var dash_text := "%s · %s" % [str(current_move.title), str(current_move.description)] if not current_move.is_empty() else "霜华刺（默认）· 突进两格攻击"
+	# 同伴换内功/轻功 (0.114.0)：同样借用沈羽已学的内功/轻功，沿用沈羽自己
+	# 修炼到的等级——内功加成叠进突进技伤害，轻功加成扩大突进技射程。
+	var current_internal_id := COMPANION_RULES.companion_internal(GameState.data, id)
+	var current_internal: Dictionary = WUXUE_RULES.INTERNAL.get(current_internal_id, {})
+	var internal_text := "%s Lv.%d · %s" % [str(current_internal.title), WUXUE_RULES.internal_level(GameState.data, current_internal_id), str(current_internal.description)] if not current_internal.is_empty() else "未修炼内功"
+	var current_lightness_id := COMPANION_RULES.companion_lightness(GameState.data, id)
+	var current_lightness: Dictionary = WUXUE_RULES.LIGHTNESS.get(current_lightness_id, {})
+	var lightness_text := "%s Lv.%d · %s" % [str(current_lightness.title), WUXUE_RULES.lightness_level(GameState.data, current_lightness_id), str(current_lightness.description)] if not current_lightness.is_empty() else "未修炼轻功"
 	var skill_card := Label.new()
-	skill_card.text = "%s\n寒锋守势 · 获得护卫并回气" % dash_text
+	skill_card.text = "%s\n寒锋守势 · 获得护卫并回气\n%s\n%s" % [dash_text, internal_text, lightness_text]
 	skill_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_card.add_theme_font_size_override("font_size", 17)
 	skill_card.add_theme_color_override("font_color", Color("#f4eee2"))
 	skill_card.add_theme_stylebox_override("normal", _box(Color("#223a30")))
 	info.add_child(skill_card)
+	var skill_buttons := HBoxContainer.new()
+	skill_buttons.add_theme_constant_override("separation", 10)
+	info.add_child(skill_buttons)
 	var move_button := UI_THEME.action_button("更换武学", Color("#4d5550"))
-	move_button.custom_minimum_size.y = 40
+	move_button.custom_minimum_size = Vector2(120, 40)
 	move_button.pressed.connect(func(): _show_companion_moves(id))
-	info.add_child(move_button)
+	skill_buttons.add_child(move_button)
+	var internal_button := UI_THEME.action_button("更换内功", Color("#4d5550"))
+	internal_button.custom_minimum_size = Vector2(120, 40)
+	internal_button.pressed.connect(func(): _show_companion_internals(id))
+	skill_buttons.add_child(internal_button)
+	var lightness_button := UI_THEME.action_button("更换轻功", Color("#4d5550"))
+	lightness_button.custom_minimum_size = Vector2(120, 40)
+	lightness_button.pressed.connect(func(): _show_companion_lightness(id))
+	skill_buttons.add_child(lightness_button)
 
 	# 同伴换装备 (0.113.0)：与沈羽共用同一份 owned_weapons/owned_armors 池，
 	# 各自独立选择装备哪一件（同一件可被多人同时装备）。
@@ -2364,6 +2407,22 @@ func _show_companion_moves(id: String) -> void:
 	choice_event = "companion_move"
 	choice_prompt = "%s · 更换武学" % str(COMPANION_RULES.companion_entry(id).get("title", id))
 	choice_options = COMPANION_RULES.options_companion_moves(GameState.data, id)
+	screen = "choice"
+	_rebuild()
+
+func _show_companion_internals(id: String) -> void:
+	companion_gear_target = id
+	choice_event = "companion_internal"
+	choice_prompt = "%s · 更换内功" % str(COMPANION_RULES.companion_entry(id).get("title", id))
+	choice_options = COMPANION_RULES.options_companion_internals(GameState.data, id)
+	screen = "choice"
+	_rebuild()
+
+func _show_companion_lightness(id: String) -> void:
+	companion_gear_target = id
+	choice_event = "companion_lightness"
+	choice_prompt = "%s · 更换轻功" % str(COMPANION_RULES.companion_entry(id).get("title", id))
+	choice_options = COMPANION_RULES.options_companion_lightness(GameState.data, id)
 	screen = "choice"
 	_rebuild()
 
@@ -2858,7 +2917,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 			var skill_valid: bool = battle_mode == "skill" and BATTLE_RULES.can_attack_cell(battle, cell, true, int(GameState.data.qi), TRAINING_RULES.cloud_qi_cost(int(GameState.data.swordsmanship)))
 			var blade_valid: bool = battle_mode == "blade_skill" and int(GameState.data.qi) >= BATTLE_ENGINE.BLADE_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var thunder_valid: bool = battle_mode == "thunder_stone" and int(GameState.data.consumables.get("thunder_stone", 0)) > 0 and BATTLE_RULES.can_attack_cell(battle, cell, true, 1, 0)
-			var frost_valid: bool = battle_mode == "frost_dash" and BATTLE_RULES.can_frost_dash(battle, cell, BATTLE_ENGINE.ally_dash_qi_cost(battle))
+			var frost_valid: bool = battle_mode == "frost_dash" and BATTLE_RULES.can_frost_dash(battle, cell, BATTLE_ENGINE.ally_dash_qi_cost(battle), BATTLE_ENGINE.ally_dash_bonus_range(battle))
 			var stone_fist_valid: bool = battle_mode == "stone_splitting_fist" and int(GameState.data.qi) >= BATTLE_ENGINE.STONE_FIST_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var night_blade_valid: bool = battle_mode == "night_triple_blade" and int(GameState.data.qi) >= BATTLE_ENGINE.NIGHT_BLADE_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))
 			var spear_valid: bool = battle_mode == "armor_splitting_spear" and int(GameState.data.qi) >= BATTLE_ENGINE.SPEAR_QI_COST and BATTLE_RULES.can_attack_cell(battle, cell, false, int(GameState.data.qi))

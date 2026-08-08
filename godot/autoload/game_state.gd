@@ -84,6 +84,8 @@ func new_game() -> void:
 		"active_disciple": "",
 		"companion_gear": {},
 		"companion_move": {},
+		"companion_internal": {},
+		"companion_lightness": {},
 		"skill_mastery": {"cloud": 0, "frost": 0, "frost_guard": 0},
 		"emei_entry": "",
 		"ending": {},
@@ -585,6 +587,10 @@ func _migrate_and_validate() -> void:
 		data.companion_gear = {}
 	if typeof(data.get("companion_move", {})) != TYPE_DICTIONARY:
 		data.companion_move = {}
+	if typeof(data.get("companion_internal", {})) != TYPE_DICTIONARY:
+		data.companion_internal = {}
+	if typeof(data.get("companion_lightness", {})) != TYPE_DICTIONARY:
+		data.companion_lightness = {}
 	if typeof(data.skills) != TYPE_ARRAY:
 		data.skills = ["cloud"]
 	if typeof(data.log) != TYPE_ARRAY:

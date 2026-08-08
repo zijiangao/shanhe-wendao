@@ -93,6 +93,37 @@ func _initialize() -> void:
 	var cloud_row := move_options.filter(func(o): return str(o[0]).begins_with("流云剑法"))
 	assert(cloud_row.size() == 1 and bool(cloud_row[0][3]), "The equipped move's row should show as currently selected (disabled).")
 
+	# 同伴换内功/轻功 (0.114.0) -- companions borrow the hero's already-learned
+	# internal/lightness arts, at whatever level the hero has trained them
+	# to, rather than leveling a separate copy of their own.
+	gear_state.learned_internal = ["purple_mist_art"]
+	gear_state.learned_lightness = ["ripple_steps"]
+	gear_state.internal_levels = {"purple_mist_art": 3}
+	gear_state.lightness_levels = {"ripple_steps": 4}
+	assert(not RULES.equip_companion_internal(gear_state, "zhou_mubai", "five_elements_art"), "Equipping an internal art the hero has NOT learned must be rejected.")
+	assert(RULES.equip_companion_internal(gear_state, "zhou_mubai", "purple_mist_art"), "Equipping a learned internal art should succeed.")
+	assert(RULES.companion_internal(gear_state, "zhou_mubai") == "purple_mist_art", "companion_internal() should report the just-equipped internal art.")
+	assert(not RULES.equip_companion_lightness(gear_state, "zhou_mubai", "wind_walk"), "Equipping a lightness skill the hero has NOT learned must be rejected.")
+	assert(RULES.equip_companion_lightness(gear_state, "zhou_mubai", "ripple_steps"), "Equipping a learned lightness skill should succeed.")
+
+	var internal_bonus := RULES.companion_internal_damage_bonus(gear_state, "purple_mist_art")
+	var expected_internal_bonus := int(RULES.WUXUE_RULES.INTERNAL.purple_mist_art.damage_bonus) + 2 * int(RULES.WUXUE_RULES.INTERNAL.purple_mist_art.level_damage_bonus)
+	assert(internal_bonus == expected_internal_bonus, "companion_internal_damage_bonus() should scale with the hero's own trained level (Lv.3), same shape as WuxueRules.internal_damage_bonus().")
+	var lightness_bonus := RULES.companion_lightness_move_bonus(gear_state, "ripple_steps")
+	var expected_lightness_bonus := int(RULES.WUXUE_RULES.LIGHTNESS.ripple_steps.move_bonus) + (4 - 1) / RULES.WUXUE_RULES.LIGHTNESS_LEVEL_DIVISOR
+	assert(lightness_bonus == expected_lightness_bonus, "companion_lightness_move_bonus() should scale with the hero's own trained level (Lv.4), same shape as WuxueRules.lightness_move_bonus().")
+
+	var geared_ally := RULES.active_disciple_ally(gear_state)
+	assert(int(geared_ally.attack) == int(RULES.DISCIPLES.zhou_mubai.attack) + internal_bonus, "active_disciple_ally() should fold the internal art's damage bonus into attack.")
+	assert(int(geared_ally.lightness_bonus) == lightness_bonus, "active_disciple_ally() should surface the lightness move bonus for battle_engine.gd's dash range.")
+
+	var internal_options: Array = RULES.options_companion_internals(gear_state, "zhou_mubai")
+	var purple_row := internal_options.filter(func(o): return str(o[0]).begins_with("紫霞神功"))
+	assert(purple_row.size() == 1 and bool(purple_row[0][3]) and "Lv.3" in str(purple_row[0][0]), "The equipped internal art's row should show the hero's own trained level and appear selected.")
+	var lightness_options: Array = RULES.options_companion_lightness(gear_state, "zhou_mubai")
+	var ripple_row := lightness_options.filter(func(o): return str(o[0]).begins_with("凌波微步"))
+	assert(ripple_row.size() == 1 and bool(ripple_row[0][3]) and "Lv.4" in str(ripple_row[0][0]), "The equipped lightness skill's row should show the hero's own trained level and appear selected.")
+
 	print("Companion rules tests passed.")
 	quit()
 
