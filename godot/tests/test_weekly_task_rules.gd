@@ -1,6 +1,7 @@
 extends SceneTree
 
 const RULES := preload("res://scripts/progression/weekly_task_rules.gd")
+const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 
 func _initialize() -> void:
 	# resolve_hero() -- 赚钱
@@ -40,15 +41,19 @@ func _initialize() -> void:
 	assert(int(companion_earn.silver) == 10 + 5 + 3, "Companion 赚钱 should scale off the companion's own attack stat, not 沈羽's.")
 	assert(int(companion_state.silver) == 100 + int(companion_earn.silver), "Companion 赚钱 should credit silver to the same shared pool as the hero's.")
 
-	# resolve_companion() -- 修炼 grants the companion's FIRST-EVER persistent
-	# stat growth, capped so it can't scale forever.
+	# resolve_companion() -- 修炼 grants the companion's FIRST-EVER independent
+	# leveling track (0.116.0), sharing GrowthRules' xp-per-level formula:
+	# every COMPANION_TRAIN_XP grant nudges xp forward, and crossing a level
+	# boundary bumps all four attributes (and hence attack/hp growth) by 1.
 	var growth_state := _hero_state()
 	growth_state.companion_tasks = {"zhou_mubai": "train"}
-	for i in range(RULES.COMPANION_ATTACK_GROWTH_CAP):
+	var levels_needed := ceili(float(GROWTH_RULES.LEVEL_XP_STEP) / float(RULES.COMPANION_TRAIN_XP))
+	for i in range(levels_needed):
 		RULES.resolve_companion(growth_state, "zhou_mubai", 5)
-	assert(RULES.companion_attack_growth(growth_state, "zhou_mubai") == RULES.COMPANION_ATTACK_GROWTH_CAP, "Repeated 修炼 should accumulate attack_bonus up to the cap.")
-	var capped_result: Dictionary = RULES.resolve_companion(growth_state, "zhou_mubai", 5)
-	assert(int(capped_result.attack_bonus_gained) == 0 and RULES.companion_attack_growth(growth_state, "zhou_mubai") == RULES.COMPANION_ATTACK_GROWTH_CAP, "修炼 past the cap must be a safe no-op, not keep growing forever.")
+	assert(RULES.companion_level(growth_state, "zhou_mubai") == 2, "Enough 修炼 grants should cross the first level boundary, mirroring GrowthRules.character_level().")
+	assert(RULES.companion_attack_growth(growth_state, "zhou_mubai") == 1 and RULES.companion_hp_growth(growth_state, "zhou_mubai") == 3, "A level gained should add +1 to attack growth (from strength) and +3 to hp growth (from constitution), same shape as GrowthRules.grant_xp().")
+	var repeat_result: Dictionary = RULES.resolve_companion(growth_state, "zhou_mubai", 5)
+	assert(int(repeat_result.xp_gained) == RULES.COMPANION_TRAIN_XP, "修炼 should keep granting the same xp amount indefinitely -- no cap, unlike the old attack_bonus mechanic it replaced.")
 
 	# options_hero()/options_companion() must reflect current assignment for the choice-menu UI.
 	var options_state := _hero_state()

@@ -441,6 +441,17 @@ func finish_battle(victory: bool) -> void:
 		GROWTH_RULES.grant_xp(data, int(base_reward.xp))
 		data.renown += int(base_reward.renown)
 		data.silver += int(base_reward.silver)
+		# 侠客升级 (0.116.0)：随沈羽出战获胜也是同伴经验的来源之一（另一处是
+		# 分派任务的"修炼"，见 WeeklyTaskRules），与沈羽本人获得的战斗修为
+		# 同一个数值，只是记到同伴自己的 companion_growth 里。
+		match battle_id:
+			"qingyun_spar":
+				var disciple_id := str(data.get("active_disciple", ""))
+				if COMPANION_RULES.is_recruited(data, disciple_id):
+					WEEKLY_TASK_RULES.grant_companion_xp(data, disciple_id, int(base_reward.xp))
+			"huashan_trial", "wuku_finale":
+				if COMPANION_RULES.is_recruited(data, "lin_qingshuang"):
+					WEEKLY_TASK_RULES.grant_companion_xp(data, "lin_qingshuang", int(base_reward.xp))
 		data.pending_reward = {"battle_id": battle_id, "turns": battle_turns}
 		if battle_id == "qingyun_spar":
 			var spar_result := SPARRING_RULES.record_victory(data.get("sparring_record", {}), battle_turns)

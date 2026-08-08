@@ -1933,7 +1933,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.115.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.116.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2143,7 +2143,7 @@ func _show_character() -> void:
 	if character_roster_selection not in roster_ids:
 		character_roster_selection = "hero"
 	for roster_id in roster_ids:
-		var roster_name: String = "沈羽" if roster_id == "hero" else str(COMPANION_RULES.companion_entry(roster_id).title)
+		var roster_name: String = "沈羽" if roster_id == "hero" else "%s Lv.%d" % [str(COMPANION_RULES.companion_entry(roster_id).title), WEEKLY_TASK_RULES.companion_level(GameState.data, roster_id)]
 		var roster_button := UI_THEME.action_button(roster_name, Color("#8b493b") if character_roster_selection == roster_id else Color("#315f4b"))
 		roster_button.custom_minimum_size.y = 46
 		roster_button.pressed.connect(func(): character_roster_selection = roster_id; _rebuild())
@@ -2330,10 +2330,14 @@ func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) ->
 	heading.add_theme_color_override("font_color", Color("#f2dfb3"))
 	info.add_child(heading)
 
-	# 分派任务·修炼 (0.115.0) 是同伴第一次能真正成长的地方，累加进攻击展示。
-	var training_bonus := WEEKLY_TASK_RULES.companion_attack_growth(GameState.data, id)
+	# 侠客升级 (0.116.0)：经验来自分派任务的"修炼"与随沈羽出战获胜两处，
+	# 跟沈羽自己一样每级四维属性各+1，攻击随臂力成长、气血随根骨成长。
+	var companion_level := WEEKLY_TASK_RULES.companion_level(GameState.data, id)
+	var companion_xp_left := GROWTH_RULES.LEVEL_XP_STEP - WEEKLY_TASK_RULES.companion_xp_into_level(GameState.data, id)
+	var attack_growth := WEEKLY_TASK_RULES.companion_attack_growth(GameState.data, id)
+	var hp_growth := WEEKLY_TASK_RULES.companion_hp_growth(GameState.data, id)
 	var summary := Label.new()
-	summary.text = "%s\n气血 %d    真气 %d    攻击 %d%s    护卫 %d" % [str(entry.get("description", "")), int(entry.get("hp", 0)), int(entry.get("max_qi", 0)), int(entry.get("attack", 0)) + training_bonus, "（含修炼 +%d）" % training_bonus if training_bonus > 0 else "", int(entry.get("guard", 0))]
+	summary.text = "%s\n等级 Lv.%d（距下一级 %d 经验）\n气血 %d%s    真气 %d    攻击 %d%s    护卫 %d" % [str(entry.get("description", "")), companion_level, companion_xp_left, int(entry.get("hp", 0)) + hp_growth, "（含升级 +%d）" % hp_growth if hp_growth > 0 else "", int(entry.get("max_qi", 0)), int(entry.get("attack", 0)) + attack_growth, "（含升级 +%d）" % attack_growth if attack_growth > 0 else "", int(entry.get("guard", 0))]
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.add_theme_font_size_override("font_size", 18)
 	summary.add_theme_color_override("font_color", Color("#e9e1cf"))
@@ -2343,7 +2347,7 @@ func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) ->
 	stat_grid.columns = 4
 	stat_grid.add_theme_constant_override("h_separation", 10)
 	info.add_child(stat_grid)
-	for stat_entry in [["臂力", int(entry.get("strength", 0)), "攻击"], ["身法", int(entry.get("agility", 0)), "综合战力"], ["悟性", int(entry.get("insight", 0)), "临阵机变"], ["根骨", int(entry.get("constitution", 0)), "护卫气血"]]:
+	for stat_entry in [["臂力", COMPANION_RULES.companion_display_attribute(GameState.data, id, entry, "strength"), "攻击"], ["身法", COMPANION_RULES.companion_display_attribute(GameState.data, id, entry, "agility"), "综合战力"], ["悟性", COMPANION_RULES.companion_display_attribute(GameState.data, id, entry, "insight"), "临阵机变"], ["根骨", COMPANION_RULES.companion_display_attribute(GameState.data, id, entry, "constitution"), "护卫气血"]]:
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.add_theme_stylebox_override("panel", _box(Color("#294438")))

@@ -237,9 +237,16 @@ static func apply_gear_and_move(state: Dictionary, id: String, base_ally: Dictio
 	var weapon_bonus := SHOP_RULES.weapon_attack_bonus({"equipped_weapon": companion_weapon(state, id)})
 	var armor_bonus := SHOP_RULES.armor_defense_bonus({"equipped_armor": companion_armor(state, id)})
 	var internal_bonus := companion_internal_damage_bonus(state, companion_internal(state, id))
-	var training_bonus := WEEKLY_TASK_RULES.companion_attack_growth(state, id)
-	ally.attack = int(ally.get("attack", 0)) + weapon_bonus + internal_bonus + training_bonus
+	var level_attack_bonus := WEEKLY_TASK_RULES.companion_attack_growth(state, id)
+	var level_hp_bonus := WEEKLY_TASK_RULES.companion_hp_growth(state, id)
+	ally.attack = int(ally.get("attack", 0)) + weapon_bonus + internal_bonus + level_attack_bonus
 	ally.armor = armor_bonus
+	ally.hp = int(ally.get("hp", 0)) + level_hp_bonus
+	ally.max_hp = int(ally.get("max_hp", 0)) + level_hp_bonus
 	ally.move_id = companion_move(state, id)
 	ally.lightness_bonus = companion_lightness_move_bonus(state, companion_lightness(state, id))
 	return ally
+
+## 侠客升级 (0.116.0)：人物界面展示用，四维属性 = 目录基础值 + 升级累积成长。
+static func companion_display_attribute(state: Dictionary, id: String, entry: Dictionary, key: String) -> int:
+	return int(entry.get(key, 0)) + WEEKLY_TASK_RULES.companion_attribute_growth(state, id, key)

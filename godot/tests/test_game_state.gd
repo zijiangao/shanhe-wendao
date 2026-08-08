@@ -219,10 +219,21 @@ func _initialize() -> void:
 	assert(state.end_week(), "Ending the week should resolve both the hero's one-shot task and the companion's persistent one.")
 	assert(str(state.data.weekly_task_hero) == "", "The hero's task must be cleared after resolving -- it needs to be reassigned each week.")
 	assert(int(state.data.silver) > 700, "Ending the week should have credited 沈羽's 赚钱 task's silver (700 remained after recruiting 周慕白 for 300).")
-	assert(WEEKLY_TASK_RULES.companion_attack_growth(state.data, "zhou_mubai") == 1, "Ending the week should have resolved 周慕白's persistent 修炼 task too.")
+	assert(WEEKLY_TASK_RULES.companion_xp(state.data, "zhou_mubai") == WEEKLY_TASK_RULES.COMPANION_TRAIN_XP, "Ending the week should have resolved 周慕白's persistent 修炼 task too, granting companion xp.")
 	assert(str(state.data.companion_tasks.zhou_mubai) == "train", "A companion's task assignment must survive end_week() -- it's persistent, unlike 沈羽's.")
 	assert(state.assign_companion_task("zhou_mubai", ""), "A companion's task can be cancelled by assigning an empty task id.")
 	assert(not state.assign_companion_task("liu_ruyan", "earn"), "Assigning a task to a disciple who hasn't even been recruited must be rejected.")
+
+	# 侠客升级 (0.116.0) -- 随沈羽出战获胜 is companion xp's second source
+	# (alongside 分派任务's "修炼" tested above): winning 青云门切磋 as the
+	# active disciple should grant that disciple the same xp amount 沈羽
+	# himself receives, feeding the same companion_growth leveling track.
+	state.new_game()
+	state.data.silver = 1000
+	assert(COMPANION_RULES.recruit(state.data, "zhou_mubai"), "A well-funded fresh save should be able to recruit at 客栈.")
+	assert(state.start_qingyun_spar_battle(), "Sparring should start with 周慕白 as the active disciple.")
+	state.finish_battle(true)
+	assert(WEEKLY_TASK_RULES.companion_xp(state.data, "zhou_mubai") > 0, "Winning a 青云门切磋 battle should grant the active disciple companion xp, not just the hero.")
 
 	state.new_game()
 	state.data.investigations = ["archer", "herbs"]

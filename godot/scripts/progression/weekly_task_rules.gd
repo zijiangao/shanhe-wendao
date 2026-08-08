@@ -22,7 +22,11 @@ const TASKS := {
 	"gather": {"title": "采集", "description": "上山下乡，采回药材矿石。"},
 }
 const FOCUS_ROTATION := ["strength", "insight", "constitution"]
-const COMPANION_ATTACK_GROWTH_CAP := 10
+## 侠客升级 (0.116.0)：修炼任务每次结算发放的经验，跟沈羽自己
+## apply_training() 发放的12点修为一致，共用 GrowthRules.LEVEL_XP_STEP=25
+## 的升级节奏，让两条成长线的速度感保持一致。
+const COMPANION_TRAIN_XP := 12
+const COMPANION_GROWTH_KEYS := ["strength", "agility", "insight", "constitution"]
 
 static func is_valid_task(task_id: String) -> bool:
 	return TASKS.has(task_id)
@@ -90,16 +94,8 @@ static func resolve_companion(state: Dictionary, id: String, companion_attack: i
 			state.silver = int(state.get("silver", 0)) + silver
 			result.silver = silver
 		"train":
-			if not state.has("companion_growth") or typeof(state.companion_growth) != TYPE_DICTIONARY:
-				state.companion_growth = {}
-			if not state.companion_growth.has(id) or typeof(state.companion_growth[id]) != TYPE_DICTIONARY:
-				state.companion_growth[id] = {"attack_bonus": 0}
-			var current_bonus := int(state.companion_growth[id].get("attack_bonus", 0))
-			if current_bonus < COMPANION_ATTACK_GROWTH_CAP:
-				state.companion_growth[id].attack_bonus = current_bonus + 1
-				result.attack_bonus_gained = 1
-			else:
-				result.attack_bonus_gained = 0
+			result.levels_gained = grant_companion_xp(state, id, COMPANION_TRAIN_XP)
+			result.xp_gained = COMPANION_TRAIN_XP
 		"gather":
 			var herbs := 1 + bonus / 5
 			var ore := 1 + bonus / 5
@@ -109,6 +105,56 @@ static func resolve_companion(state: Dictionary, id: String, companion_attack: i
 			result.ore = ore
 	return result
 
-## CompanionRules.apply_gear_and_move() 叠加这个持续修炼加成到 ally.attack。
+static func _companion_growth_bucket(state: Dictionary, id: String) -> Dictionary:
+	if not state.has("companion_growth") or typeof(state.companion_growth) != TYPE_DICTIONARY:
+		state.companion_growth = {}
+	if not state.companion_growth.has(id) or typeof(state.companion_growth[id]) != TYPE_DICTIONARY:
+		state.companion_growth[id] = {}
+	var bucket: Dictionary = state.companion_growth[id]
+	if not bucket.has("xp"):
+		bucket.xp = 0
+	if not bucket.has("level"):
+		bucket.level = 1
+	for key in COMPANION_GROWTH_KEYS:
+		if not bucket.has(key):
+			bucket[key] = 0
+	return bucket
+
+## 侠客升级 (0.116.0)：跟沈羽共用同一套 GrowthRules.character_level() 公式，
+## 每升一级四维属性各+1，攻击随 strength 成长、气血随 constitution 成长
+## (companion_attack_growth()/companion_hp_growth())，跟沈羽自己 grant_xp()
+## 的效果一一对应，只是数据分开存放在 companion_growth[id] 里，不影响沈羽
+## 自己的 xp/character_level。经验来源有两处：分派任务的"修炼"
+## (COMPANION_TRAIN_XP，见上) 与随沈羽出战获胜 (GameState.finish_battle())。
+static func grant_companion_xp(state: Dictionary, id: String, amount: int) -> int:
+	if amount <= 0:
+		return 0
+	var bucket := _companion_growth_bucket(state, id)
+	bucket.xp = int(bucket.xp) + amount
+	var target := GROWTH_RULES.character_level(int(bucket.xp))
+	var current := int(bucket.get("level", 1))
+	var gained := target - current
+	if gained > 0:
+		for key in COMPANION_GROWTH_KEYS:
+			bucket[key] = int(bucket[key]) + gained
+	bucket.level = target
+	return gained
+
+static func companion_level(state: Dictionary, id: String) -> int:
+	return int(_companion_growth_bucket(state, id).get("level", 1))
+
+static func companion_xp(state: Dictionary, id: String) -> int:
+	return int(_companion_growth_bucket(state, id).get("xp", 0))
+
+static func companion_xp_into_level(state: Dictionary, id: String) -> int:
+	return GROWTH_RULES.xp_into_level(companion_xp(state, id))
+
+## CompanionRules.apply_gear_and_move() 叠加这两项持续成长到 ally.attack/hp。
 static func companion_attack_growth(state: Dictionary, id: String) -> int:
-	return int(Dictionary(state.get("companion_growth", {})).get(id, {}).get("attack_bonus", 0))
+	return int(_companion_growth_bucket(state, id).get("strength", 0))
+
+static func companion_hp_growth(state: Dictionary, id: String) -> int:
+	return int(_companion_growth_bucket(state, id).get("constitution", 0)) * 3
+
+static func companion_attribute_growth(state: Dictionary, id: String, key: String) -> int:
+	return int(_companion_growth_bucket(state, id).get(key, 0))
