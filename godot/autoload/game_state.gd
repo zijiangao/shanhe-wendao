@@ -58,6 +58,8 @@ func new_game() -> void:
 		"materials": {"herbs": 0, "ore": 0},
 		"herbarium": {},
 		"mineralogy": {},
+		"alchemy_crafts": 0,
+		"forge_crafts": 0,
 		"consumables": {"healing_powder": 0, "thunder_stone": 0},
 		"equipped_weapon": "",
 		"equipped_armor": "",

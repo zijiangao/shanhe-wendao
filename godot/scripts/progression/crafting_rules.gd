@@ -64,6 +64,25 @@ const RECIPES := {
 		"description": "工坊自制护具，防御 +2，流银砂 1，赤火铜 1，锻造要求更高。",
 		"cost": {"herbs": 0, "ore": 8, "silver": 0, "specimens": {"silver_sand": 1, "fire_copper": 1}},
 		"defense_bonus": 2
+	},
+	"vitality_pill": {
+		"title": "炼制 · 回元丹",
+		"description": "药材 5 · 七星莲 1 · 银两 40 · 服下后四维属性各+1，可反复炼制，炼药坊5级解锁。",
+		"cost": {"herbs": 5, "ore": 0, "silver": 40, "specimens": {"sevenstar_lotus": 1}}
+	},
+	"star_marrow_blade": {
+		"title": "打造 · 星陨寒锋",
+		"item_name": "星陨寒锋",
+		"description": "工坊自制兵刃，攻击 +5，星陨髓 1，锻造坊5级解锁，江湖顶尖神兵。",
+		"cost": {"herbs": 0, "ore": 15, "silver": 0, "specimens": {"star_marrow": 1}},
+		"attack_bonus": 5
+	},
+	"star_marrow_armor": {
+		"title": "打造 · 星陨玄甲",
+		"item_name": "星陨玄甲",
+		"description": "工坊自制护具，防御 +4，星陨髓 1，锻造坊5级解锁，江湖顶尖玄甲。",
+		"cost": {"herbs": 0, "ore": 12, "silver": 0, "specimens": {"star_marrow": 1}},
+		"defense_bonus": 4
 	}
 }
 
@@ -71,14 +90,54 @@ const RECIPES := {
 ## catalog (ShopRules.WEAPONS/ARMORS) -- same equip/owned/bonus machinery,
 ## reused via ShopRules' fallback lookup into these RECIPES entries, but a
 ## distinct item list acquired with materials instead of silver.
-const CRAFTABLE_WEAPONS := ["forged_iron_blade", "twin_edge_saber"]
-const CRAFTABLE_ARMORS := ["rattan_guard", "layered_iron_armor"]
+const CRAFTABLE_WEAPONS := ["forged_iron_blade", "twin_edge_saber", "star_marrow_blade"]
+const CRAFTABLE_ARMORS := ["rattan_guard", "layered_iron_armor", "star_marrow_armor"]
 
 ## 炼药坊/锻造坊 split (0.84.0): alchemy covers every herb-based "炼制" recipe,
 ## forge covers every ore-based "打造" recipe -- this mirrors the verb the
 ## recipe titles already used before the split existed, not a new taxonomy.
-const ALCHEMY_RECIPES := ["healing_powder", "insight_pill", "strength_pill", "agility_pill", "constitution_pill"]
-const FORGE_RECIPES := ["forged_iron_blade", "twin_edge_saber", "rattan_guard", "layered_iron_armor"]
+const ALCHEMY_RECIPES := ["healing_powder", "insight_pill", "strength_pill", "agility_pill", "constitution_pill", "vitality_pill"]
+const FORGE_RECIPES := ["forged_iron_blade", "twin_edge_saber", "rattan_guard", "layered_iron_armor", "star_marrow_blade", "star_marrow_armor"]
+
+## 炼药坊/锻造坊等级 (0.118.0) -- 独立于采药/挖矿的图鉴等级 (0.117.0)，是
+## 工坊本身的1-10级熟练度，从"累计成功打造/炼制次数"直接推算，无需额外
+## 存档字段之外的东西（只需两个简单计数器 alchemy_crafts/forge_crafts，
+## GameState.new_game()/_migrate_and_validate() 里默认0，老存档天然兼容）。
+## CRAFTS_PER_LEVEL=1 是刻意的：锻造坊的兵刃/护具只能各打造一次（不像采药/
+## 挖矿可以无限重复），若沿用采药挖矿的 CATCHES_PER_LEVEL=3 会让锻造坊的
+## 等级永远够不到后面新配方的门槛——把已有的4件兵刃/护具全部打造一遍正好
+## 凑满5级，解锁星陨髓打造的顶尖神兵/玄甲，门槛与"练完现有全部配方"精确
+## 对齐，不会出现"新配方永远解锁不了"的死锁。炼药坊的丹药本身可反复炼制，
+## 同一套节奏用起来也很顺畅。已有的5款炼药坊配方/4款锻造坊配方门槛都设为
+## 1级（不受影响，它们已经被0.117.0的采集图鉴等级间接把关过了），只有新增
+## 的顶尖配方需要5级。
+const MAX_CRAFT_LEVEL := 10
+const CRAFTS_PER_LEVEL := 1
+const RECIPE_LEVEL_REQUIREMENT := {
+	"vitality_pill": 5,
+	"star_marrow_blade": 5,
+	"star_marrow_armor": 5,
+}
+
+static func _craft_count_key(workshop: String) -> String:
+	return "alchemy_crafts" if workshop == "alchemy" else "forge_crafts"
+
+static func craft_level(state: Dictionary, workshop: String) -> int:
+	var crafts := int(state.get(_craft_count_key(workshop), 0))
+	return mini(MAX_CRAFT_LEVEL, 1 + crafts / CRAFTS_PER_LEVEL)
+
+static func crafts_to_next_level(state: Dictionary, workshop: String) -> int:
+	var level := craft_level(state, workshop)
+	if level >= MAX_CRAFT_LEVEL:
+		return 0
+	var crafts := int(state.get(_craft_count_key(workshop), 0))
+	return level * CRAFTS_PER_LEVEL - crafts
+
+static func workshop_for(recipe_id: String) -> String:
+	return "alchemy" if recipe_id in ALCHEMY_RECIPES else "forge"
+
+static func recipe_level_requirement(recipe_id: String) -> int:
+	return int(RECIPE_LEVEL_REQUIREMENT.get(recipe_id, 1))
 
 static func options_alchemy(state: Dictionary) -> Array:
 	var options := [
@@ -87,6 +146,7 @@ static func options_alchemy(state: Dictionary) -> Array:
 		[RECIPES.strength_pill.title, "%s 当前臂力 %d。" % [RECIPES.strength_pill.description, int(state.get("strength", 0))], "strength_pill", not can_craft(state, "strength_pill")],
 		[RECIPES.agility_pill.title, "%s%s 当前身法 %d。" % [RECIPES.agility_pill.description, _specimens_note(state, RECIPES.agility_pill.cost.specimens), int(state.get("agility", 0))], "agility_pill", not can_craft(state, "agility_pill")],
 		[RECIPES.constitution_pill.title, "%s%s 当前根骨 %d。" % [RECIPES.constitution_pill.description, _specimens_note(state, RECIPES.constitution_pill.cost.specimens), int(state.get("constitution", 0))], "constitution_pill", not can_craft(state, "constitution_pill")],
+		[RECIPES.vitality_pill.title, "%s%s%s" % [RECIPES.vitality_pill.description, _specimens_note(state, RECIPES.vitality_pill.cost.specimens), _level_note(state, "vitality_pill")], "vitality_pill", not can_craft(state, "vitality_pill")],
 	]
 	options.append(["离开炼药坊", "不消耗材料，直接返回青云门。", "leave"])
 	return options
@@ -106,7 +166,21 @@ static func _gear_row(state: Dictionary, id: String, owned_key: String) -> Array
 		return ["%s · 已打造" % str(item.title), "%s（已拥有，前往背包装备）" % str(item.description), id, true]
 	var cost: Dictionary = effective_cost(state, id)
 	var discount_note := "（挖矿大成减免）" if int(cost.ore) < int(RECIPES[id].cost.ore) else ""
-	return ["%s · 矿石%d%s" % [str(item.title), int(cost.ore), discount_note], "%s%s" % [str(item.description), _specimens_note(state, cost.specimens)], id, not can_craft(state, id)]
+	return ["%s · 矿石%d%s" % [str(item.title), int(cost.ore), discount_note], "%s%s%s" % [str(item.description), _specimens_note(state, cost.specimens), _level_note(state, id)], id, not can_craft(state, id)]
+
+## 炼药坊/锻造坊等级 (0.118.0) 门槛提示，跟 _specimens_note() 同款风格——
+## 只有真正被 RECIPE_LEVEL_REQUIREMENT 卡住的配方才会显示，已解锁的配方
+## （包括全部原有的5款丹药/4款兵刃护具）不显示任何等级文字。
+static func _level_note(state: Dictionary, recipe_id: String) -> String:
+	var required := recipe_level_requirement(recipe_id)
+	if required <= 1:
+		return ""
+	var workshop := workshop_for(recipe_id)
+	var level := craft_level(state, workshop)
+	if level >= required:
+		return ""
+	var workshop_name := "炼药坊" if workshop == "alchemy" else "锻造坊"
+	return " 【尚需%s %d级，当前 %d 级】" % [workshop_name, required, level]
 
 ## Names each still-missing specimen with how many the player currently owns
 ## vs. how many the recipe needs, e.g. " 【尚缺：云纹叶 0/1】" -- empty string
@@ -152,6 +226,8 @@ static func can_craft(state: Dictionary, recipe_id: String) -> bool:
 		return false
 	if recipe_id in CRAFTABLE_ARMORS and recipe_id in Array(state.get("owned_armors", [])):
 		return false
+	if craft_level(state, workshop_for(recipe_id)) < recipe_level_requirement(recipe_id):
+		return false
 	var materials: Dictionary = state.get("materials", {})
 	var cost: Dictionary = effective_cost(state, recipe_id)
 	return int(materials.get("herbs", 0)) >= int(cost.herbs) and int(materials.get("ore", 0)) >= int(cost.ore) and int(state.get("silver", 0)) >= int(cost.silver) and _has_specimens(state, cost.specimens)
@@ -184,12 +260,21 @@ static func apply(state: Dictionary, recipe_id: String) -> bool:
 			state.constitution = int(state.get("constitution", 0)) + 1
 			state.max_hp = int(state.get("max_hp", 0)) + 3
 			state.hp = mini(int(state.max_hp), int(state.get("hp", 0)) + 3)
-		"forged_iron_blade", "twin_edge_saber":
+		"vitality_pill":
+			state.strength = int(state.get("strength", 0)) + 1
+			state.agility = int(state.get("agility", 0)) + 1
+			state.insight = int(state.get("insight", 0)) + 1
+			state.constitution = int(state.get("constitution", 0)) + 1
+			state.max_hp = int(state.get("max_hp", 0)) + 3
+			state.hp = mini(int(state.max_hp), int(state.get("hp", 0)) + 3)
+		"forged_iron_blade", "twin_edge_saber", "star_marrow_blade":
 			state.owned_weapons.append(recipe_id)
 			state.equipped_weapon = recipe_id
-		"rattan_guard", "layered_iron_armor":
+		"rattan_guard", "layered_iron_armor", "star_marrow_armor":
 			state.owned_armors.append(recipe_id)
 			state.equipped_armor = recipe_id
+	var craft_key := _craft_count_key(workshop_for(recipe_id))
+	state[craft_key] = int(state.get(craft_key, 0)) + 1
 	return true
 
 ## 炼药坊 only deals in herbs -- its prompt line omits ore entirely. Generic
@@ -197,7 +282,8 @@ static func apply(state: Dictionary, recipe_id: String) -> bool:
 ## player, so they're shown together on one "材料" line (0.89.0), not split
 ## into a separate count and a separate collection line.
 static func inventory_text_alchemy(state: Dictionary) -> String:
-	return "材料：药材 %d · %s\n银两 %d · 回春散 %d · 臂力 %d · 身法 %d · 悟性 %d · 根骨 %d" % [
+	return "炼药坊等级 Lv.%d/%d（累计炼制次数，越高解锁越高阶丹药）\n材料：药材 %d · %s\n银两 %d · 回春散 %d · 臂力 %d · 身法 %d · 悟性 %d · 根骨 %d" % [
+		craft_level(state, "alchemy"), MAX_CRAFT_LEVEL,
 		int(state.get("materials", {}).get("herbs", 0)), HERBARIUM_RULES.collection_text(state.get("herbarium", {})),
 		int(state.get("silver", 0)), int(state.get("consumables", {}).get("healing_powder", 0)),
 		int(state.get("strength", 0)), int(state.get("agility", 0)), int(state.get("insight", 0)), int(state.get("constitution", 0))
@@ -210,7 +296,8 @@ static func inventory_text_alchemy(state: Dictionary) -> String:
 ## 霹雳石 (recipe removed) or 淬炼 (legacy forge_level stat, unrelated to any
 ## current recipe) -- 0.88.0.
 static func inventory_text_forge(state: Dictionary) -> String:
-	return "材料：矿石 %d · %s\n银两 %d" % [
+	return "锻造坊等级 Lv.%d/%d（累计打造次数，越高解锁越高阶兵刃护具）\n材料：矿石 %d · %s\n银两 %d" % [
+		craft_level(state, "forge"), MAX_CRAFT_LEVEL,
 		int(state.get("materials", {}).get("ore", 0)), MINERALOGY_RULES.collection_text(state.get("mineralogy", {})),
 		int(state.get("silver", 0))
 	]

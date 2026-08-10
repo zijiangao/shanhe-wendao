@@ -12,18 +12,18 @@ func _initialize() -> void:
 
 	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "mining": 0, "strength": 0, "agility": 0, "insight": 0, "constitution": 0, "owned_weapons": [], "owned_armors": [], "herbarium": {}, "mineralogy": {}}
 	var broke_alchemy: Array = RULES.options_alchemy(broke)
-	assert(broke_alchemy.size() == 6, "A fresh recruit with no materials should still see a sixth way out of the alchemy building.")
-	for option in broke_alchemy.slice(0, 5):
+	assert(broke_alchemy.size() == 7, "A fresh recruit with no materials should still see a seventh way out of the alchemy building, now that 回元丹 (0.118.0) exists.")
+	for option in broke_alchemy.slice(0, 6):
 		assert(bool(option[3]), "Every real alchemy recipe should be disabled when nothing is affordable.")
-	var alchemy_leave_option: Array = broke_alchemy[5]
+	var alchemy_leave_option: Array = broke_alchemy[6]
 	assert(str(alchemy_leave_option[2]) == "leave", "The escape option must be the fixed 'leave' id, not a recipe.")
 	assert(alchemy_leave_option.size() <= 3 or not bool(alchemy_leave_option[3]), "Leaving the alchemy building must never be disabled, even with zero materials.")
 
 	var broke_forge: Array = RULES.options_forge(broke)
-	assert(broke_forge.size() == 5, "A fresh recruit with no materials should still see a fifth way out of the forge, now that 霹雳石 is gone.")
-	for option in broke_forge.slice(0, 4):
+	assert(broke_forge.size() == 7, "A fresh recruit with no materials should still see a seventh way out of the forge, now that 星陨寒锋/星陨玄甲 (0.118.0) exist.")
+	for option in broke_forge.slice(0, 6):
 		assert(bool(option[3]), "Every real forge recipe should be disabled when nothing is affordable.")
-	var forge_leave_option: Array = broke_forge[4]
+	var forge_leave_option: Array = broke_forge[6]
 	assert(str(forge_leave_option[2]) == "leave", "The escape option must be the fixed 'leave' id, not a recipe.")
 	assert(forge_leave_option.size() <= 3 or not bool(forge_leave_option[3]), "Leaving the forge must never be disabled, even with zero materials.")
 
@@ -107,6 +107,37 @@ func _initialize() -> void:
 	master_smith.mineralogy = {"silver_sand": 1}
 	assert("挖矿大成减免" in str(RULES.options_forge(master_smith).filter(func(o): return str(o[2]) == "twin_edge_saber")[0][0]), "The forge choice should disclose the mastery discount before crafting.")
 	assert(RULES.apply(master_smith, "twin_edge_saber") and int(master_smith.materials.ore) == 0 and int(master_smith.mineralogy.silver_sand) == 0, "The discounted ore cost and the named specimen should both be charged exactly once.")
+
+	# 炼药坊/锻造坊等级 (0.118.0) -- a workshop-level hard gate on top of the
+	# existing specimen gating, tracked by a simple cumulative craft counter
+	# (CRAFTS_PER_LEVEL=1, since forge gear can each only be crafted once and
+	# needs every level to be reachable purely from the OTHER existing
+	# recipes -- unlike 采药/挖矿's infinitely-repeatable catches).
+	assert(RULES.craft_level({}, "alchemy") == 1, "A fresh save with no crafts yet should start at workshop level 1.")
+	assert(RULES.craft_level({"alchemy_crafts": 4}, "alchemy") == 5, "4 prior crafts should land exactly at level 5 (1 + 4/1).")
+	assert(RULES.craft_level({"forge_crafts": 999}, "forge") == RULES.MAX_CRAFT_LEVEL, "Workshop level should cap at MAX_CRAFT_LEVEL no matter how many crafts accumulate.")
+
+	var alchemist := _state()
+	alchemist.materials.herbs = 5
+	alchemist.silver = 40
+	alchemist.herbarium = {"sevenstar_lotus": 1}
+	assert(not RULES.can_craft(alchemist, "vitality_pill"), "回元丹 should stay locked at 炼药坊 level 1 even with every ingredient in hand -- it needs level 5.")
+	alchemist.alchemy_crafts = 4
+	assert(RULES.can_craft(alchemist, "vitality_pill"), "Reaching 炼药坊 level 5 (via 4 prior crafts of anything) should unlock 回元丹.")
+	var strength_before := int(alchemist.strength)
+	var agility_before := int(alchemist.agility)
+	var insight_before := int(alchemist.insight)
+	var constitution_before := int(alchemist.constitution)
+	assert(RULES.apply(alchemist, "vitality_pill"), "A level-5 alchemist with full ingredients should be able to craft 回元丹.")
+	assert(int(alchemist.strength) == strength_before + 1 and int(alchemist.agility) == agility_before + 1 and int(alchemist.insight) == insight_before + 1 and int(alchemist.constitution) == constitution_before + 1, "回元丹 should raise all four base attributes by exactly one.")
+	assert(int(alchemist.alchemy_crafts) == 5, "Crafting should itself count toward the workshop's own level, same as any other recipe.")
+
+	var smith2 := _state()
+	smith2.materials = {"herbs": 0, "ore": 15}
+	smith2.mineralogy = {"star_marrow": 1}
+	assert(not RULES.can_craft(smith2, "star_marrow_blade"), "星陨寒锋 should stay locked at 锻造坊 level 1 even with every ingredient in hand -- it needs level 5.")
+	smith2.forge_crafts = 4
+	assert(RULES.apply(smith2, "star_marrow_blade") and "star_marrow_blade" in Array(smith2.owned_weapons), "Reaching 锻造坊 level 5 (via 4 prior crafts, e.g. all existing gear) should unlock 星陨寒锋.")
 
 	print("Crafting rules tests passed.")
 	quit()
