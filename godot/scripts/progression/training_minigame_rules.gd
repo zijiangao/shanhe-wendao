@@ -1,6 +1,9 @@
 class_name TrainingMinigameRules
 extends RefCounted
 
+const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
+const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
+
 const ROUND_COUNT := 3
 const COMBO_SCORE_THRESHOLD := 85
 const COMBO_BONUS_PER_STEP := 5
@@ -209,7 +212,14 @@ static func _discipline_options(state: Dictionary, disciplines: Array) -> Array:
 		var progress := "已达大成" if next_level < 0 else "距下境界 %d级" % (next_level - level)
 		var xp_progress := "已满级" if level >= MAX_SPECIALTY_LEVEL else "%d/%d 经验" % [specialty_xp(state, discipline), specialty_xp_needed(level)]
 		var focus_text := "【本周专精 · 额外修为 +%d】\n" % WEEKLY_FOCUS_XP_BONUS if discipline == focus else ""
-		result.append([str(titles[discipline]), "%s%s %d级（%s） · %s · %s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, xp_progress, progress, perk_text(discipline, level)], discipline])
+		var gather_text := ""
+		if discipline == "herbalism":
+			var herb_level := HERBARIUM_RULES.gather_level(state.get("herbarium", {}))
+			gather_text = "\n采药等级 Lv.%d/%d（药材本身的图鉴等级，越高解锁越稀有的品种）" % [herb_level, HERBARIUM_RULES.MAX_GATHER_LEVEL]
+		elif discipline == "mining":
+			var mineral_level := MINERALOGY_RULES.gather_level(state.get("mineralogy", {}))
+			gather_text = "\n挖矿等级 Lv.%d/%d（矿物本身的图鉴等级，越高解锁越稀有的品种）" % [mineral_level, MINERALOGY_RULES.MAX_GATHER_LEVEL]
+		result.append([str(titles[discipline]), "%s%s %d级（%s） · %s · %s%s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, xp_progress, progress, perk_text(discipline, level), gather_text], discipline])
 	return result
 
 static func score_round(correct: bool, elapsed_ms: int) -> int:

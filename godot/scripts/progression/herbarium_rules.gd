@@ -31,13 +31,47 @@ const GRADE_POOLS := {
 	"S": ["dewgrass", "cloudleaf", "sunroot", "sevenstar_lotus"]
 }
 
+## 采药等级 (0.117.0) -- 独立于 TrainingMinigameRules 的采药"专精"（那个是
+## 采药人本身的0-100级熟练度，影响小游戏难度/产量），这个是药材本身的
+## 1-10级"图鉴"进度：每采到一份药材（不论品级）累积一次，每 CATCHES_PER_LEVEL
+## 次升一级，无需额外存档字段——直接从 herbarium 收藏字典的数量总和推算，
+## 天然对旧存档兼容。未到对应等级门槛的稀有品级，即使单局小游戏打出S级，
+## 也绝对采不到（LEVEL_UNLOCK 是硬门槛，不是概率加成）。
+const MAX_GATHER_LEVEL := 10
+const CATCHES_PER_LEVEL := 3
+const LEVEL_UNLOCK := {
+	"dewgrass": 1,
+	"cloudleaf": 4,
+	"sunroot": 7,
+	"sevenstar_lotus": 10,
+}
+
+static func total_catches(collection: Variant) -> int:
+	var safe_collection: Dictionary = collection if typeof(collection) == TYPE_DICTIONARY else {}
+	var total := 0
+	for specimen_id in safe_collection:
+		total += int(safe_collection[specimen_id])
+	return total
+
+static func gather_level(collection: Variant) -> int:
+	return mini(MAX_GATHER_LEVEL, 1 + total_catches(collection) / CATCHES_PER_LEVEL)
+
+static func catches_to_next_level(collection: Variant) -> int:
+	var level := gather_level(collection)
+	if level >= MAX_GATHER_LEVEL:
+		return 0
+	return level * CATCHES_PER_LEVEL - total_catches(collection)
+
 static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionary:
 	if not GRADE_POOLS.has(grade):
 		return {}
 	if typeof(state.get("herbarium", {})) != TYPE_DICTIONARY:
 		state.herbarium = {}
 	var collection: Dictionary = state.herbarium
-	var pool: Array = GRADE_POOLS[grade]
+	var level := gather_level(collection)
+	var pool: Array = GRADE_POOLS[grade].filter(func(specimen_id): return int(LEVEL_UNLOCK.get(specimen_id, 1)) <= level)
+	if pool.is_empty():
+		pool = [GRADE_POOLS[grade][0]]
 	var start := posmod(roll, pool.size())
 	var specimen_id := str(pool[start])
 	for offset in range(pool.size()):
@@ -48,6 +82,7 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 	var first_discovery := int(collection.get(specimen_id, 0)) <= 0
 	collection[specimen_id] = int(collection.get(specimen_id, 0)) + 1
 	state.herbarium = collection
+	var new_level := gather_level(collection)
 	var spec: Dictionary = SPECIMENS[specimen_id]
 	return {
 		"id": specimen_id,
@@ -56,7 +91,10 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 		"description": str(spec.description),
 		"first_discovery": first_discovery,
 		"count": int(collection[specimen_id]),
-		"xp": 2 if first_discovery else 0
+		"xp": 2 if first_discovery else 0,
+		"gather_level": new_level,
+		"leveled_up": new_level > level,
+		"catches_to_next_level": catches_to_next_level(collection)
 	}
 
 static func discovered_count(collection: Variant) -> int:

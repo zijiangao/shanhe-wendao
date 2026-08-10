@@ -31,13 +31,43 @@ const GRADE_POOLS := {
 	"S": ["ironstone", "silver_sand", "fire_copper", "star_marrow"]
 }
 
+## 挖矿等级 (0.117.0) -- 与 herbarium_rules.gd 的采药等级同构，独立于挖矿人
+## 本身0-100级熟练度之外，矿物本身的1-10级"图鉴"进度，见该文件的注释。
+const MAX_GATHER_LEVEL := 10
+const CATCHES_PER_LEVEL := 3
+const LEVEL_UNLOCK := {
+	"ironstone": 1,
+	"silver_sand": 4,
+	"fire_copper": 7,
+	"star_marrow": 10,
+}
+
+static func total_catches(collection: Variant) -> int:
+	var safe_collection: Dictionary = collection if typeof(collection) == TYPE_DICTIONARY else {}
+	var total := 0
+	for specimen_id in safe_collection:
+		total += int(safe_collection[specimen_id])
+	return total
+
+static func gather_level(collection: Variant) -> int:
+	return mini(MAX_GATHER_LEVEL, 1 + total_catches(collection) / CATCHES_PER_LEVEL)
+
+static func catches_to_next_level(collection: Variant) -> int:
+	var level := gather_level(collection)
+	if level >= MAX_GATHER_LEVEL:
+		return 0
+	return level * CATCHES_PER_LEVEL - total_catches(collection)
+
 static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionary:
 	if not GRADE_POOLS.has(grade):
 		return {}
 	if typeof(state.get("mineralogy", {})) != TYPE_DICTIONARY:
 		state.mineralogy = {}
 	var collection: Dictionary = state.mineralogy
-	var pool: Array = GRADE_POOLS[grade]
+	var level := gather_level(collection)
+	var pool: Array = GRADE_POOLS[grade].filter(func(specimen_id): return int(LEVEL_UNLOCK.get(specimen_id, 1)) <= level)
+	if pool.is_empty():
+		pool = [GRADE_POOLS[grade][0]]
 	var start := posmod(roll, pool.size())
 	var specimen_id := str(pool[start])
 	for offset in range(pool.size()):
@@ -48,6 +78,7 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 	var first_discovery := int(collection.get(specimen_id, 0)) <= 0
 	collection[specimen_id] = int(collection.get(specimen_id, 0)) + 1
 	state.mineralogy = collection
+	var new_level := gather_level(collection)
 	var spec: Dictionary = SPECIMENS[specimen_id]
 	return {
 		"id": specimen_id,
@@ -56,7 +87,10 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 		"description": str(spec.description),
 		"first_discovery": first_discovery,
 		"count": int(collection[specimen_id]),
-		"silver": 2 if first_discovery else 0
+		"silver": 2 if first_discovery else 0,
+		"gather_level": new_level,
+		"leveled_up": new_level > level,
+		"catches_to_next_level": catches_to_next_level(collection)
 	}
 
 static func discovered_count(collection: Variant) -> int:

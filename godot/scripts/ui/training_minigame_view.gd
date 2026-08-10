@@ -2,6 +2,8 @@ class_name TrainingMinigameView
 extends Control
 
 const RULES := preload("res://scripts/progression/training_minigame_rules.gd")
+const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
+const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 
 signal direction_selected(direction: String)
 signal continue_requested
@@ -259,7 +261,9 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 		herb_card.add_theme_stylebox_override("panel", _box(Color("#294438")))
 		page.add_child(herb_card)
 		var herb_text := Label.new()
-		herb_text.text = "%s药谱 · %s（%s）\n%s%s" % ["新收录 " if bool(discovery.get("first_discovery", false)) else "再采得 ", str(discovery.name), str(discovery.rarity), str(discovery.description), "\n首次发现：修为 +%d" % int(discovery.xp) if int(discovery.get("xp", 0)) > 0 else ""]
+		var herb_level := int(discovery.get("gather_level", 1))
+		var herb_level_text := "\n采药等级 Lv.%d 突破！解锁更高阶药材" % herb_level if bool(discovery.get("leveled_up", false)) else ("\n采药等级 Lv.%d（已满级）" % herb_level if herb_level >= HERBARIUM_RULES.MAX_GATHER_LEVEL else "\n采药等级 Lv.%d（还需再采 %d 次升级）" % [herb_level, int(discovery.get("catches_to_next_level", 0))])
+		herb_text.text = "%s药谱 · %s（%s）\n%s%s%s" % ["新收录 " if bool(discovery.get("first_discovery", false)) else "再采得 ", str(discovery.name), str(discovery.rarity), str(discovery.description), "\n首次发现：修为 +%d" % int(discovery.xp) if int(discovery.get("xp", 0)) > 0 else "", herb_level_text]
 		herb_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		herb_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		herb_text.add_theme_font_size_override("font_size", 15)
@@ -271,7 +275,9 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 		mineral_card.add_theme_stylebox_override("panel", _box(Color("#443b31")))
 		page.add_child(mineral_card)
 		var mineral_text := Label.new()
-		mineral_text.text = "%s矿谱 · %s（%s）\n%s%s" % ["新收录 " if bool(mineral.get("first_discovery", false)) else "再掘得 ", str(mineral.name), str(mineral.rarity), str(mineral.description), "\n首次鉴矿：银两 +%d" % int(mineral.silver) if int(mineral.get("silver", 0)) > 0 else ""]
+		var mineral_level := int(mineral.get("gather_level", 1))
+		var mineral_level_text := "\n挖矿等级 Lv.%d 突破！解锁更高阶矿石" % mineral_level if bool(mineral.get("leveled_up", false)) else ("\n挖矿等级 Lv.%d（已满级）" % mineral_level if mineral_level >= MINERALOGY_RULES.MAX_GATHER_LEVEL else "\n挖矿等级 Lv.%d（还需再采 %d 次升级）" % [mineral_level, int(mineral.get("catches_to_next_level", 0))])
+		mineral_text.text = "%s矿谱 · %s（%s）\n%s%s%s" % ["新收录 " if bool(mineral.get("first_discovery", false)) else "再掘得 ", str(mineral.name), str(mineral.rarity), str(mineral.description), "\n首次鉴矿：银两 +%d" % int(mineral.silver) if int(mineral.get("silver", 0)) > 0 else "", mineral_level_text]
 		mineral_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		mineral_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		mineral_text.add_theme_font_size_override("font_size", 15)
