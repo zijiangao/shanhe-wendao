@@ -135,7 +135,7 @@ func _capture() -> void:
 	# A workshop-crafted weapon (an id never in SHOP_RULES.WEAPONS at all) must
 	# show its bare item name here, not the workshop action-button label
 	# ("打造 · 自铸铁刃") that CraftingRules.RECIPES.title is actually meant for.
-	game_state.data.owned_weapons.append("forged_iron_blade")
+	game_state.data.owned_weapons["forged_iron_blade"] = 1
 	game_state.data.equipped_weapon = "forged_iron_blade"
 	main_scene._rebuild()
 	for frame in range(3):

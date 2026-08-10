@@ -4,6 +4,8 @@ extends RefCounted
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
+const EQUIPMENT_RULES := preload("res://scripts/progression/equipment_rules.gd")
+const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 
 ## 客栈招募的门下弟子 (0.109.0) -- distinct from the story companion 林清霜
 ## (who joins for free at a fixed quest beat and fights in 华山论剑试炼/
@@ -121,14 +123,16 @@ static func _companion_gear_slot(state: Dictionary, id: String) -> Dictionary:
 		state.companion_gear[id] = {"weapon": "", "armor": ""}
 	return state.companion_gear[id]
 
+## 兵器/护具数量制 (0.119.0): 同伴换装现在也要过"是否还有空闲的一份"这一关
+## （EQUIPMENT_RULES.is_available_for），不再是拥有即可无限多人共穿。
 static func equip_companion_weapon(state: Dictionary, id: String, weapon_id: String) -> bool:
-	if not is_valid_companion(id) or (weapon_id != "" and weapon_id not in Array(state.get("owned_weapons", []))):
+	if not is_valid_companion(id) or not EQUIPMENT_RULES.is_available_for(state, "owned_weapons", "weapon", weapon_id, id):
 		return false
 	_companion_gear_slot(state, id).weapon = weapon_id
 	return true
 
 static func equip_companion_armor(state: Dictionary, id: String, armor_id: String) -> bool:
-	if not is_valid_companion(id) or (armor_id != "" and armor_id not in Array(state.get("owned_armors", []))):
+	if not is_valid_companion(id) or not EQUIPMENT_RULES.is_available_for(state, "owned_armors", "armor", armor_id, id):
 		return false
 	_companion_gear_slot(state, id).armor = armor_id
 	return true
@@ -157,15 +161,24 @@ static func equip_companion_lightness(state: Dictionary, id: String, lightness_i
 	state.companion_lightness[id] = lightness_id
 	return true
 
-## 换装/换武学选项列表，供人物界面的同伴信息卡使用。
+static func _gear_item(catalog: Dictionary, id: String) -> Dictionary:
+	var item: Dictionary = catalog.get(id, {})
+	return item if not item.is_empty() else CRAFTING_RULES.RECIPES.get(id, {})
+
+## 换装/换武学选项列表，供人物界面的同伴信息卡使用。数量制 (0.119.0)：
+## 每件装备都显示拥有份数，若已被其他人占满则整行禁用（除非本来就是这位
+## 同伴自己正穿着的那件，允许原地重选/取消）。
 static func options_companion_weapons(state: Dictionary, id: String) -> Array:
 	var options := []
 	var current := companion_weapon(state, id)
 	options.append(["赤手（不装备兵器）", "卸下兵器。", "equip_weapon_", current == ""])
-	for weapon_id in Array(state.get("owned_weapons", [])):
-		var item: Dictionary = SHOP_RULES.WEAPONS.get(str(weapon_id), {})
+	for weapon_id in Dictionary(state.get("owned_weapons", {})):
+		var item := _gear_item(SHOP_RULES.WEAPONS, str(weapon_id))
 		var title := str(item.get("item_name", item.get("title", weapon_id)))
-		options.append(["%s（攻击+%d）" % [title, int(item.get("attack_bonus", 0))], "为同伴换上此兵器。", "equip_weapon_%s" % weapon_id, current == str(weapon_id)])
+		var owned_count := EQUIPMENT_RULES.owned_count(state, "owned_weapons", str(weapon_id))
+		var available := EQUIPMENT_RULES.is_available_for(state, "owned_weapons", "weapon", str(weapon_id), id)
+		var note := "为同伴换上此兵器（拥有 %d 件）。" % owned_count if available else "此兵器共 %d 件，均已被其他人装备。" % owned_count
+		options.append(["%s（攻击+%d）" % [title, int(item.get("attack_bonus", 0))], note, "equip_weapon_%s" % weapon_id, not available and current != str(weapon_id)])
 	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
 	return options
 
@@ -173,10 +186,13 @@ static func options_companion_armors(state: Dictionary, id: String) -> Array:
 	var options := []
 	var current := companion_armor(state, id)
 	options.append(["无护具", "卸下护具。", "equip_armor_", current == ""])
-	for armor_id in Array(state.get("owned_armors", [])):
-		var item: Dictionary = SHOP_RULES.ARMORS.get(str(armor_id), {})
+	for armor_id in Dictionary(state.get("owned_armors", {})):
+		var item := _gear_item(SHOP_RULES.ARMORS, str(armor_id))
 		var title := str(item.get("item_name", item.get("title", armor_id)))
-		options.append(["%s（防御+%d）" % [title, int(item.get("defense_bonus", 0))], "为同伴换上此护具。", "equip_armor_%s" % armor_id, current == str(armor_id)])
+		var owned_count := EQUIPMENT_RULES.owned_count(state, "owned_armors", str(armor_id))
+		var available := EQUIPMENT_RULES.is_available_for(state, "owned_armors", "armor", str(armor_id), id)
+		var note := "为同伴换上此护具（拥有 %d 件）。" % owned_count if available else "此护具共 %d 件，均已被其他人装备。" % owned_count
+		options.append(["%s（防御+%d）" % [title, int(item.get("defense_bonus", 0))], note, "equip_armor_%s" % armor_id, not available and current != str(armor_id)])
 	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
 	return options
 

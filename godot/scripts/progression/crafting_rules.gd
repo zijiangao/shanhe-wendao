@@ -4,6 +4,7 @@ extends RefCounted
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
+const EQUIPMENT_RULES := preload("res://scripts/progression/equipment_rules.gd")
 
 ## "specimens" (0.85.0) names specific 药谱/矿谱 collectibles a recipe needs,
 ## on top of the plain herbs/ore pool -- reuses the same named items 采药/挖矿
@@ -160,13 +161,15 @@ static func options_forge(state: Dictionary) -> Array:
 	options.append(["离开锻造坊", "不消耗材料，直接返回青云门。", "leave"])
 	return options
 
+## 兵器/护具数量制 (0.119.0): 打造不再是"打过一次就永久锁死"，同一件可以
+## 反复打造多份（凑够材料即可），每份多打一份就多一个人能同时装备它。
 static func _gear_row(state: Dictionary, id: String, owned_key: String) -> Array:
 	var item: Dictionary = RECIPES[id]
-	if id in Array(state.get(owned_key, [])):
-		return ["%s · 已打造" % str(item.title), "%s（已拥有，前往背包装备）" % str(item.description), id, true]
+	var owned_count := EQUIPMENT_RULES.owned_count(state, owned_key, id)
+	var owned_note := "（已拥有 %d 件）" % owned_count if owned_count > 0 else ""
 	var cost: Dictionary = effective_cost(state, id)
 	var discount_note := "（挖矿大成减免）" if int(cost.ore) < int(RECIPES[id].cost.ore) else ""
-	return ["%s · 矿石%d%s" % [str(item.title), int(cost.ore), discount_note], "%s%s%s" % [str(item.description), _specimens_note(state, cost.specimens), _level_note(state, id)], id, not can_craft(state, id)]
+	return ["%s · 矿石%d%s%s" % [str(item.title), int(cost.ore), discount_note, owned_note], "%s%s%s" % [str(item.description), _specimens_note(state, cost.specimens), _level_note(state, id)], id, not can_craft(state, id)]
 
 ## 炼药坊/锻造坊等级 (0.118.0) 门槛提示，跟 _specimens_note() 同款风格——
 ## 只有真正被 RECIPE_LEVEL_REQUIREMENT 卡住的配方才会显示，已解锁的配方
@@ -222,10 +225,6 @@ static func effective_cost(state: Dictionary, recipe_id: String) -> Dictionary:
 static func can_craft(state: Dictionary, recipe_id: String) -> bool:
 	if not RECIPES.has(recipe_id):
 		return false
-	if recipe_id in CRAFTABLE_WEAPONS and recipe_id in Array(state.get("owned_weapons", [])):
-		return false
-	if recipe_id in CRAFTABLE_ARMORS and recipe_id in Array(state.get("owned_armors", [])):
-		return false
 	if craft_level(state, workshop_for(recipe_id)) < recipe_level_requirement(recipe_id):
 		return false
 	var materials: Dictionary = state.get("materials", {})
@@ -268,10 +267,10 @@ static func apply(state: Dictionary, recipe_id: String) -> bool:
 			state.max_hp = int(state.get("max_hp", 0)) + 3
 			state.hp = mini(int(state.max_hp), int(state.get("hp", 0)) + 3)
 		"forged_iron_blade", "twin_edge_saber", "star_marrow_blade":
-			state.owned_weapons.append(recipe_id)
+			EQUIPMENT_RULES.add_owned(state, "owned_weapons", recipe_id, 1)
 			state.equipped_weapon = recipe_id
 		"rattan_guard", "layered_iron_armor", "star_marrow_armor":
-			state.owned_armors.append(recipe_id)
+			EQUIPMENT_RULES.add_owned(state, "owned_armors", recipe_id, 1)
 			state.equipped_armor = recipe_id
 	var craft_key := _craft_count_key(workshop_for(recipe_id))
 	state[craft_key] = int(state.get(craft_key, 0)) + 1

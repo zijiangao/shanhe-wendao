@@ -10,7 +10,7 @@ func _initialize() -> void:
 	assert(not RULES.can_craft(state, "thunder_stone"), "霹雳石 is no longer a craftable recipe (0.88.0) -- it's still buyable at 西市's 杂货铺, just not forged here.")
 	assert(not RULES.apply(state, "invalid"), "Unknown recipes must never mutate state.")
 
-	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "mining": 0, "strength": 0, "agility": 0, "insight": 0, "constitution": 0, "owned_weapons": [], "owned_armors": [], "herbarium": {}, "mineralogy": {}}
+	var broke := {"materials": {"herbs": 0, "ore": 0}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 0, "mining": 0, "strength": 0, "agility": 0, "insight": 0, "constitution": 0, "owned_weapons": {}, "owned_armors": {}, "herbarium": {}, "mineralogy": {}}
 	var broke_alchemy: Array = RULES.options_alchemy(broke)
 	assert(broke_alchemy.size() == 7, "A fresh recruit with no materials should still see a seventh way out of the alchemy building, now that 回元丹 (0.118.0) exists.")
 	for option in broke_alchemy.slice(0, 6):
@@ -85,15 +85,20 @@ func _initialize() -> void:
 	smith.materials = {"herbs": 0, "ore": 5}
 	assert(RULES.can_craft(smith, "forged_iron_blade"), "Five ore should exactly afford the cheaper workshop weapon, with zero silver or named specimens required.")
 	assert(RULES.apply(smith, "forged_iron_blade"), "A well-stocked smith should be able to forge the weapon.")
-	assert(int(smith.materials.ore) == 0 and "forged_iron_blade" in Array(smith.owned_weapons) and str(smith.equipped_weapon) == "forged_iron_blade", "Forging a workshop weapon should consume its full ore cost, own it, and equip it immediately -- no silver ever changes hands.")
-	assert(not RULES.can_craft(smith, "forged_iron_blade"), "An already-forged weapon must not be craftable again.")
+	assert(int(smith.materials.ore) == 0 and int(smith.owned_weapons.get("forged_iron_blade", 0)) == 1 and str(smith.equipped_weapon) == "forged_iron_blade", "Forging a workshop weapon should consume its full ore cost, own it, and equip it immediately -- no silver ever changes hands.")
+	# 兵器/护具数量制 (0.119.0): forging is no longer one-shot -- a second copy
+	# can be crafted once enough materials are restocked, unlike the old
+	# "already forged, blocked forever" rule.
+	assert(not RULES.can_craft(smith, "forged_iron_blade"), "Without more ore, a second copy still can't be forged -- this is a materials block, not an ownership block.")
+	smith.materials.ore = 5
+	assert(RULES.apply(smith, "forged_iron_blade") and int(smith.owned_weapons.get("forged_iron_blade", 0)) == 2, "With materials restocked, a SECOND copy of an already-owned weapon should be craftable, unlike the old one-shot rule.")
 
 	var armorer := _state()
 	armorer.materials = {"herbs": 5, "ore": 0}
 	assert(not RULES.can_craft(armorer, "rattan_guard"), "Herbs alone should not afford 藤甲护身 now that it is an ore-only forge recipe.")
 	armorer.materials = {"herbs": 0, "ore": 5}
 	assert(RULES.apply(armorer, "rattan_guard"), "Five ore should afford the cheaper workshop armor.")
-	assert(int(armorer.materials.ore) == 0 and "rattan_guard" in Array(armorer.owned_armors) and str(armorer.equipped_armor) == "rattan_guard", "Forging workshop armor should consume its full ore cost, own it, and equip it immediately.")
+	assert(int(armorer.materials.ore) == 0 and int(armorer.owned_armors.get("rattan_guard", 0)) == 1 and str(armorer.equipped_armor) == "rattan_guard", "Forging workshop armor should consume its full ore cost, own it, and equip it immediately.")
 
 	# Mining mastery discounts the ORE cost of workshop gear now, replacing
 	# the old silver discount on 淬炼青锋. 双刃寒锋 is ore-only (0.86.0) and
@@ -137,10 +142,10 @@ func _initialize() -> void:
 	smith2.mineralogy = {"star_marrow": 1}
 	assert(not RULES.can_craft(smith2, "star_marrow_blade"), "星陨寒锋 should stay locked at 锻造坊 level 1 even with every ingredient in hand -- it needs level 5.")
 	smith2.forge_crafts = 4
-	assert(RULES.apply(smith2, "star_marrow_blade") and "star_marrow_blade" in Array(smith2.owned_weapons), "Reaching 锻造坊 level 5 (via 4 prior crafts, e.g. all existing gear) should unlock 星陨寒锋.")
+	assert(RULES.apply(smith2, "star_marrow_blade") and int(smith2.owned_weapons.get("star_marrow_blade", 0)) == 1, "Reaching 锻造坊 level 5 (via 4 prior crafts, e.g. all existing gear) should unlock 星陨寒锋.")
 
 	print("Crafting rules tests passed.")
 	quit()
 
 func _state() -> Dictionary:
-	return {"materials": {"herbs": 3, "ore": 5}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 20, "mining": 0, "strength": 4, "agility": 5, "insight": 4, "constitution": 4, "hp": 45, "max_hp": 45, "owned_weapons": [], "equipped_weapon": "", "owned_armors": [], "equipped_armor": "", "herbarium": {}, "mineralogy": {}}
+	return {"materials": {"herbs": 3, "ore": 5}, "consumables": {"healing_powder": 0, "thunder_stone": 0}, "silver": 20, "mining": 0, "strength": 4, "agility": 5, "insight": 4, "constitution": 4, "hp": 45, "max_hp": 45, "owned_weapons": {}, "equipped_weapon": "", "owned_armors": {}, "equipped_armor": "", "herbarium": {}, "mineralogy": {}}

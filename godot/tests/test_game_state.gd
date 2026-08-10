@@ -197,7 +197,7 @@ func _initialize() -> void:
 	# 同伴换装备/换武学 (0.113.0) -- gear/move chosen for 林清霜 must carry
 	# into her hardcoded ally dict in the two story battles she fights in.
 	state.new_game()
-	state.data.owned_weapons = ["cold_crow_blade"]
+	state.data.owned_weapons = {"cold_crow_blade": 1}
 	state.data.learned_moves = ["blade_technique"]
 	assert(COMPANION_RULES.equip_companion_weapon(state.data, "lin_qingshuang", "cold_crow_blade"), "The hero should be able to gear up 林清霜 before the 华山 trial.")
 	assert(COMPANION_RULES.equip_companion_move(state.data, "lin_qingshuang", "blade_technique"), "The hero should be able to pick 林清霜's dash move before the 华山 trial.")
@@ -278,16 +278,24 @@ func _initialize() -> void:
 	assert(str(state.data.equipped_weapon) == "" and str(state.data.equipped_armor) == "", "A save with no equipment fields should default to bare-handed and unarmored.")
 	assert(state.data.owned_weapons.is_empty() and state.data.owned_armors.is_empty(), "A save with no equipment fields should default to empty inventories.")
 
+	# 兵器/护具数量制 (0.119.0): 老存档的 owned_weapons 是不重复id数组，每个
+	# id按1份迁移成字典；已经是字典的新存档格式也要能正确通过迁移。
 	var corrupted_equipment_save: Dictionary = state.data.duplicate(true)
-	corrupted_equipment_save.owned_weapons = ["iron_sword", "a_deleted_weapon_id"]
+	corrupted_equipment_save.owned_weapons = ["iron_sword", "iron_sword", "a_deleted_weapon_id"]
 	corrupted_equipment_save.equipped_weapon = "a_deleted_weapon_id"
-	corrupted_equipment_save.owned_armors = "not even an array"
+	corrupted_equipment_save.owned_armors = "not even an array or dictionary"
 	corrupted_equipment_save.equipped_armor = "hedgehog_mail"
 	assert(state.import_data(corrupted_equipment_save), "A save with stale or malformed equipment data must still load.")
-	assert(state.data.owned_weapons == ["iron_sword"], "An unrecognized weapon id must be dropped from the owned list on migration.")
+	assert(state.data.owned_weapons == {"iron_sword": 2}, "An old-format array should migrate to a count dictionary (duplicates counted, unrecognized ids dropped).")
 	assert(str(state.data.equipped_weapon) == "", "Equipping a weapon id that failed to migrate must fall back to bare-handed rather than crash or keep a dangling reference.")
-	assert(typeof(state.data.owned_armors) == TYPE_ARRAY and state.data.owned_armors.is_empty(), "A non-array owned_armors field must be repaired to an empty list.")
+	assert(typeof(state.data.owned_armors) == TYPE_DICTIONARY and state.data.owned_armors.is_empty(), "A non-array, non-dictionary owned_armors field must be repaired to an empty dictionary.")
 	assert(str(state.data.equipped_armor) == "", "An armor id that is not actually owned (post-repair) must be cleared rather than trusted.")
+
+	var dict_format_save: Dictionary = state.data.duplicate(true)
+	dict_format_save.owned_weapons = {"iron_sword": 3, "a_deleted_weapon_id": 1, "cold_crow_blade": 0}
+	dict_format_save.equipped_weapon = "iron_sword"
+	assert(state.import_data(dict_format_save), "A save already in the new dictionary format should load unchanged.")
+	assert(state.data.owned_weapons == {"iron_sword": 3}, "An already-dictionary save should drop unrecognized ids and zero/negative counts, but keep valid positive counts as-is.")
 
 	state.new_game()
 	state.data.silver = 1000

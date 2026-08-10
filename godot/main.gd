@@ -32,6 +32,7 @@ const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
+const EQUIPMENT_RULES := preload("res://scripts/progression/equipment_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
@@ -1933,7 +1934,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.118.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.119.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2553,15 +2554,15 @@ func _show_backpack() -> void:
 	list.add_child(_backpack_equipment_row("weapon", equipped_weapon, true))
 	list.add_child(_backpack_equipment_row("armor", equipped_armor, true))
 
-	var owned_weapons: Array = GameState.data.get("owned_weapons", [])
-	var unequipped_weapons: Array = owned_weapons.filter(func(id): return str(id) != equipped_weapon)
+	var owned_weapons: Dictionary = GameState.data.get("owned_weapons", {})
+	var unequipped_weapons: Array = owned_weapons.keys().filter(func(id): return str(id) != equipped_weapon)
 	if not unequipped_weapons.is_empty():
 		list.add_child(_backpack_section_title("其余兵刃"))
 		for id in unequipped_weapons:
 			list.add_child(_backpack_equipment_row("weapon", str(id), false))
 
-	var owned_armors: Array = GameState.data.get("owned_armors", [])
-	var unequipped_armors: Array = owned_armors.filter(func(id): return str(id) != equipped_armor)
+	var owned_armors: Dictionary = GameState.data.get("owned_armors", {})
+	var unequipped_armors: Array = owned_armors.keys().filter(func(id): return str(id) != equipped_armor)
 	if not unequipped_armors.is_empty():
 		list.add_child(_backpack_section_title("其余护具"))
 		for id in unequipped_armors:
@@ -2594,6 +2595,19 @@ func _show_backpack() -> void:
 	list.add_child(_backpack_section_title("材料与药品"))
 	for good_id in ["herbs", "ore", "healing_powder", "thunder_stone"]:
 		list.add_child(_backpack_goods_row(good_id))
+
+	# 特殊材料 (0.119.0)：药谱/矿谱里已发现的稀有品种此前只在演武场/后山的
+	# 采集结果卡与炼药坊/锻造坊的配方说明里露面，背包本身从未展示过——
+	# 用户明确要求"特殊材料也需要有数量，在背包里显示"，这里补上。
+	var herbarium: Dictionary = GameState.data.get("herbarium", {})
+	var mineralogy: Dictionary = GameState.data.get("mineralogy", {})
+	var discovered_specimens: Array = HERBARIUM_RULES.SPECIMENS.keys().filter(func(id): return int(herbarium.get(id, 0)) > 0)
+	discovered_specimens.append_array(MINERALOGY_RULES.SPECIMENS.keys().filter(func(id): return int(mineralogy.get(id, 0)) > 0))
+	if not discovered_specimens.is_empty():
+		list.add_child(_backpack_section_title("特殊材料（药谱/矿谱）"))
+		for specimen_id in discovered_specimens:
+			list.add_child(_backpack_specimen_row(str(specimen_id)))
+
 	var bottom_spacer2 := Control.new()
 	bottom_spacer2.custom_minimum_size.y = 16
 	list.add_child(bottom_spacer2)
@@ -2610,8 +2624,11 @@ func _backpack_section_title(text_value: String) -> Label:
 ## "【当前装备】" prefix -- callers pass true for the two fixed equipped-slot
 ## rows and false for every other owned-but-inactive item, which get their
 ## own "装备" button so switching gear doesn't require a trip to 西市.
+## 数量制 (0.119.0)：每行额外显示拥有份数与"几人正穿着/尚余几份"，装备
+## 按钮在所有份数都被同伴占满时禁用（沈羽自己已经穿着的那件不受影响）。
 func _backpack_equipment_row(category: String, id: String, equipped: bool) -> PanelContainer:
 	var catalog: Dictionary = SHOP_RULES.WEAPONS if category == "weapon" else SHOP_RULES.ARMORS
+	var owned_field := "owned_weapons" if category == "weapon" else "owned_armors"
 	var bonus_key := "attack_bonus" if category == "weapon" else "defense_bonus"
 	var bonus_label := "攻击" if category == "weapon" else "防御"
 	var item: Dictionary = catalog.get(id, {})
@@ -2620,21 +2637,25 @@ func _backpack_equipment_row(category: String, id: String, equipped: bool) -> Pa
 	var fallback_name := "赤手" if category == "weapon" else "无护具"
 	var name_text := str(item.get("item_name", item.get("title", fallback_name))) if id != "" else fallback_name
 	var primary := ("【当前装备】" + name_text) if equipped else name_text
-	var secondary := "%s +%d" % [bonus_label, int(item.get(bonus_key, 0))] if id != "" else "尚未购置"
+	var owned_count := EQUIPMENT_RULES.owned_count(GameState.data, owned_field, id) if id != "" else 0
+	var claimed_count := EQUIPMENT_RULES.claimed_count(GameState.data, category, id, "hero") if id != "" else 0
+	var secondary := "%s +%d · 拥有 %d 件 · 已被同伴装备 %d 件" % [bonus_label, int(item.get(bonus_key, 0)), owned_count, claimed_count] if id != "" else "尚未购置"
 	var panel_color := Color("#294438") if equipped else Color("#4b514d")
 	var text_color := Color("#f2dfb3") if equipped else Color("#dbe0d9")
 	var action_button: Button = null
 	if not equipped and id != "":
-		action_button = UI_THEME.action_button("装备", Color("#294438"))
+		var available := EQUIPMENT_RULES.is_available_for(GameState.data, owned_field, category, id, "hero")
+		action_button = UI_THEME.action_button("装备" if available else "均已被占用", Color("#294438"))
 		action_button.custom_minimum_size = Vector2(96, 44)
 		action_button.add_theme_font_size_override("font_size", 16)
+		action_button.disabled = not available
 		action_button.pressed.connect(_equip_from_backpack.bind(category, id))
 	return _backpack_row(UI_THEME.item_icon(id) if id != "" else null, primary, secondary, panel_color, text_color, action_button)
 
 func _equip_from_backpack(category: String, id: String) -> void:
 	var ok := SHOP_RULES.equip_weapon(GameState.data, id) if category == "weapon" else SHOP_RULES.equip_armor(GameState.data, id)
 	if not ok:
-		_toast("这件装备不在你的行囊中。")
+		_toast("无法装备：不在行囊中，或所有份数都已被同伴装备。")
 		return
 	SaveManager.save_auto()
 	_show_backpack()
@@ -2673,6 +2694,16 @@ func _backpack_goods_row(good_id: String) -> PanelContainer:
 	var item: Dictionary = SHOP_RULES.GOODS.get(good_id, {})
 	var count := int(GameState.data.materials.get(good_id, 0)) if good_id in ["herbs", "ore"] else int(GameState.data.consumables.get(good_id, 0))
 	return _backpack_row(UI_THEME.item_icon(good_id), str(item.get("title", good_id)), "携带 %d 份" % count, Color("#4b514d"), Color("#dbe0d9"), null)
+
+## 特殊材料 (0.119.0)：药谱/矿谱里已发现的稀有品种，纯展示（炼药坊/锻造坊
+## 消耗它们，背包本身不提供任何操作按钮）。
+func _backpack_specimen_row(specimen_id: String) -> PanelContainer:
+	var is_herb := HERBARIUM_RULES.SPECIMENS.has(specimen_id)
+	var catalog: Dictionary = HERBARIUM_RULES.SPECIMENS if is_herb else MINERALOGY_RULES.SPECIMENS
+	var collection: Dictionary = GameState.data.get("herbarium", {}) if is_herb else GameState.data.get("mineralogy", {})
+	var item: Dictionary = catalog.get(specimen_id, {})
+	var count := int(collection.get(specimen_id, 0))
+	return _backpack_row(UI_THEME.item_icon(specimen_id), "%s（%s）" % [str(item.get("name", specimen_id)), str(item.get("rarity", ""))], "携带 %d 份 · %s" % [count, str(item.get("description", ""))], Color("#4b514d"), Color("#dbe0d9"), null)
 
 func _backpack_row(icon_texture: Texture2D, primary_text: String, secondary_text: String, panel_color: Color, text_color: Color, action_button: Button) -> PanelContainer:
 	var row := PanelContainer.new()

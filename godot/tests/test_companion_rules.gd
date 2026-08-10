@@ -62,11 +62,13 @@ func _initialize() -> void:
 	# 同伴换装备/换武学 (0.113.0) -- companions share the hero's own
 	# owned_weapons/owned_armors pool; equipping requires the hero to
 	# actually own the item, mirroring 秘籍阁/西市's own ownership checks.
+	# 兵器/护具数量制 (0.119.0) 取代了"拥有即可无限多人共穿"：数量决定了
+	# 能同时装备的人数上限，见下面的排他性测试。
 	var gear_state := _state()
 	gear_state.companions = ["zhou_mubai"]
 	gear_state.active_disciple = "zhou_mubai"
-	gear_state.owned_weapons = ["cold_crow_blade"]
-	gear_state.owned_armors = ["cold_jade_armor"]
+	gear_state.owned_weapons = {"cold_crow_blade": 1}
+	gear_state.owned_armors = {"cold_jade_armor": 1}
 	gear_state.learned_moves = ["cloud_sword"]
 	assert(not RULES.equip_companion_weapon(gear_state, "zhou_mubai", "dragon_etched_sword"), "Equipping a weapon the hero doesn't own must be rejected.")
 	assert(RULES.equip_companion_weapon(gear_state, "zhou_mubai", "cold_crow_blade"), "Equipping a weapon the hero owns should succeed.")
@@ -74,11 +76,17 @@ func _initialize() -> void:
 	assert(RULES.equip_companion_armor(gear_state, "zhou_mubai", "cold_jade_armor"), "Equipping an owned armor should succeed.")
 	assert(RULES.equip_companion_move(gear_state, "zhou_mubai", "cloud_sword"), "Equipping a move the hero has learned should succeed.")
 	assert(not RULES.equip_companion_move(gear_state, "zhou_mubai", "blade_technique"), "Equipping a move the hero has NOT learned must be rejected.")
+
+	# 数量制排他性 (0.119.0): with only ONE copy owned and already worn by
+	# 周慕白, a second companion must NOT be able to equip the same weapon --
+	# this directly replaces the old "shared pool, not exclusive" behavior.
+	assert(not RULES.equip_companion_weapon(gear_state, "lin_qingshuang", "cold_crow_blade"), "With only one copy owned and already worn by 周慕白, a second companion equipping the same weapon must be rejected.")
+	gear_state.owned_weapons["cold_crow_blade"] = 2
+	assert(RULES.equip_companion_weapon(gear_state, "lin_qingshuang", "cold_crow_blade"), "With a second copy now owned, a second companion should be able to equip the same weapon.")
+	assert(RULES.companion_weapon(gear_state, "zhou_mubai") == "cold_crow_blade", "周慕白's own equipped weapon must be untouched by 林清霜 equipping a separate copy.")
+
 	assert(RULES.equip_companion_weapon(gear_state, "zhou_mubai", ""), "Unequipping (empty id) should always succeed regardless of ownership.")
 	assert(RULES.companion_weapon(gear_state, "zhou_mubai") == "", "After unequipping, companion_weapon() should report empty.")
-	# The same weapon can accompany multiple people at once (a shared pool,
-	# not exclusive ownership) -- 林清霜 equipping it must not disturb 周慕白.
-	assert(RULES.equip_companion_weapon(gear_state, "lin_qingshuang", "cold_crow_blade"), "A second companion should be able to equip the same shared weapon.")
 
 	var equipped_ally := RULES.active_disciple_ally(gear_state)
 	assert(int(equipped_ally.attack) == int(RULES.DISCIPLES.zhou_mubai.attack) and int(equipped_ally.armor) == 3, "active_disciple_ally() should fold in the armor bonus but not a weapon that was unequipped again.")

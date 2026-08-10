@@ -2,6 +2,7 @@ class_name ShopRules
 extends RefCounted
 
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
+const EQUIPMENT_RULES := preload("res://scripts/progression/equipment_rules.gd")
 const SELL_BACK_RATE := 0.5
 
 const WEAPONS := {
@@ -47,32 +48,36 @@ static func armor_sell_price(id: String) -> int:
 	return int(floor(float(ARMORS.get(id, {}).get("price", 0)) * SELL_BACK_RATE))
 
 static func options_weapons(state: Dictionary) -> Array:
-	var owned: Array = state.get("owned_weapons", [])
 	var equipped := str(state.get("equipped_weapon", ""))
 	var silver := int(state.get("silver", 0))
 	var options := []
 	for id in WEAPONS:
 		var item: Dictionary = WEAPONS[id]
+		var owned_count := EQUIPMENT_RULES.owned_count(state, "owned_weapons", id)
 		if id == equipped:
-			options.append(["卖出 · %s" % str(item.title), "%s（当前装备，回收 %d 银）" % [str(item.description), weapon_sell_price(id)], "sell_%s" % id, false])
-		elif id in owned:
-			options.append(["换装 · %s" % str(item.title), "%s 已购入，可随时换回。" % str(item.description), "equip_%s" % id, false])
+			options.append(["卖出 · %s" % str(item.title), "%s（当前装备，拥有 %d 件，回收 %d 银）" % [str(item.description), owned_count, weapon_sell_price(id)], "sell_%s" % id, false])
+		elif owned_count > 0:
+			var available := EQUIPMENT_RULES.is_available_for(state, "owned_weapons", "weapon", id, "hero")
+			var note := "已购入 %d 件，可随时换回。" % owned_count if available else "已购入 %d 件，但均已被同伴装备，可再购买一件。" % owned_count
+			options.append(["换装 · %s" % str(item.title), "%s%s" % [str(item.description), note], "equip_%s" % id, not available])
 		else:
 			options.append(["购买并装备 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "buy_%s" % id, silver < int(item.price)])
 	options.append(["返回", "不消耗行动点，返回西市。", "leave"])
 	return options
 
 static func options_armor(state: Dictionary) -> Array:
-	var owned: Array = state.get("owned_armors", [])
 	var equipped := str(state.get("equipped_armor", ""))
 	var silver := int(state.get("silver", 0))
 	var options := []
 	for id in ARMORS:
 		var item: Dictionary = ARMORS[id]
+		var owned_count := EQUIPMENT_RULES.owned_count(state, "owned_armors", id)
 		if id == equipped:
-			options.append(["卖出 · %s" % str(item.title), "%s（当前装备，回收 %d 银）" % [str(item.description), armor_sell_price(id)], "sell_%s" % id, false])
-		elif id in owned:
-			options.append(["换装 · %s" % str(item.title), "%s 已购入，可随时换回。" % str(item.description), "equip_%s" % id, false])
+			options.append(["卖出 · %s" % str(item.title), "%s（当前装备，拥有 %d 件，回收 %d 银）" % [str(item.description), owned_count, armor_sell_price(id)], "sell_%s" % id, false])
+		elif owned_count > 0:
+			var available := EQUIPMENT_RULES.is_available_for(state, "owned_armors", "armor", id, "hero")
+			var note := "已购入 %d 件，可随时换回。" % owned_count if available else "已购入 %d 件，但均已被同伴装备，可再购买一件。" % owned_count
+			options.append(["换装 · %s" % str(item.title), "%s%s" % [str(item.description), note], "equip_%s" % id, not available])
 		else:
 			options.append(["购买并装备 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "buy_%s" % id, silver < int(item.price)])
 	options.append(["返回", "不消耗行动点，返回西市。", "leave"])
@@ -89,19 +94,21 @@ static func options_goods(state: Dictionary) -> Array:
 	options.append(["返回", "不消耗行动点，返回西市。", "leave"])
 	return options
 
+## 兵器/护具数量制 (0.119.0): 已拥有也可以再次购买，多买一份就多一份能同时
+## 让沈羽或同伴穿着的名额，不再是"买过就不能再买"的一次性所有权。
 static func buy_weapon(state: Dictionary, id: String) -> bool:
-	if not WEAPONS.has(id) or id in Array(state.get("owned_weapons", [])) or int(state.get("silver", 0)) < int(WEAPONS[id].price):
+	if not WEAPONS.has(id) or int(state.get("silver", 0)) < int(WEAPONS[id].price):
 		return false
 	state.silver = int(state.get("silver", 0)) - int(WEAPONS[id].price)
-	state.owned_weapons.append(id)
+	EQUIPMENT_RULES.add_owned(state, "owned_weapons", id, 1)
 	state.equipped_weapon = id
 	return true
 
 static func buy_armor(state: Dictionary, id: String) -> bool:
-	if not ARMORS.has(id) or id in Array(state.get("owned_armors", [])) or int(state.get("silver", 0)) < int(ARMORS[id].price):
+	if not ARMORS.has(id) or int(state.get("silver", 0)) < int(ARMORS[id].price):
 		return false
 	state.silver = int(state.get("silver", 0)) - int(ARMORS[id].price)
-	state.owned_armors.append(id)
+	EQUIPMENT_RULES.add_owned(state, "owned_armors", id, 1)
 	state.equipped_armor = id
 	return true
 
@@ -109,35 +116,34 @@ static func buy_armor(state: Dictionary, id: String) -> bool:
 ## only ever be populated by buy_weapon()/buy_armor() (validated against
 ## WEAPONS/ARMORS) or CraftingRules.apply() (validated against its own
 ## catalog), so re-checking WEAPONS/ARMORS membership here would incorrectly
-## reject a legitimately owned workshop-crafted item.
+## reject a legitimately owned workshop-crafted item. 数量制 (0.119.0) 还要求
+## 至少有一份"没被同伴占用"的空闲份数，否则拒绝换装。
 static func equip_weapon(state: Dictionary, id: String) -> bool:
-	if id not in Array(state.get("owned_weapons", [])):
+	if not EQUIPMENT_RULES.is_available_for(state, "owned_weapons", "weapon", id, "hero"):
 		return false
 	state.equipped_weapon = id
 	return true
 
 static func equip_armor(state: Dictionary, id: String) -> bool:
-	if id not in Array(state.get("owned_armors", [])):
+	if not EQUIPMENT_RULES.is_available_for(state, "owned_armors", "armor", id, "hero"):
 		return false
 	state.equipped_armor = id
 	return true
 
 static func sell_weapon(state: Dictionary, id: String) -> bool:
-	if not WEAPONS.has(id) or id not in Array(state.get("owned_weapons", [])):
+	if not WEAPONS.has(id) or EQUIPMENT_RULES.owned_count(state, "owned_weapons", id) <= 0:
 		return false
-	state.owned_weapons.erase(id)
+	EQUIPMENT_RULES.add_owned(state, "owned_weapons", id, -1)
 	state.silver = int(state.get("silver", 0)) + weapon_sell_price(id)
-	if str(state.get("equipped_weapon", "")) == id:
-		state.equipped_weapon = ""
+	EQUIPMENT_RULES.reconcile_wearers(state, "owned_weapons", "weapon", id)
 	return true
 
 static func sell_armor(state: Dictionary, id: String) -> bool:
-	if not ARMORS.has(id) or id not in Array(state.get("owned_armors", [])):
+	if not ARMORS.has(id) or EQUIPMENT_RULES.owned_count(state, "owned_armors", id) <= 0:
 		return false
-	state.owned_armors.erase(id)
+	EQUIPMENT_RULES.add_owned(state, "owned_armors", id, -1)
 	state.silver = int(state.get("silver", 0)) + armor_sell_price(id)
-	if str(state.get("equipped_armor", "")) == id:
-		state.equipped_armor = ""
+	EQUIPMENT_RULES.reconcile_wearers(state, "owned_armors", "armor", id)
 	return true
 
 static func buy_good(state: Dictionary, id: String, quantity: int = 1) -> bool:

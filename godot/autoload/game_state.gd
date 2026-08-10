@@ -9,6 +9,7 @@ const TRAINING_EVENT_RULES := preload("res://scripts/progression/training_event_
 const SPARRING_RULES := preload("res://scripts/progression/sparring_rules.gd")
 const CRAFTING_RULES := preload("res://scripts/progression/crafting_rules.gd")
 const SHOP_RULES := preload("res://scripts/progression/shop_rules.gd")
+const EQUIPMENT_RULES := preload("res://scripts/progression/equipment_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
@@ -63,8 +64,8 @@ func new_game() -> void:
 		"consumables": {"healing_powder": 0, "thunder_stone": 0},
 		"equipped_weapon": "",
 		"equipped_armor": "",
-		"owned_weapons": [],
-		"owned_armors": [],
+		"owned_weapons": {},
+		"owned_armors": {},
 		"learned_moves": [],
 		"learned_internal": ["foundational_qi"],
 		"learned_lightness": ["basic_footwork"],
@@ -592,6 +593,22 @@ func import_data(value: Dictionary) -> bool:
 	state_changed.emit()
 	return true
 
+## 兵器/护具数量制 (0.119.0) 迁移助手：老存档的 owned_weapons/owned_armors
+## 是不重复id数组，每个id按1份换算成字典；已经是字典的新存档只做合法性
+## 过滤（is_valid 校验每个id仍在西市/锻造坊目录里，数量强制非负整数）。
+func _migrate_owned_gear(value: Variant, is_valid: Callable) -> Dictionary:
+	var result := {}
+	if typeof(value) == TYPE_ARRAY:
+		for id in value:
+			if is_valid.call(str(id)):
+				result[str(id)] = int(result.get(str(id), 0)) + 1
+	elif typeof(value) == TYPE_DICTIONARY:
+		for id in value:
+			var count := maxi(0, int(value[id]))
+			if count > 0 and is_valid.call(str(id)):
+				result[str(id)] = count
+	return result
+
 func _migrate_and_validate() -> void:
 	# 新字段由 new_game() 提供默认值；这里修复旧版本类型及已淘汰的战斗结构。
 	if typeof(data.flags) != TYPE_ARRAY:
@@ -708,15 +725,14 @@ func _migrate_and_validate() -> void:
 	data.mineralogy = normalized_mineralogy
 	data.consumables.healing_powder = maxi(0, int(data.consumables.get("healing_powder", 0)))
 	data.consumables.thunder_stone = maxi(0, int(data.consumables.get("thunder_stone", 0)))
-	if typeof(data.get("owned_weapons", [])) != TYPE_ARRAY:
-		data.owned_weapons = []
-	data.owned_weapons = Array(data.owned_weapons).filter(func(id): return SHOP_RULES.WEAPONS.has(str(id)) or CRAFTING_RULES.RECIPES.get(str(id), {}).has("attack_bonus"))
-	if typeof(data.get("owned_armors", [])) != TYPE_ARRAY:
-		data.owned_armors = []
-	data.owned_armors = Array(data.owned_armors).filter(func(id): return SHOP_RULES.ARMORS.has(str(id)) or CRAFTING_RULES.RECIPES.get(str(id), {}).has("defense_bonus"))
-	if str(data.get("equipped_weapon", "")) not in data.owned_weapons:
+	# 兵器/护具数量制 (0.119.0): owned_weapons/owned_armors 从"不重复id列表"
+	# 改为"id -> 拥有数量"字典 -- 旧存档的数组每个id天然只出现一次，直接
+	# 按1份迁移；已经是字典的新存档原样通过，只做合法性过滤。
+	data.owned_weapons = _migrate_owned_gear(data.get("owned_weapons", {}), func(id): return SHOP_RULES.WEAPONS.has(id) or CRAFTING_RULES.RECIPES.get(id, {}).has("attack_bonus"))
+	data.owned_armors = _migrate_owned_gear(data.get("owned_armors", {}), func(id): return SHOP_RULES.ARMORS.has(id) or CRAFTING_RULES.RECIPES.get(id, {}).has("defense_bonus"))
+	if EQUIPMENT_RULES.owned_count(data, "owned_weapons", str(data.get("equipped_weapon", ""))) <= 0:
 		data.equipped_weapon = ""
-	if str(data.get("equipped_armor", "")) not in data.owned_armors:
+	if EQUIPMENT_RULES.owned_count(data, "owned_armors", str(data.get("equipped_armor", ""))) <= 0:
 		data.equipped_armor = ""
 	if typeof(data.get("learned_moves", [])) != TYPE_ARRAY:
 		data.learned_moves = []
