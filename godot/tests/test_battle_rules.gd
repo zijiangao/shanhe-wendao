@@ -35,9 +35,11 @@ func _initialize() -> void:
 	assert(not RULES.can_enemy_attack(battle, battle.enemies[0], Vector2i(1, 1)), "Terrain should block ranged enemy attacks.")
 	battle.blocked.clear()
 	battle.enemies[0].role = "archer"
-	battle.turn = 3
-	assert(RULES.is_aimed_shot_turn(battle, battle.enemies[0]), "Archers should telegraph an aimed shot every third turn.")
-	assert("穿云箭" in RULES.enemy_preview(battle) and "少1行动点" in RULES.enemy_preview(battle), "Enemy preview should teach the aimed shot and its counterplay stakes.")
+	# 行动条改版：节奏判断从"共享回合数取模"改成"这个敌人自己的行动次数
+	# 取模"，直接播种 actions_taken，不再靠 battle.turn。
+	battle.enemies[0].actions_taken = 3
+	assert(RULES.is_aimed_shot_turn(battle.enemies[0]), "Archers should telegraph an aimed shot every third of their own actions.")
+	assert("穿云箭" in RULES.enemy_preview(battle) and "拖慢其行动条" in RULES.enemy_preview(battle), "Enemy preview should teach the aimed shot and its counterplay stakes.")
 
 	battle.active_unit = "ally"
 	battle.ally.x = 1
@@ -54,7 +56,7 @@ func _initialize() -> void:
 	battle.enemies[0].y = 2
 	battle.enemies[0].range = 1
 	battle.enemies[0].role = "brute"
-	battle.turn = 2
+	battle.enemies[0].actions_taken = 2
 	var preview: String = RULES.enemy_preview(battle)
 	assert("蓄力重击林清霜" in preview, "Enemy previews should identify a brute's target and heavy attack.")
 	assert(RULES.enemy_armor(battle.enemies[0]) == 2 and "护甲2" in preview, "Brutes should expose their default armor in the enemy preview.")
@@ -62,14 +64,21 @@ func _initialize() -> void:
 	assert(RULES.enemy_exposure(battle.enemies[0]) == 2 and "破绽2" in RULES.enemy_trait_text(battle.enemies[0]), "Exposure stacks should be clamped and clearly described.")
 	assert(RULES.enemy_move_steps({"role": "duelist"}) == 2, "Duelists should have a two-cell movement allowance.")
 	assert("疾步2" in RULES.enemy_trait_text({"role": "duelist"}), "Duelist mobility must be visible on its battle cell and preview.")
-	var boss := {"name": "厉无咎", "role": "brute", "boss": true, "hp": 20, "max_hp": 46, "x": 3, "y": 2}
+	var boss := {"name": "厉无咎", "role": "brute", "boss": true, "hp": 20, "max_hp": 46, "x": 3, "y": 2, "actions_taken": 3}
 	battle.enemies = [boss]
-	battle.turn = 3
 	assert(RULES.boss_phase(boss) == 2 and RULES.enemy_move_steps(boss) == 2, "A half-health boss should enter phase two and move faster.")
-	assert(RULES.is_boss_sweep_turn(battle, boss), "The phase-two boss should telegraph a sweep every third turn.")
+	assert(RULES.is_boss_sweep_turn(boss), "The phase-two boss should telegraph a sweep every third of its own actions.")
 	assert(RULES.in_boss_sweep_range(boss, Vector2i(1, 2)) and not RULES.in_boss_sweep_range(boss, Vector2i(0, 2)), "The boss sweep should have an exact two-cell Manhattan radius.")
 	assert(RULES.is_boss_sweep_cell(battle, Vector2i(1, 2)) and not RULES.is_boss_sweep_cell(battle, Vector2i(0, 2)), "Battle cells should expose the telegraphed sweep danger zone to the UI.")
 	assert("立即撤离" in RULES.enemy_preview(battle), "The boss sweep preview should clearly teach its counterplay.")
+
+	# ATB身法数值 (行动条改版)：敌人自己标注的 speed 字段直接读出，boss二
+	# 阶段额外+2，跟 enemy_move_steps() 已有的"二阶段更快"叙事保持一致。
+	assert(RULES.enemy_speed({"speed": 6}) == 6, "enemy_speed() should read the enemy's own speed field.")
+	assert(RULES.enemy_speed({"speed": 6}.duplicate()) == 6, "enemy_speed() should not mutate its input.")
+	assert(RULES.enemy_speed({}) == 5, "A missing speed field should default to five, a sensible mid-pack value.")
+	var phase_two_boss := {"speed": 4, "boss": true, "hp": 10, "max_hp": 46}
+	assert(RULES.enemy_speed(phase_two_boss) == 6, "A phase-two boss should get a +2 speed bump on top of its base value.")
 
 	print("BattleRules tests passed.")
 	quit()

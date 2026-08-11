@@ -440,10 +440,10 @@ func _verify_combat_feedback() -> void:
 	GameState.data.acted_this_week = false
 	GameState.data.investigations = ["secret_route", "archer"]
 	GameState.start_blackreed_battle()
-	GameState.data.battle.turn = 2
+	GameState.data.battle.enemies[0].actions_taken = 1
 	GameState.data.battle.enemies[0].x = 3
 	GameState.data.battle.enemies[0].y = 3
-	var outcome := BATTLE_ENGINE.enemy_turn(GameState.data.battle, int(GameState.data.hp))
+	var outcome := BATTLE_ENGINE.resolve_enemy_turn(GameState.data.battle, 0, int(GameState.data.hp))
 	var heavy_event: bool = Array(outcome.events).any(func(event: Dictionary): return str(event.get("type", "")) == "hit" and str(event.get("impact", "")) == "heavy")
 	var valid: bool = float(heavy.shake) > float(light.shake) and str(heavy.cue) == "heavy_hit" and settings_valid and heavy_event
 	print("Combat feedback verification passed." if valid else "Combat feedback verification failed.")
@@ -1943,7 +1943,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.120.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.121.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3113,7 +3113,7 @@ func _show_battle() -> void:
 	view.setup(_battle_texture(last_battle_id), battle, GameState.data, battle_mode, _battle_cell_data(battle), BATTLE_RULES.enemy_preview(battle), scene_style)
 	view.cell_selected.connect(_tactical_cell)
 	view.mode_selected.connect(_battle_mode_selected)
-	view.end_turn_requested.connect(_enemy_turn)
+	view.end_turn_requested.connect(_end_active_turn)
 
 func _battle_mode_selected(next_mode: String) -> void:
 	if next_mode in ["frost_guard", "brace", "heal"]:
@@ -3168,7 +3168,7 @@ func _battle_cell_data(battle: Dictionary) -> Array:
 				data.disabled = true
 				data.color = "#4b4b45ee"
 			elif x == int(battle.player_x) and y == int(battle.player_y):
-				data.text = "%s%s沈羽\nAP %d" % ["⚠ " if boss_danger else "", "▶ " if str(battle.get("active_unit", "hero")) == "hero" else "", battle.ap]
+				data.text = "%s%s沈羽\nAP %d" % ["⚠ " if boss_danger else "", "▶ " if str(battle.get("active_unit", "hero")) == "hero" else "", battle.action_points]
 				data.token = 0
 				data.color = "#3d916fee" if str(battle.get("active_unit", "hero")) == "hero" else "#2f7359"
 			elif BATTLE_RULES.is_ally_at(battle, cell):
@@ -3353,22 +3353,12 @@ func _show_battle_legacy() -> void:
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
 	side_box.add_child(help)
 
+## 行动条改版：点击自己/同伴棋子不再能免费切换 active_unit——一次只有一个
+## 单位能行动，由行动条（身法）决定，不是玩家自由挑选。
 func _tactical_cell(x: int, y: int) -> void:
 	var battle: Dictionary = GameState.data.battle
-	if x == int(battle.player_x) and y == int(battle.player_y):
-		battle.active_unit = "hero"
-		battle.result = "当前由沈羽行动。"
-		GameState.data.battle = battle
-		_rebuild()
-		return
-	if BATTLE_RULES.is_ally_at(battle, Vector2i(x, y)):
-		battle.active_unit = "ally"
-		battle.result = "当前由%s行动。" % str(battle.get("ally", {}).get("name", "同伴"))
-		GameState.data.battle = battle
-		_rebuild()
-		return
-	if int(battle.ap) <= 0:
-		_toast("行动点已用尽，请结束回合。")
+	if int(battle.action_points) <= 0:
+		_toast("行动点已用尽，请稍候。")
 		return
 	_execute_player_action(battle_mode, Vector2i(x, y))
 
@@ -3380,39 +3370,71 @@ func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) ->
 		return
 	AudioFeedback.play({"move": "move", "attack": "hit", "skill": "skill", "blade_skill": "skill", "thunder_stone": "heavy_hit", "frost_dash": "skill", "frost_guard": "turn", "brace": "turn", "heal": "confirm"}.get(action, "confirm"))
 	var battle: Dictionary = outcome.battle
+	GameState.data.battle = battle
 	if _check_tactical_victory(battle):
 		SaveManager.save_auto()
 		_rebuild()
 		return
-	GameState.data.battle = battle
+	if int(battle.action_points) <= 0:
+		SaveManager.save_auto()
+		_advance_battle_queue()
+		return
 	SaveManager.save_auto()
 	_rebuild()
 
-func _enemy_turn() -> void:
+## "结束回合"按钮：放弃当前单位剩余的行动点，直接推进行动条到下一位。
+func _end_active_turn() -> void:
+	var battle: Dictionary = GameState.data.battle
+	battle.action_points = 0
+	GameState.data.battle = battle
+	_advance_battle_queue()
+
+## 行动条改版：不再是"点结束回合→全体敌人一次性行动完"，而是持续调用
+## BATTLE_ENGINE.advance_turn() 推进到下一位单位；轮到敌人就解析这一个
+## 敌人的行动并播放其动画，再继续推进，直到轮到沈羽或同伴为止——玩家
+## 体验上仍然是"看几个敌人依次行动，然后轮到我"，不需要额外点击。
+func _advance_battle_queue() -> void:
 	if enemy_turn_active:
 		return
 	enemy_turn_active = true
 	var battle: Dictionary = GameState.data.battle
-	var outcome: Dictionary = BATTLE_ENGINE.enemy_turn(battle, int(GameState.data.hp), null, SHOP_RULES.armor_defense_bonus(GameState.data))
-	if is_instance_valid(active_battle_view):
-		await active_battle_view.play_enemy_events(Array(outcome.get("events", [])))
-	enemy_turn_active = false
-	GameState.data.hp = int(outcome.hero_hp)
-	if bool(outcome.hero_defeated):
-		AudioFeedback.play("defeat")
-		last_defeat_battle = str(battle.get("battle_id", "blackreed"))
-		GameState.finish_battle(false)
-		screen = "defeat"
-	else:
-		if Array(outcome.get("events", [])).is_empty():
-			AudioFeedback.play("skill" if bool(outcome.get("boss_transition", false)) else ("enemy_hit" if int(outcome.total_hurt) > 0 else "turn"))
-		GameState.data.battle = outcome.battle
-		if _check_tactical_victory(outcome.battle):
-			SaveManager.save_auto()
+	var hero_hp := int(GameState.data.hp)
+	while true:
+		var winner := BATTLE_ENGINE.advance_turn(battle)
+		if winner == "hero" or winner == "ally":
+			break
+		var enemy_index := int(winner.split(":")[1])
+		var outcome: Dictionary = BATTLE_ENGINE.resolve_enemy_turn(battle, enemy_index, hero_hp, null, SHOP_RULES.armor_defense_bonus(GameState.data))
+		battle = outcome.battle
+		hero_hp = int(outcome.hero_hp)
+		if is_instance_valid(active_battle_view):
+			await active_battle_view.play_enemy_events(Array(outcome.get("events", [])))
+		if bool(outcome.hero_defeated):
+			enemy_turn_active = false
+			GameState.data.hp = hero_hp
+			GameState.data.battle = battle
+			AudioFeedback.play("defeat")
+			last_defeat_battle = str(battle.get("battle_id", "blackreed"))
+			GameState.finish_battle(false)
+			screen = "defeat"
 			_rebuild()
 			return
+		if Array(outcome.get("events", [])).is_empty():
+			AudioFeedback.play("skill" if bool(outcome.get("boss_transition", false)) else ("enemy_hit" if int(outcome.total_hurt) > 0 else "turn"))
+	enemy_turn_active = false
+	GameState.data.hp = hero_hp
+	GameState.data.battle = battle
+	if _check_tactical_victory(battle):
+		SaveManager.save_auto()
+		_rebuild()
+		return
 	SaveManager.save_auto()
 	_rebuild()
+
+## _show_battle_legacy()（确认死代码，本次不动）还引用着这个旧名字，留一
+## 个薄封装避免编译失败；真正的行动条推进逻辑都在 _advance_battle_queue()。
+func _enemy_turn() -> void:
+	_advance_battle_queue()
 
 func _show_defeat() -> void:
 	_clear_content()

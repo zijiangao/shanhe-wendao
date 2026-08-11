@@ -64,12 +64,14 @@ func _capture() -> void:
 	main_scene._rebuild()
 	for frame in range(3):
 		await process_frame
-	var full_roster_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return (b as Button).text in ["沈羽", "林清霜", "周慕白"])
+	# 侠客独立升级系统 (0.116.0) 起，同伴的名单按钮会带上等级后缀（"林清霜
+	# Lv.1"），不再是裸名字——沈羽自己没有这个后缀，仍然精确匹配"沈羽"。
+	var full_roster_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(b: Button): return (b as Button).text == "沈羽" or (b as Button).text.begins_with("林清霜") or (b as Button).text.begins_with("周慕白"))
 	var full_roster_ok := full_roster_buttons.size() == 3
 
 	var zhou_button: Button = null
 	for b in full_roster_buttons:
-		if (b as Button).text == "周慕白":
+		if (b as Button).text.begins_with("周慕白"):
 			zhou_button = b
 	var switch_ok := false
 	if zhou_button != null:

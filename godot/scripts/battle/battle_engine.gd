@@ -11,10 +11,17 @@ const STONE_FIST_QI_COST := 5
 const NIGHT_BLADE_QI_COST := 9
 const SPEAR_QI_COST := 6
 
+## 行动条改版 (0.121.0)：身法(agility/speed)驱动的逐单位出手，取代原来
+## "每回合2点共享行动点+全体敌人批量行动"的模式。每次tick，存活单位的
+## gauge各自累加自己的speed，谁先到阈值谁行动，行动后gauge扣减阈值（不清
+## 零，保留溢出量）。battle.turn 的含义也从"共享回合数"改成"行动条轮回到
+## 沈羽的次数"，与"坚持N回合"胜利条件的语义一起换算。
+const ATB_THRESHOLD := 100
+
 static func is_victory(battle: Dictionary) -> bool:
 	if str(battle.get("objective", {}).get("type", "eliminate")) == "survive":
 		var required_rounds := maxi(1, int(battle.objective.get("rounds", 1)))
-		if int(battle.get("turn", 1)) > required_rounds:
+		if int(battle.get("turn", 0)) > required_rounds:
 			return true
 	for enemy in battle.enemies:
 		if int(enemy.hp) > 0:
@@ -25,9 +32,83 @@ static func objective_text(battle: Dictionary) -> String:
 	var objective: Dictionary = battle.get("objective", {"type": "eliminate"})
 	if str(objective.get("type", "eliminate")) == "survive":
 		var required_rounds := maxi(1, int(objective.get("rounds", 1)))
-		var completed_rounds := mini(required_rounds, maxi(0, int(battle.get("turn", 1)) - 1))
+		var completed_rounds := mini(required_rounds, maxi(0, int(battle.get("turn", 0))))
 		return "坚持回合 %d/%d（或提前击败所有对手）" % [completed_rounds, required_rounds]
 	return "击败所有敌人"
+
+## 行动条依赖的存活单位快照——全新的浅字典，不是 battle 嵌套字典的引用，
+## 可以放心被tick循环就地改动而不会误伤真正的战斗数据。advance_turn()与
+## preview_queue()共用这份逻辑，保证预览与真正推进永远一致。id依次是
+## "hero"、"ally"（若存活）、"enemy:<下标>"（数组下标当稳定id，敌人在
+## 战斗中只会hp归零、不会被移除或重排）。
+static func _living_units(battle: Dictionary) -> Array:
+	var units: Array = []
+	units.append({"id": "hero", "speed": maxi(1, int(battle.get("hero_speed", 5))), "gauge": int(battle.get("hero_gauge", 0))})
+	if battle.has("ally") and not battle.ally.is_empty() and int(battle.ally.get("hp", 0)) > 0:
+		units.append({"id": "ally", "speed": maxi(1, int(battle.ally.get("speed", 5))), "gauge": int(battle.ally.get("gauge", 0))})
+	for i in range(battle.enemies.size()):
+		var enemy: Dictionary = battle.enemies[i]
+		if int(enemy.get("hp", 0)) > 0:
+			units.append({"id": "enemy:%d" % i, "speed": maxi(1, RULES.enemy_speed(enemy)), "gauge": int(enemy.get("gauge", 0))})
+	return units
+
+## 把units（纯量表，不是真正battle里的字典）逐tick推进，直到有人的gauge
+## 达到阈值。完全同gauge时，units数组里靠前的单位优先——_living_units()
+## 天然按 hero > ally > enemy:0 > enemy:1 > ... 的顺序构建，所以这里只需
+## 要"取第一个到达阈值的最大值"，不需要额外的优先级表。
+static func _tick_until_ready(units: Array) -> Dictionary:
+	# 每个单位speed至少为1（_living_units()已用maxi(1,...)保证），阈值100，
+	# 所以最多100次tick必有人就绪——用有界循环满足GDScript"所有路径必须
+	# return"的静态检查，实际永远不会跑到循环外的兜底分支。
+	for _tick in range(ATB_THRESHOLD + 1):
+		var winner_index := -1
+		var max_gauge := -1
+		for i in range(units.size()):
+			if int(units[i].gauge) >= ATB_THRESHOLD and int(units[i].gauge) > max_gauge:
+				max_gauge = int(units[i].gauge)
+				winner_index = i
+		if winner_index >= 0:
+			return {"winner": str(units[winner_index].id), "units": units}
+		for unit in units:
+			unit.gauge = int(unit.gauge) + int(unit.speed)
+	return {"winner": str(units[0].id) if not units.is_empty() else "", "units": units}
+
+## 用真实battle的行动条字段推进一步，写回battle并把battle.active_unit设成
+## 新出手者；沈羽/同伴轮到自己时补满action_points；行动条轮回到沈羽时
+## battle.turn自增（"坚持N回合"胜利条件按此计数）。
+static func advance_turn(battle: Dictionary) -> String:
+	var result := _tick_until_ready(_living_units(battle))
+	var winner := str(result.winner)
+	for unit in result.units:
+		var id := str(unit.id)
+		var gauge := int(unit.gauge) - (ATB_THRESHOLD if id == winner else 0)
+		if id == "hero":
+			battle.hero_gauge = gauge
+		elif id == "ally":
+			battle.ally.gauge = gauge
+		elif id.begins_with("enemy:"):
+			battle.enemies[int(id.split(":")[1])].gauge = gauge
+	battle.active_unit = winner
+	if winner == "hero" or winner == "ally":
+		battle.action_points = 2
+	if winner == "hero":
+		battle.turn = int(battle.get("turn", 0)) + 1
+	return winner
+
+## 战斗屏幕上方的横板行动条只读这个纯函数的结果，不会改动真正的battle——
+## 复用与advance_turn()完全相同的tick逻辑，保证预览与实际推进永不脱节。
+static func preview_queue(battle: Dictionary, count: int = 6) -> Array:
+	var units := _living_units(battle)
+	var order: Array = []
+	while order.size() < count and not units.is_empty():
+		var result := _tick_until_ready(units)
+		var winner := str(result.winner)
+		order.append(winner)
+		units = result.units
+		for unit in units:
+			if str(unit.id) == winner:
+				unit.gauge = int(unit.gauge) - ATB_THRESHOLD
+	return order
 
 static func normal_damage_range(player: Dictionary) -> Vector2i:
 	var base := int(player.get("strength", 0)) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
@@ -90,7 +171,7 @@ static func hero_action_help(player: Dictionary) -> String:
 	return text
 
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
-	if int(battle.ap) <= 0:
+	if int(battle.action_points) <= 0:
 		return _failure("行动点已用尽，请结束回合。")
 	match action:
 		"move":
@@ -129,7 +210,7 @@ static func _move(battle: Dictionary, player: Dictionary, target: Vector2i) -> D
 		return _failure("只能移动到两格内的空地。")
 	var active_name := _active_name(battle)
 	RULES.set_active_position(battle, target)
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	battle.result = "%s施展身法，移动到新的位置。" % active_name
 	_clear_effect(battle)
 	return _success(battle, 0)
@@ -145,7 +226,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	var target_survived := int(battle.enemies[enemy_index].hp) > 0
 	if target_survived:
 		battle.enemies[enemy_index].exposure = mini(2, RULES.enemy_exposure(battle.enemies[enemy_index]) + TRAINING_RULES.attack_exposure_gain(int(player.get("bladesmanship", 0))))
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	var armor_note := "（护甲抵消%d）" % armor if armor > 0 else ""
 	var exposure_note := "，并制造1层破绽" if target_survived else ""
 	battle.result = "%s对%s造成%d点伤害%s%s。" % [_active_name(battle), battle.enemies[enemy_index].name, damage, armor_note, exposure_note]
@@ -169,7 +250,7 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
 	battle.enemies[enemy_index].exposure = 0
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	var exposure_note := "，引爆%d层破绽追加%d点" % [exposure, exposure_bonus] if exposure > 0 else ""
 	battle.result = "流云剑气无视护甲，对%s造成%d点伤害%s！" % [battle.enemies[enemy_index].name, damage, exposure_note]
 	battle.skill_flash = true
@@ -194,7 +275,7 @@ static func _blade_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
 	if int(battle.enemies[enemy_index].hp) > 0:
 		battle.enemies[enemy_index].exposure = 2
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	battle.result = "断岳刀势劈中%s，造成%d点伤害，永久削去%d点护甲并制造2层破绽！" % [battle.enemies[enemy_index].name, damage, armor_break]
 	battle.skill_flash = true
 	battle.skill_name = "断 岳 刀 法"
@@ -213,7 +294,7 @@ static func _stone_splitting_fist(battle: Dictionary, player: Dictionary, target
 	var damage := maxi(1, damage_range.x + _roll_range(rng, 0, damage_range.y - damage_range.x))
 	player.qi = int(player.qi) - fist_qi_cost
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	battle.result = "裂石拳内力贯穿，无视护甲对%s造成%d点伤害！" % [battle.enemies[enemy_index].name, damage]
 	battle.skill_flash = true
 	battle.skill_name = "裂 石 拳"
@@ -235,7 +316,7 @@ static func _night_triple_blade(battle: Dictionary, player: Dictionary, target: 
 		total_damage += hit_damage
 		_apply_enemy_damage(battle, enemy_index, target, hit_damage, "skill")
 	player.qi = int(player.qi) - NIGHT_BLADE_QI_COST
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	battle.result = "暗夜三刀连斩三次，对%s共造成%d点伤害！" % [battle.enemies[enemy_index].name, total_damage]
 	battle.skill_flash = true
 	battle.skill_name = "暗 夜 三 刀"
@@ -256,7 +337,7 @@ static func _armor_splitting_spear(battle: Dictionary, player: Dictionary, targe
 	var damage := maxi(1, damage_range.x + _roll_range(rng, 0, damage_range.y - damage_range.x) - effective_armor)
 	player.qi = int(player.qi) - SPEAR_QI_COST
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	var pierce_note := "无视护甲" if full_pierce else "护甲减半"
 	battle.result = "裂甲枪突刺而出，%s对%s造成%d点伤害！" % [pierce_note, battle.enemies[enemy_index].name, damage]
 	battle.skill_flash = true
@@ -298,7 +379,7 @@ static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i
 	if path.size() >= 2:
 		battle.ally.x = path[path.size() - 2].x
 		battle.ally.y = path[path.size() - 2].y
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	var dash_title := ally_dash_title(battle)
 	battle.result = "%s踏雪突进，以%s对%s造成%d点伤害！" % [_active_name(battle), dash_title, battle.enemies[enemy_index].name, damage]
 	battle.skill_flash = true
@@ -311,7 +392,7 @@ static func _frost_guard(battle: Dictionary, player: Dictionary) -> Dictionary:
 	battle.ally.guard = 8 + int(player.skill_mastery.frost_guard / 3)
 	battle.ally.qi = mini(int(battle.ally.max_qi), int(battle.ally.qi) + 3)
 	player.skill_mastery.frost_guard = int(player.skill_mastery.frost_guard) + 1
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	battle.result = "%s横剑凝神，获得%d点护卫并恢复3点真气。" % [_active_name(battle), battle.ally.guard]
 	_clear_effect(battle)
 	battle.skill_flash = true
@@ -330,7 +411,7 @@ static func _use_healing_powder(battle: Dictionary, player: Dictionary) -> Dicti
 	var before := int(player.hp)
 	player.hp = mini(int(player.max_hp), before + healing)
 	player.consumables.healing_powder = int(player.consumables.healing_powder) - 1
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	battle.result = "沈羽服下回春散，恢复%d点气血。" % (int(player.hp) - before)
 	_clear_effect(battle)
 	return {"ok": true, "battle": battle, "damage": 0, "healed": int(player.hp) - before, "error": ""}
@@ -349,7 +430,7 @@ static func _use_thunder_stone(battle: Dictionary, player: Dictionary, target: V
 	player.consumables.thunder_stone = int(player.consumables.thunder_stone) - 1
 	battle.enemies[enemy_index].armor = maxi(0, old_armor - 1)
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	battle.result = "霹雳石命中%s，造成%d点伤害并削去1点护甲！" % [battle.enemies[enemy_index].name, damage]
 	battle.skill_flash = true
 	battle.skill_name = "霹 雳 石"
@@ -362,30 +443,38 @@ static func _hero_brace(battle: Dictionary, player: Dictionary) -> Dictionary:
 	battle.hero_guard = guard
 	var restored := mini(20, int(player.get("qi", 0)) + 3) - int(player.get("qi", 0))
 	player.qi = int(player.get("qi", 0)) + restored
-	battle.ap = int(battle.ap) - 1
+	battle.action_points = int(battle.action_points) - 1
 	battle.result = "沈羽运气护体，获得%d点护体并恢复%d点真气。" % [guard, restored]
 	_clear_effect(battle)
 	battle.skill_flash = true
 	battle.skill_name = "运 气 护 体"
 	return _success(battle, 0)
 
-static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenerator = null, hero_armor: int = 0) -> Dictionary:
+## 敌人AI单回合处理 (行动条改版)：从原来批量处理全体敌人的 enemy_turn()
+## 收窄成只处理行动条点到的这一个敌人——逻辑本体（boss二阶段转换、断岳
+## 刀势扫荡、目标选择、攻击/移动分支）原样保留，只是作用域从"全体"收窄
+## 到"这一个"，返回形状与旧版聚合结果保持一致，main.gd/tactical_battle_
+## view.gd 的展示层不用重写。调用方（main.gd 的 _advance_battle_queue()）
+## 负责在多个敌人连续行动之间反复调用它，直到行动条轮到沈羽或同伴为止。
+static func resolve_enemy_turn(battle: Dictionary, enemy_index: int, hero_hp: int, rng: RandomNumberGenerator = null, hero_armor: int = 0) -> Dictionary:
+	var enemy: Dictionary = battle.enemies[enemy_index]
 	var total_hurt := 0
 	var special_notes: PackedStringArray = []
 	var ally_was_active := battle.has("ally") and int(battle.ally.hp) > 0
 	var boss_transition := false
-	var suppressed := false
 	var effects: Array = []
 	var events: Array = []
-	for enemy in battle.enemies:
-		if int(enemy.hp) <= 0:
-			continue
+	if int(enemy.hp) > 0:
+		enemy.actions_taken = int(enemy.get("actions_taken", 0)) + 1
 		if bool(enemy.get("boss", false)) and RULES.boss_phase(enemy) == 2 and not bool(enemy.get("phase_two_started", false)):
 			enemy.phase_two_started = true
+			# 从二阶段开始重新计数"每3次自己的行动扫荡一次"，不延续一阶段
+			# 攒下来的次数，让节奏更贴合ATB直觉。
+			enemy.actions_taken = 1
 			boss_transition = true
 			special_notes.append("%s震碎刀鞘，进入第二阶段“断岳”" % str(enemy.name))
 			events.append({"type": "technique", "actor": str(enemy.name), "text": "断 岳 · 第 二 阶 段"})
-		if RULES.is_boss_sweep_turn(battle, enemy):
+		if RULES.is_boss_sweep_turn(enemy):
 			events.append({"type": "technique", "actor": str(enemy.name), "text": "断 岳 刀 势"})
 			var sweep_damage := int(enemy.attack) + 2 + _roll_bonus(rng)
 			var sweep_hits := 0
@@ -410,58 +499,61 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 				effects.append(_damage_effect(Vector2i(int(battle.ally.x), int(battle.ally.y)), ally_hurt, blocked))
 				events.append(_hit_event(str(enemy.name), str(battle.ally.name), Vector2i(int(battle.ally.x), int(battle.ally.y)), ally_hurt, blocked, "heavy"))
 			special_notes.append("%s施展断岳刀势，命中%d人" % [str(enemy.name), sweep_hits])
-			continue
-		var target_data := select_target(battle, enemy)
-		var target: Vector2i = target_data.position
-		var target_is_ally: bool = target_data.is_ally
-		var enemy_position := Vector2i(int(enemy.x), int(enemy.y))
-		if RULES.can_enemy_attack(battle, enemy, target):
-			var heavy_attack := RULES.is_heavy_turn(battle, enemy)
-			var aimed_shot := RULES.is_aimed_shot_turn(battle, enemy)
-			if aimed_shot:
-				events.append({"type": "technique", "actor": str(enemy.name), "text": "穿 云 箭"})
-			events.append({"type": "attack", "actor": str(enemy.name), "position": enemy_position, "text": "蓄力重击" if heavy_attack else ("穿云箭" if aimed_shot else "发动攻击")})
-			var hurt := int(enemy.attack) + _roll_bonus(rng) + (4 if heavy_attack else 0) + (2 if aimed_shot else 0)
-			if heavy_attack:
-				special_notes.append("%s发动重击" % str(enemy.name))
-			if aimed_shot:
-				suppressed = true
-				special_notes.append("%s施展穿云箭，压制下回合行动" % str(enemy.name))
-			if target_is_ally:
-				hurt = maxi(0, hurt - int(battle.ally.get("armor", 0)))
-				var blocked := mini(hurt, int(battle.ally.guard))
-				hurt -= blocked
-				battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)
-				battle.ally.hp = maxi(0, int(battle.ally.hp) - hurt)
-				effects.append(_damage_effect(target, hurt, blocked))
-				events.append(_hit_event(str(enemy.name), str(battle.ally.name), target, hurt, blocked, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
-			else:
-				hurt = maxi(0, hurt - hero_armor)
-				var hero_blocked := mini(hurt, maxi(0, int(battle.get("hero_guard", 0))))
-				hurt -= hero_blocked
-				battle.hero_guard = maxi(0, int(battle.get("hero_guard", 0)) - hero_blocked)
-				hero_hp = maxi(0, hero_hp - hurt)
-				effects.append(_damage_effect(target, hurt, hero_blocked))
-				events.append(_hit_event(str(enemy.name), "沈羽", target, hurt, hero_blocked, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
-			total_hurt += hurt
 		else:
-			var path := RULES.find_path(battle, enemy_position, target, true)
-			if path.size() > 1:
-				var move_index := mini(RULES.enemy_move_steps(enemy), path.size() - 2)
-				if move_index >= 1:
-					var destination: Vector2i = path[move_index]
-					events.append({"type": "move", "actor": str(enemy.name), "from": enemy_position, "to": destination})
-					enemy.x = path[move_index].x
-					enemy.y = path[move_index].y
+			var target_data := select_target(battle, enemy)
+			var target: Vector2i = target_data.position
+			var target_is_ally: bool = target_data.is_ally
+			var enemy_position := Vector2i(int(enemy.x), int(enemy.y))
+			if RULES.can_enemy_attack(battle, enemy, target):
+				var heavy_attack := RULES.is_heavy_turn(enemy)
+				var aimed_shot := RULES.is_aimed_shot_turn(enemy)
+				if aimed_shot:
+					events.append({"type": "technique", "actor": str(enemy.name), "text": "穿 云 箭"})
+				events.append({"type": "attack", "actor": str(enemy.name), "position": enemy_position, "text": "蓄力重击" if heavy_attack else ("穿云箭" if aimed_shot else "发动攻击")})
+				var hurt := int(enemy.attack) + _roll_bonus(rng) + (4 if heavy_attack else 0) + (2 if aimed_shot else 0)
+				if heavy_attack:
+					special_notes.append("%s发动重击" % str(enemy.name))
+				if target_is_ally:
+					hurt = maxi(0, hurt - int(battle.ally.get("armor", 0)))
+					var blocked := mini(hurt, int(battle.ally.guard))
+					hurt -= blocked
+					battle.ally.guard = maxi(0, int(battle.ally.guard) - blocked)
+					battle.ally.hp = maxi(0, int(battle.ally.hp) - hurt)
+					effects.append(_damage_effect(target, hurt, blocked))
+					events.append(_hit_event(str(enemy.name), str(battle.ally.name), target, hurt, blocked, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
+				else:
+					hurt = maxi(0, hurt - hero_armor)
+					var hero_blocked := mini(hurt, maxi(0, int(battle.get("hero_guard", 0))))
+					hurt -= hero_blocked
+					battle.hero_guard = maxi(0, int(battle.get("hero_guard", 0)) - hero_blocked)
+					hero_hp = maxi(0, hero_hp - hurt)
+					effects.append(_damage_effect(target, hurt, hero_blocked))
+					events.append(_hit_event(str(enemy.name), "沈羽", target, hurt, hero_blocked, "heavy" if heavy_attack else ("normal" if aimed_shot else "light")))
+				total_hurt += hurt
+				# 弓手压制 (行动条改版)：原本是"下回合行动点降到1"，这个共享
+				# 回合概念已经不存在了，改成直接扣被命中一方自己的行动条，
+				# 相当于ATB式的减速/眩晕，只影响真正被命中的那一方。
+				if aimed_shot:
+					special_notes.append("%s施展穿云箭，拖慢%s行动" % [str(enemy.name), str(battle.ally.get("name", "同伴")) if target_is_ally else "沈羽"])
+					if target_is_ally:
+						battle.ally.gauge = maxi(0, int(battle.ally.get("gauge", 0)) - ATB_THRESHOLD / 2)
+					else:
+						battle.hero_gauge = maxi(0, int(battle.get("hero_gauge", 0)) - ATB_THRESHOLD / 2)
+			else:
+				var path := RULES.find_path(battle, enemy_position, target, true)
+				if path.size() > 1:
+					var move_index := mini(RULES.enemy_move_steps(enemy), path.size() - 2)
+					if move_index >= 1:
+						var destination: Vector2i = path[move_index]
+						events.append({"type": "move", "actor": str(enemy.name), "from": enemy_position, "to": destination})
+						enemy.x = path[move_index].x
+						enemy.y = path[move_index].y
 
 	battle.effects = effects
 	battle.effect = effects.back() if not effects.is_empty() else {}
 	var hero_defeated := hero_hp <= 0
 	var ally_defeated := ally_was_active and battle.has("ally") and int(battle.ally.hp) <= 0
 	if not hero_defeated:
-		battle.turn = int(battle.turn) + 1
-		battle.ap = 1 if suppressed else 2
-		battle.active_unit = "hero"
 		battle.result = _turn_result(total_hurt, ally_defeated, special_notes, str(battle.get("ally", {}).get("name", "同伴")))
 		battle.skill_flash = boss_transition
 		battle.skill_name = "断 岳 刀 势" if boss_transition else ""
@@ -472,7 +564,6 @@ static func enemy_turn(battle: Dictionary, hero_hp: int, rng: RandomNumberGenera
 		"ally_defeated": ally_defeated,
 		"total_hurt": total_hurt,
 		"boss_transition": boss_transition,
-		"suppressed": suppressed,
 		"events": events
 	}
 

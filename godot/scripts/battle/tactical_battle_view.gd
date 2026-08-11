@@ -32,26 +32,22 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	add_child(shade)
 	var title := Label.new()
 	title.position = Vector2(30, 14)
-	title.text = "%s  ·  %s难度  ·  第 %d 回合" % [scene_style.get("title", battle.name), DIFFICULTY_RULES.display_name(str(battle.get("difficulty", "standard"))), battle.turn]
+	# battle.turn 内部从0开始计数"沈羽轮到自己回合的次数"（配合"坚持N回合"
+	# 目标的判定逻辑），标题这里+1只是显示层面的美化——身法快的敌人可能在
+	# 沈羽第一次行动前就已出手，不加1会让开局一瞬间显示"第 0 回合"。
+	title.text = "%s  ·  %s难度  ·  第 %d 回合" % [scene_style.get("title", battle.name), DIFFICULTY_RULES.display_name(str(battle.get("difficulty", "standard"))), int(battle.turn) + 1]
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color("#f1e3c6"))
 	add_child(title)
-	var turn_banner := Label.new()
-	turn_banner.position = Vector2(660, 14)
-	turn_banner.size = Vector2(160, 36)
-	turn_banner.text = "我 方 回 合"
-	turn_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	turn_banner.add_theme_font_size_override("font_size", 18)
-	turn_banner.add_theme_color_override("font_color", Color("#d9f2e5"))
-	turn_banner.add_theme_stylebox_override("normal", _box(Color(str(scene_style.get("accent", "#27604b")))))
-	add_child(turn_banner)
 	var static_capture := bool(scene_style.get("static_capture", false))
-	if not static_capture:
-		_animate_turn_banner(turn_banner)
+	# 行动条改版：原来的"我方回合"横幅从来没真正切换过文字（敌方回合只在
+	# play_enemy_events()的全屏遮罩里短暂出现），删掉换成下面这条能精确
+	# 展示"轮到谁、接下来谁"的横板行动条。棋盘/侧边栏整体下移44px腾位置。
+	_build_turn_order_bar(battle, scene_style)
 
 	var board := GridContainer.new()
 	board.columns = 8
-	board.position = Vector2(30, 60)
+	board.position = Vector2(30, 104)
 	board.size = Vector2(790, 450)
 	board.add_theme_constant_override("h_separation", 5)
 	board.add_theme_constant_override("v_separation", 5)
@@ -78,7 +74,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		effects = [battle.effect]
 	for effect: Dictionary in effects:
 		var effect_label := Label.new()
-		effect_label.position = Vector2(34 + int(effect.x) * 99, 48 + int(effect.y) * 71)
+		effect_label.position = Vector2(34 + int(effect.x) * 99, 92 + int(effect.y) * 71)
 		effect_label.size = Vector2(86, 34)
 		effect_label.z_index = 5
 		effect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,7 +89,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 			_play_impact_feedback(effect_label, COMBAT_FEEDBACK.for_player_effect(effect))
 	if battle.has("skill_flash") and bool(battle.skill_flash):
 		var skill_name := Label.new()
-		skill_name.position = Vector2(250, 260)
+		skill_name.position = Vector2(250, 304)
 		skill_name.size = Vector2(360, 64)
 		skill_name.z_index = 6
 		skill_name.text = str(battle.get("skill_name", "流 云 剑 法"))
@@ -107,7 +103,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 			_animate_skill_name(skill_name)
 
 	var side := PanelContainer.new()
-	side.position = Vector2(840, 60)
+	side.position = Vector2(840, 104)
 	side.size = Vector2(400, 540)
 	side.add_theme_stylebox_override("panel", _box(Color("#14271ff2")))
 	add_child(side)
@@ -120,7 +116,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	var active_hp: int = int(battle.ally.hp) if is_ally_turn else int(player.hp)
 	var active_max_hp: int = int(battle.ally.max_hp) if is_ally_turn else int(player.max_hp)
 	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if is_ally_turn else "真气 %d/20 · 护体 %d" % [player.qi, int(battle.get("hero_guard", 0))]
-	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.ap, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
+	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.action_points, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
 	if str(battle.get("battle_id", "")) == "qingyun_spar":
 		status.text += "\n演武课题：%s · 兵器方向：%s" % [battle.get("name", "青云切磋"), SPARRING_RULES.discipline_name(str(battle.get("discipline", "swordsmanship")))]
 	status.add_theme_font_size_override("font_size", 17)
@@ -169,7 +165,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	for action in actions:
 		var button := _action_button(action[0], Color("#8b493b") if mode == action[1] else Color("#315f4b"))
 		button.custom_minimum_size.x = 174
-		button.disabled = int(battle.ap) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "blade_skill" and int(player.qi) < BATTLE_ENGINE.BLADE_QI_COST) or (action[1] == "frost_dash" and int(battle.ally.qi) < BATTLE_ENGINE.ally_dash_qi_cost(battle)) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp))) or (action[1] == "thunder_stone" and int(player.get("consumables", {}).get("thunder_stone", 0)) <= 0) or (action[1] == "stone_splitting_fist" and int(player.qi) < BATTLE_ENGINE.STONE_FIST_QI_COST) or (action[1] == "night_triple_blade" and int(player.qi) < BATTLE_ENGINE.NIGHT_BLADE_QI_COST) or (action[1] == "armor_splitting_spear" and int(player.qi) < BATTLE_ENGINE.SPEAR_QI_COST)
+		button.disabled = int(battle.action_points) <= 0 and action[1] != "inspect" or (action[1] == "skill" and int(player.qi) < TRAINING_RULES.cloud_qi_cost(int(player.get("swordsmanship", 0)))) or (action[1] == "blade_skill" and int(player.qi) < BATTLE_ENGINE.BLADE_QI_COST) or (action[1] == "frost_dash" and int(battle.ally.qi) < BATTLE_ENGINE.ally_dash_qi_cost(battle)) or (action[1] == "heal" and (int(player.get("consumables", {}).get("healing_powder", 0)) <= 0 or int(player.hp) >= int(player.max_hp))) or (action[1] == "thunder_stone" and int(player.get("consumables", {}).get("thunder_stone", 0)) <= 0) or (action[1] == "stone_splitting_fist" and int(player.qi) < BATTLE_ENGINE.STONE_FIST_QI_COST) or (action[1] == "night_triple_blade" and int(player.qi) < BATTLE_ENGINE.NIGHT_BLADE_QI_COST) or (action[1] == "armor_splitting_spear" and int(player.qi) < BATTLE_ENGINE.SPEAR_QI_COST)
 		button.pressed.connect(_emit_mode.bind(str(action[1])))
 		action_grid.add_child(button)
 	var end_button := _action_button("结束回合", Color("#806c4f"))
@@ -181,6 +177,63 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
 	side_box.add_child(help)
+
+## 战斗屏幕上方的横板行动条 (行动条改版)：第一格是当前正在行动的单位，
+## 后面5格是 BATTLE_ENGINE.preview_queue() 算出的"接下来谁出手"预览——
+## 这是个纯函数，不会改动真正的battle，跟真正的 advance_turn() 共用同一套
+## tick逻辑，保证预览和实际推进永远一致。
+func _build_turn_order_bar(battle: Dictionary, scene_style: Dictionary) -> void:
+	var bar := Control.new()
+	bar.position = Vector2(30, 50)
+	bar.size = Vector2(1210, 44)
+	add_child(bar)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	bar.add_child(row)
+	var chips: Array = [str(battle.get("active_unit", "hero"))]
+	chips.append_array(BATTLE_ENGINE.preview_queue(battle, 5))
+	for i in range(chips.size()):
+		row.add_child(_turn_order_chip(battle, str(chips[i]), i == 0, scene_style))
+
+func _turn_order_chip(battle: Dictionary, unit_id: String, is_current: bool, scene_style: Dictionary) -> PanelContainer:
+	var chip := PanelContainer.new()
+	chip.custom_minimum_size = Vector2(84, 40)
+	chip.add_theme_stylebox_override("panel", _box(Color(str(scene_style.get("accent", "#27604b")))) if is_current else _box(Color("#21382fcc")))
+	var chip_content := HBoxContainer.new()
+	chip_content.add_theme_constant_override("separation", 4)
+	chip.add_child(chip_content)
+	var icon := TextureRect.new()
+	icon.texture = _battle_token(_unit_token_index(battle, unit_id))
+	icon.custom_minimum_size = Vector2(30, 30)
+	icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	chip_content.add_child(icon)
+	var name_label := Label.new()
+	name_label.text = _unit_display_name(battle, unit_id)
+	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_color_override("font_color", Color("#fff4dc") if is_current else Color("#cfc8b8"))
+	chip_content.add_child(name_label)
+	return chip
+
+## 跟 main.gd 的 _battle_cell_data() 用的是同一套"敌人名字→图标下标"启发
+## 式规则（0=沈羽、4=同伴、1=boss、3=弓手、2=普通敌人），保证行动条头像
+## 和棋盘上的棋子图标不会各说各话。
+func _unit_token_index(battle: Dictionary, unit_id: String) -> int:
+	if unit_id == "hero":
+		return 0
+	if unit_id == "ally":
+		return 4
+	var enemy_index := int(unit_id.split(":")[1])
+	var enemy_name := str(battle.enemies[enemy_index].get("name", ""))
+	return 1 if enemy_name == "黑苇寨主" else (3 if "弓手" in enemy_name else 2)
+
+func _unit_display_name(battle: Dictionary, unit_id: String) -> String:
+	if unit_id == "hero":
+		return "沈羽"
+	if unit_id == "ally":
+		return str(battle.get("ally", {}).get("name", "同伴"))
+	var enemy_index := int(unit_id.split(":")[1])
+	return str(battle.enemies[enemy_index].get("name", "敌人"))
 
 func _emit_cell(x: int, y: int) -> void:
 	cell_selected.emit(x, y)
@@ -255,7 +308,7 @@ func _play_enemy_event(event: Dictionary, instant: bool = false) -> void:
 				await get_tree().create_timer(0.28).timeout
 			hit_label.queue_free()
 		"technique":
-			var technique := _presentation_label(str(event.get("text", "敌方绝技")), Vector2(370, 245), Vector2(520, 68), Color("#7d3029f2"), 28)
+			var technique := _presentation_label(str(event.get("text", "敌方绝技")), Vector2(370, 289), Vector2(520, 68), Color("#7d3029f2"), 28)
 			technique.z_index = 23
 			add_child(technique)
 			AudioFeedback.play("skill")
@@ -265,7 +318,7 @@ func _play_enemy_event(event: Dictionary, instant: bool = false) -> void:
 			technique.queue_free()
 
 func _cell_overlay_position(cell: Vector2i) -> Vector2:
-	return Vector2(30 + cell.x * 99, 71 + cell.y * 71)
+	return Vector2(30 + cell.x * 99, 115 + cell.y * 71)
 
 func _presentation_label(text_value: String, at: Vector2, dimensions: Vector2, color: Color, font_size: int) -> Label:
 	var label := Label.new()
@@ -279,13 +332,6 @@ func _presentation_label(text_value: String, at: Vector2, dimensions: Vector2, c
 	label.add_theme_stylebox_override("normal", _box(color))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
-
-func _animate_turn_banner(banner: Control) -> void:
-	banner.modulate.a = 0.0
-	banner.position.y -= 8.0
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(banner, "modulate:a", 1.0, 0.16)
-	tween.tween_property(banner, "position:y", banner.position.y + 8.0, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _play_impact_feedback(label: Control, feedback: Dictionary) -> void:
 	label.pivot_offset = label.size * 0.5

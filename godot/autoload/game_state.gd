@@ -3,6 +3,7 @@ extends Node
 const DIFFICULTY_RULES := preload("res://scripts/battle/difficulty_rules.gd")
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const ENCOUNTER_RULES := preload("res://scripts/battle/encounter_rules.gd")
+const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
 const REWARD_RULES := preload("res://scripts/progression/reward_rules.gd")
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const TRAINING_EVENT_RULES := preload("res://scripts/progression/training_event_rules.gd")
@@ -20,7 +21,7 @@ signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 10
+const SAVE_VERSION := 11
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -318,21 +319,24 @@ func start_blackreed_battle() -> bool:
 		"height": 6,
 		"player_x": 1,
 		"player_y": 3,
-		"ap": 2,
+		"action_points": 2,
 		"active_unit": "hero",
 		"hero_guard": 0,
-		"turn": 1,
+		"hero_speed": int(data.agility),
+		"hero_gauge": 0,
+		"turn": 0,
 		"objective": {"type": "eliminate"},
-		"result": "寨主率两名喽啰封住渡口。每回合有两个行动点。",
+		"result": "寨主率两名喽啰封住渡口。行动条按身法决定出手顺序。",
 		"blocked": [[3, 1], [3, 2], [5, 4]],
 		"enemies": [
-			{"name": "黑苇寨主", "role": "brute", "hp": 34, "max_hp": 34, "attack": 7, "range": 1, "x": 6, "y": 2},
-			{"name": "持刀喽啰", "role": "melee", "hp": 16, "max_hp": 16, "attack": 4, "range": 1, "x": 6, "y": 4},
-			{"name": "弓手喽啰", "role": "archer", "hp": 13, "max_hp": 13, "attack": 4, "range": 4, "x": 5, "y": 0}
+			{"name": "黑苇寨主", "role": "brute", "hp": 34, "max_hp": 34, "attack": 7, "range": 1, "x": 6, "y": 2, "speed": 4, "gauge": 0},
+			{"name": "持刀喽啰", "role": "melee", "hp": 16, "max_hp": 16, "attack": 4, "range": 1, "x": 6, "y": 4, "speed": 5, "gauge": 0},
+			{"name": "弓手喽啰", "role": "archer", "hp": 13, "max_hp": 13, "attack": 4, "range": 4, "x": 5, "y": 0, "speed": 6, "gauge": 0}
 		]
 	}
 	data.battle = ENCOUNTER_RULES.prepare_blackreed(data.battle, data.investigations)
 	_apply_current_difficulty()
+	BATTLE_ENGINE.advance_turn(data.battle)
 	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
@@ -347,7 +351,8 @@ func start_qingyun_spar_battle(discipline: String = "swordsmanship") -> bool:
 	data.qi = 20
 	data.battle = {
 		"battle_id": "qingyun_spar", "rotation_id": rotation.id, "discipline": discipline, "name": "青云门 · %s" % rotation.name, "width": 8, "height": 6,
-		"player_x": 1, "player_y": 3, "ap": 2, "active_unit": "hero", "hero_guard": 0, "turn": 1,
+		"player_x": 1, "player_y": 3, "action_points": 2, "active_unit": "hero", "hero_guard": 0,
+		"hero_speed": int(data.agility), "hero_gauge": 0, "turn": 0,
 		"objective": {"type": "eliminate"},
 		"result": rotation.result,
 		"blocked": rotation.blocked,
@@ -359,6 +364,7 @@ func start_qingyun_spar_battle(discipline: String = "swordsmanship") -> bool:
 	if not disciple_ally.is_empty():
 		data.battle.ally = disciple_ally
 	_apply_current_difficulty()
+	BATTLE_ENGINE.advance_turn(data.battle)
 	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
@@ -375,23 +381,26 @@ func start_huashan_trial_battle() -> bool:
 		"height": 6,
 		"player_x": 1,
 		"player_y": 3,
-		"ap": 2,
+		"action_points": 2,
 		"active_unit": "hero",
 		"hero_guard": 0,
-		"turn": 1,
+		"hero_speed": int(data.agility),
+		"hero_gauge": 0,
+		"turn": 0,
 		"objective": {"type": "survive", "rounds": 4},
-		"result": "林清霜与你并肩登台。她会在每次行动后自动支援攻击。",
+		"result": "林清霜与你并肩登台，行动条按身法决定出手顺序。",
 		"blocked": [[3, 1], [4, 4]],
 		"ally": {"name": "林清霜", "hp": 30, "max_hp": 30, "qi": 15, "max_qi": 15, "attack": 5, "guard": 0, "x": 1, "y": 4},
 		"enemies": [
-			{"name": "华山剑侍", "role": "duelist", "hp": 22, "max_hp": 22, "attack": 5, "range": 1, "x": 6, "y": 1},
-			{"name": "守擂弟子", "role": "melee", "hp": 25, "max_hp": 25, "attack": 6, "range": 1, "x": 6, "y": 4}
+			{"name": "华山剑侍", "role": "duelist", "hp": 22, "max_hp": 22, "attack": 5, "range": 1, "x": 6, "y": 1, "speed": 7, "gauge": 0},
+			{"name": "守擂弟子", "role": "melee", "hp": 25, "max_hp": 25, "attack": 6, "range": 1, "x": 6, "y": 4, "speed": 5, "gauge": 0}
 		]
 	}
 	# 同伴换装备/换武学 (0.113.0) -- 沈羽给林清霜配的兵器/护具/招式同样在
 	# 这场主线战斗里生效，跟客栈弟子共用同一套 CompanionRules 加成逻辑。
 	data.battle.ally = COMPANION_RULES.apply_gear_and_move(data, "lin_qingshuang", data.battle.ally)
 	_apply_current_difficulty()
+	BATTLE_ENGINE.advance_turn(data.battle)
 	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
@@ -410,23 +419,26 @@ func start_final_battle() -> bool:
 		"height": 6,
 		"player_x": 1,
 		"player_y": 3,
-		"ap": 2,
+		"action_points": 2,
 		"active_unit": "hero",
 		"hero_guard": 0,
-		"turn": 1,
+		"hero_speed": int(data.agility),
+		"hero_gauge": 0,
+		"turn": 0,
 		"objective": {"type": "eliminate"},
 		"result": "厉无咎率玄甲亲卫守住武库天门。林清霜并肩出剑，苏晚晴则在阵外截断援兵。" if trusted_su else "厉无咎率玄甲亲卫守住武库天门。林清霜与你并肩迎敌。",
 		"blocked": [[3, 1], [3, 4], [5, 2]],
 		"ally": {"name": "林清霜", "hp": 34, "max_hp": 34, "qi": 15, "max_qi": 15, "attack": 6, "guard": 0, "x": 1, "y": 4},
 		"enemies": [
-			{"name": "厉无咎", "role": "brute", "boss": true, "hp": 46, "max_hp": 46, "attack": 8, "range": 1, "x": 6, "y": 2},
-			{"name": "玄甲亲卫", "role": "melee", "hp": 22, "max_hp": 22, "attack": 6, "range": 1, "x": 6, "y": 4},
-			{"name": "武库弩手", "role": "archer", "hp": 12 if trusted_su else 17, "max_hp": 12 if trusted_su else 17, "attack": 5, "range": 4, "x": 5, "y": 0}
+			{"name": "厉无咎", "role": "brute", "boss": true, "hp": 46, "max_hp": 46, "attack": 8, "range": 1, "x": 6, "y": 2, "speed": 4, "gauge": 0},
+			{"name": "玄甲亲卫", "role": "melee", "hp": 22, "max_hp": 22, "attack": 6, "range": 1, "x": 6, "y": 4, "speed": 5, "gauge": 0},
+			{"name": "武库弩手", "role": "archer", "hp": 12 if trusted_su else 17, "max_hp": 12 if trusted_su else 17, "attack": 5, "range": 4, "x": 5, "y": 0, "speed": 6, "gauge": 0}
 		]
 	}
 	# 同伴换装备/换武学 (0.113.0) -- 同上，覆盖终战里的林清霜。
 	data.battle.ally = COMPANION_RULES.apply_gear_and_move(data, "lin_qingshuang", data.battle.ally)
 	_apply_current_difficulty()
+	BATTLE_ENGINE.advance_turn(data.battle)
 	capture_battle_checkpoint()
 	battle_started.emit()
 	state_changed.emit()
@@ -798,7 +810,7 @@ func _valid_battle(value: Variant) -> bool:
 	var battle: Dictionary = value
 	if battle.is_empty():
 		return true
-	for key in ["width", "height", "player_x", "player_y", "ap", "turn", "enemies", "blocked"]:
+	for key in ["width", "height", "player_x", "player_y", "action_points", "turn", "enemies", "blocked"]:
 		if not battle.has(key):
 			return false
 	var width := int(battle.width)

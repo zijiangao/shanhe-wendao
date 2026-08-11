@@ -9,7 +9,9 @@ const BLACKREED_PATROL := {
 	"attack": 4,
 	"range": 1,
 	"x": 5,
-	"y": 5
+	"y": 5,
+	"speed": 7,
+	"gauge": 0
 }
 
 static func prepare_blackreed(battle: Dictionary, investigations: Array) -> Dictionary:

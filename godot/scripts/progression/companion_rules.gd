@@ -261,6 +261,11 @@ static func apply_gear_and_move(state: Dictionary, id: String, base_ally: Dictio
 	ally.max_hp = int(ally.get("max_hp", 0)) + level_hp_bonus
 	ally.move_id = companion_move(state, id)
 	ally.lightness_bonus = companion_lightness_move_bonus(state, companion_lightness(state, id))
+	# 行动条改版：同伴出手速度直接用目录里一直没被读取的 agility 字段（加
+	# 上分派任务·修炼带来的身法成长），跟人物界面同伴信息卡"身法"那一栏
+	# 显示的完全是同一个数值，不会出现面板和实际生效数值不一致的割裂。
+	ally.speed = int(companion_entry(id).get("agility", 5)) + WEEKLY_TASK_RULES.companion_attribute_growth(state, id, "agility")
+	ally.gauge = 0
 	return ally
 
 ## 侠客升级 (0.116.0)：人物界面展示用，四维属性 = 目录基础值 + 升级累积成长。

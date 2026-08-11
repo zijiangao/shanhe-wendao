@@ -148,12 +148,12 @@ static func enemy_preview(battle: Dictionary) -> String:
 		var target_name: String = target_data.name
 		var can_attack := can_enemy_attack(battle, enemy, target)
 		var description := "向%s接近" % target_name
-		if is_boss_sweep_turn(battle, enemy):
+		if is_boss_sweep_turn(enemy):
 			description = "施展断岳刀势（周身两格，立即撤离）"
-		elif is_aimed_shot_turn(battle, enemy) and can_attack:
-			description = "穿云箭瞄准%s（命中后下回合少1行动点）" % target_name
+		elif is_aimed_shot_turn(enemy) and can_attack:
+			description = "穿云箭瞄准%s（命中后拖慢其行动条）" % target_name
 		elif can_attack:
-			if is_heavy_turn(battle, enemy):
+			if is_heavy_turn(enemy):
 				description = "蓄力重击%s" % target_name
 			elif int(enemy.get("range", 1)) > 1:
 				description = "准备远程攻击%s" % target_name
@@ -167,26 +167,29 @@ static func enemy_preview(battle: Dictionary) -> String:
 		lines.append("· %s：%s" % [enemy.name, description])
 	return "\n".join(lines)
 
-static func is_heavy_turn(battle: Dictionary, enemy: Dictionary) -> bool:
-	return str(enemy.get("role", "melee")) == "brute" and int(battle.get("turn", 1)) % 2 == 0
+## 行动条改版：节奏判断从"共享回合数取模"改成"这个敌人自己的行动次数
+## 取模"（actions_taken 由 BattleEngine.resolve_enemy_turn() 在真正行动
+## 前自增），每个敌人按自己的节奏走，不再依赖全局共享的battle.turn。
+static func is_heavy_turn(enemy: Dictionary) -> bool:
+	return str(enemy.get("role", "melee")) == "brute" and int(enemy.get("actions_taken", 0)) % 2 == 0
 
-static func is_aimed_shot_turn(battle: Dictionary, enemy: Dictionary) -> bool:
-	return str(enemy.get("role", "melee")) == "archer" and int(battle.get("turn", 1)) % 3 == 0
+static func is_aimed_shot_turn(enemy: Dictionary) -> bool:
+	return str(enemy.get("role", "melee")) == "archer" and int(enemy.get("actions_taken", 0)) % 3 == 0
 
 static func boss_phase(enemy: Dictionary) -> int:
 	if not bool(enemy.get("boss", false)):
 		return 1
 	return 2 if int(enemy.get("hp", 1)) * 2 <= int(enemy.get("max_hp", enemy.get("hp", 1))) else 1
 
-static func is_boss_sweep_turn(battle: Dictionary, enemy: Dictionary) -> bool:
-	return boss_phase(enemy) == 2 and int(battle.get("turn", 1)) % 3 == 0
+static func is_boss_sweep_turn(enemy: Dictionary) -> bool:
+	return boss_phase(enemy) == 2 and int(enemy.get("actions_taken", 0)) % 3 == 0
 
 static func in_boss_sweep_range(enemy: Dictionary, target: Vector2i) -> bool:
 	return absi(int(enemy.x) - target.x) + absi(int(enemy.y) - target.y) <= 2
 
 static func is_boss_sweep_cell(battle: Dictionary, cell: Vector2i) -> bool:
 	for enemy in battle.get("enemies", []):
-		if int(enemy.get("hp", 0)) > 0 and is_boss_sweep_turn(battle, enemy) and in_boss_sweep_range(enemy, cell):
+		if int(enemy.get("hp", 0)) > 0 and is_boss_sweep_turn(enemy) and in_boss_sweep_range(enemy, cell):
 			return true
 	return false
 
@@ -194,3 +197,8 @@ static func enemy_move_steps(enemy: Dictionary) -> int:
 	if str(enemy.get("role", "melee")) == "duelist" or boss_phase(enemy) == 2:
 		return 2
 	return 1
+
+## ATB身法数值 (行动条改版)：读取敌人自己标注的 speed 字段，boss二阶段
+## 额外+2，跟 enemy_move_steps() 已有的"二阶段更快"叙事保持一致。
+static func enemy_speed(enemy: Dictionary) -> int:
+	return int(enemy.get("speed", 5)) + (2 if boss_phase(enemy) == 2 else 0)
