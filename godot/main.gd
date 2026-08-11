@@ -58,6 +58,11 @@ var library_category: String = "fist"
 var character_roster_selection: String = "hero"
 ## 同伴换装备/换武学 (0.113.0) -- 记录当前正在为哪位同伴选择装备/武学。
 var companion_gear_target: String = ""
+## 背包网格改版 (0.120.0) -- {} 表示未选中；否则 {"category": "weapon"/
+## "armor"/"move"/"internal"/"lightness"/"good"/"specimen", "id": String}。
+## 只在从其他页面切入背包时重置 (见 _switch_screen())，背包内部装备操作
+## 触发的 _show_backpack() 不清空它，这样装备后仍停留在同一格看最新状态。
+var backpack_selected: Dictionary = {}
 var last_rewards: Dictionary = {}
 var dialogue_event: String = ""
 var dialogue_index: int = 0
@@ -758,6 +763,10 @@ func _switch_screen(next: String) -> void:
 		GameState.new_game()
 	if next in NAVIGATION_RULES.OVERLAY_SCREENS:
 		previous_screen = screen
+	# 背包网格改版 (0.120.0)：只在真正切入背包时重置选中项，背包内部的装备
+	# 操作走 _show_backpack() 直接刷新，不经过这里，选中格因此不会被打断。
+	if next == "backpack" and screen != "backpack":
+		backpack_selected = {}
 	screen = next
 	_rebuild()
 
@@ -1934,7 +1943,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.119.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.120.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2522,13 +2531,20 @@ func _show_companion_lightness(id: String) -> void:
 	screen = "choice"
 	_rebuild()
 
+## 背包网格改版 (0.120.0)：把原先"每件物品一整行文字"的竖排列表改成图标
+## 网格 + 右侧详情面板——原因有二：其一，_backpack_row() 的文字 Label
+## 从未设置过自动换行，0.119.0 给每件装备加的"拥有 N 件 · 已被同伴装备 N
+## 件"和特殊材料行拼上的完整描述文字，在固定52px行高下很容易被截断/挤变形；
+## 其二，用户直接要求"改成网格式"，更接近常见RPG背包的样子。详情面板一次
+## 只展示"当前选中"的那一件，因此可以放心用完整长文字+自动换行，不再需要
+## 把所有信息硬塞进一行。
 func _show_backpack() -> void:
 	_clear_content()
 	var backdrop := ColorRect.new()
 	backdrop.color = Color("#d8cfbd")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(backdrop)
-	var panel := UI_THEME.framed_panel(content, Vector2(185, 28), Vector2(910, 520), UI_THEME.PARCHMENT_TINT, 10)
+	var panel := UI_THEME.framed_panel(content, Vector2(155, 28), Vector2(970, 520), UI_THEME.PARCHMENT_TINT, 14)
 	var title := Label.new()
 	title.text = "背 囊"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2536,81 +2552,88 @@ func _show_backpack() -> void:
 	title.add_theme_color_override("font_color", Color("#193128"))
 	panel.add_child(title)
 	var hint := Label.new()
-	hint.text = "已购置的装备可在此直接更换；购置或出售仍需前往洛阳城西市。"
+	hint.text = "点选道具查看详情；已购置的装备可在此直接更换，购置或出售仍需前往洛阳城西市。"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_color_override("font_color", Color("#526159"))
 	panel.add_child(hint)
+
+	var equipped_weapon := str(GameState.data.get("equipped_weapon", ""))
+	var equipped_armor := str(GameState.data.get("equipped_armor", ""))
+	if backpack_selected.is_empty():
+		backpack_selected = {"category": "weapon", "id": equipped_weapon}
+
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 20)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(body)
+
 	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(scroll)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	body.add_child(scroll)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 8)
 	scroll.add_child(list)
 
-	list.add_child(_backpack_section_title("已装备"))
-	var equipped_weapon := str(GameState.data.get("equipped_weapon", ""))
-	var equipped_armor := str(GameState.data.get("equipped_armor", ""))
-	list.add_child(_backpack_equipment_row("weapon", equipped_weapon, true))
-	list.add_child(_backpack_equipment_row("armor", equipped_armor, true))
+	_backpack_grid_section(list, "已装备", [
+		{"category": "weapon", "id": equipped_weapon, "equipped": true},
+		{"category": "armor", "id": equipped_armor, "equipped": true},
+	])
 
 	var owned_weapons: Dictionary = GameState.data.get("owned_weapons", {})
 	var unequipped_weapons: Array = owned_weapons.keys().filter(func(id): return str(id) != equipped_weapon)
-	if not unequipped_weapons.is_empty():
-		list.add_child(_backpack_section_title("其余兵刃"))
-		for id in unequipped_weapons:
-			list.add_child(_backpack_equipment_row("weapon", str(id), false))
+	_backpack_grid_section(list, "其余兵刃", unequipped_weapons.map(func(id): return {"category": "weapon", "id": str(id), "equipped": false}))
 
 	var owned_armors: Dictionary = GameState.data.get("owned_armors", {})
 	var unequipped_armors: Array = owned_armors.keys().filter(func(id): return str(id) != equipped_armor)
-	if not unequipped_armors.is_empty():
-		list.add_child(_backpack_section_title("其余护具"))
-		for id in unequipped_armors:
-			list.add_child(_backpack_equipment_row("armor", str(id), false))
+	_backpack_grid_section(list, "其余护具", unequipped_armors.map(func(id): return {"category": "armor", "id": str(id), "equipped": false}))
 
 	var learned_moves: Array = GameState.data.get("learned_moves", [])
-	if not learned_moves.is_empty():
-		list.add_child(_backpack_section_title("已习招式（战斗中皆可使用）"))
-		for id in learned_moves:
-			list.add_child(_backpack_wuxue_row("move", str(id), true))
+	_backpack_grid_section(list, "已习招式（战斗中皆可使用）", learned_moves.map(func(id): return {"category": "move", "id": str(id), "equipped": true}))
 
 	var equipped_internal := str(GameState.data.get("equipped_internal", ""))
 	var equipped_lightness := str(GameState.data.get("equipped_lightness", ""))
-	if equipped_internal != "" or equipped_lightness != "":
-		list.add_child(_backpack_section_title("已修炼内功轻功"))
-		if equipped_internal != "":
-			list.add_child(_backpack_wuxue_row("internal", equipped_internal, true))
-		if equipped_lightness != "":
-			list.add_child(_backpack_wuxue_row("lightness", equipped_lightness, true))
+	var current_wuxue: Array = []
+	if equipped_internal != "":
+		current_wuxue.append({"category": "internal", "id": equipped_internal, "equipped": true})
+	if equipped_lightness != "":
+		current_wuxue.append({"category": "lightness", "id": equipped_lightness, "equipped": true})
+	_backpack_grid_section(list, "已修炼内功轻功", current_wuxue)
 
 	var unequipped_internal: Array = Array(GameState.data.get("learned_internal", [])).filter(func(id): return str(id) != equipped_internal)
 	var unequipped_lightness: Array = Array(GameState.data.get("learned_lightness", [])).filter(func(id): return str(id) != equipped_lightness)
-	if not unequipped_internal.is_empty() or not unequipped_lightness.is_empty():
-		list.add_child(_backpack_section_title("其余已习内功轻功"))
-		for id in unequipped_internal:
-			list.add_child(_backpack_wuxue_row("internal", str(id), false))
-		for id in unequipped_lightness:
-			list.add_child(_backpack_wuxue_row("lightness", str(id), false))
+	var remaining_wuxue: Array = unequipped_internal.map(func(id): return {"category": "internal", "id": str(id), "equipped": false})
+	remaining_wuxue.append_array(unequipped_lightness.map(func(id): return {"category": "lightness", "id": str(id), "equipped": false}))
+	_backpack_grid_section(list, "其余已习内功轻功", remaining_wuxue)
 
-	list.add_child(_backpack_section_title("材料与药品"))
+	# 材料与药品：过滤掉数量为0的项目，跟其余每个分区一样"没有就隐藏"——
+	# 此前这里固定显示四行，是全屏幕唯一一个不看数量、恒定可见的分区。
+	var goods_items: Array = []
 	for good_id in ["herbs", "ore", "healing_powder", "thunder_stone"]:
-		list.add_child(_backpack_goods_row(good_id))
+		var count := int(GameState.data.materials.get(good_id, 0)) if good_id in ["herbs", "ore"] else int(GameState.data.consumables.get(good_id, 0))
+		if count > 0:
+			goods_items.append({"category": "good", "id": good_id, "equipped": false})
+	_backpack_grid_section(list, "材料与药品", goods_items)
 
 	# 特殊材料 (0.119.0)：药谱/矿谱里已发现的稀有品种此前只在演武场/后山的
-	# 采集结果卡与炼药坊/锻造坊的配方说明里露面，背包本身从未展示过——
-	# 用户明确要求"特殊材料也需要有数量，在背包里显示"，这里补上。
+	# 采集结果卡与炼药坊/锻造坊的配方说明里露面，背包本身从未展示过。
 	var herbarium: Dictionary = GameState.data.get("herbarium", {})
 	var mineralogy: Dictionary = GameState.data.get("mineralogy", {})
 	var discovered_specimens: Array = HERBARIUM_RULES.SPECIMENS.keys().filter(func(id): return int(herbarium.get(id, 0)) > 0)
 	discovered_specimens.append_array(MINERALOGY_RULES.SPECIMENS.keys().filter(func(id): return int(mineralogy.get(id, 0)) > 0))
-	if not discovered_specimens.is_empty():
-		list.add_child(_backpack_section_title("特殊材料（药谱/矿谱）"))
-		for specimen_id in discovered_specimens:
-			list.add_child(_backpack_specimen_row(str(specimen_id)))
+	_backpack_grid_section(list, "特殊材料（药谱/矿谱）", discovered_specimens.map(func(id): return {"category": "specimen", "id": str(id), "equipped": false}))
 
-	var bottom_spacer2 := Control.new()
-	bottom_spacer2.custom_minimum_size.y = 16
-	list.add_child(bottom_spacer2)
+	var bottom_spacer := Control.new()
+	bottom_spacer.custom_minimum_size.y = 16
+	list.add_child(bottom_spacer)
+
+	var detail_panel := PanelContainer.new()
+	detail_panel.custom_minimum_size.x = 280
+	detail_panel.add_theme_stylebox_override("panel", _box(Color("#223a30")))
+	body.add_child(detail_panel)
+	_refresh_backpack_detail_panel(detail_panel)
 
 func _backpack_section_title(text_value: String) -> Label:
 	var label := Label.new()
@@ -2619,38 +2642,171 @@ func _backpack_section_title(text_value: String) -> Label:
 	label.add_theme_color_override("font_color", Color("#193128"))
 	return label
 
-## category is "weapon" or "armor"; id is a ShopRules catalog key or "" for
-## bare-handed/unarmored. equipped controls the highlighted row color and the
-## "【当前装备】" prefix -- callers pass true for the two fixed equipped-slot
-## rows and false for every other owned-but-inactive item, which get their
-## own "装备" button so switching gear doesn't require a trip to 西市.
-## 数量制 (0.119.0)：每行额外显示拥有份数与"几人正穿着/尚余几份"，装备
-## 按钮在所有份数都被同伴占满时禁用（沈羽自己已经穿着的那件不受影响）。
-func _backpack_equipment_row(category: String, id: String, equipped: bool) -> PanelContainer:
-	var catalog: Dictionary = SHOP_RULES.WEAPONS if category == "weapon" else SHOP_RULES.ARMORS
-	var owned_field := "owned_weapons" if category == "weapon" else "owned_armors"
-	var bonus_key := "attack_bonus" if category == "weapon" else "defense_bonus"
-	var bonus_label := "攻击" if category == "weapon" else "防御"
-	var item: Dictionary = catalog.get(id, {})
-	if item.is_empty() and id != "":
-		item = CRAFTING_RULES.RECIPES.get(id, {})
-	var fallback_name := "赤手" if category == "weapon" else "无护具"
-	var name_text := str(item.get("item_name", item.get("title", fallback_name))) if id != "" else fallback_name
-	var primary := ("【当前装备】" + name_text) if equipped else name_text
-	var owned_count := EQUIPMENT_RULES.owned_count(GameState.data, owned_field, id) if id != "" else 0
-	var claimed_count := EQUIPMENT_RULES.claimed_count(GameState.data, category, id, "hero") if id != "" else 0
-	var secondary := "%s +%d · 拥有 %d 件 · 已被同伴装备 %d 件" % [bonus_label, int(item.get(bonus_key, 0)), owned_count, claimed_count] if id != "" else "尚未购置"
-	var panel_color := Color("#294438") if equipped else Color("#4b514d")
-	var text_color := Color("#f2dfb3") if equipped else Color("#dbe0d9")
-	var action_button: Button = null
-	if not equipped and id != "":
-		var available := EQUIPMENT_RULES.is_available_for(GameState.data, owned_field, category, id, "hero")
-		action_button = UI_THEME.action_button("装备" if available else "均已被占用", Color("#294438"))
-		action_button.custom_minimum_size = Vector2(96, 44)
-		action_button.add_theme_font_size_override("font_size", 16)
-		action_button.disabled = not available
-		action_button.pressed.connect(_equip_from_backpack.bind(category, id))
-	return _backpack_row(UI_THEME.item_icon(id) if id != "" else null, primary, secondary, panel_color, text_color, action_button)
+## 往 list 里追加一个分区标题+图标网格；items 为空时整个分区（连标题也
+## 不例外）都不会出现——这是"没有就隐藏"对全部分区（包括材料与药品）
+## 统一生效的唯一落点。items 是 [{"category","id","equipped"}, ...]。
+func _backpack_grid_section(list: VBoxContainer, title_text: String, items: Array) -> void:
+	if items.is_empty():
+		return
+	list.add_child(_backpack_section_title(title_text))
+	var grid := GridContainer.new()
+	grid.columns = 5
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	list.add_child(grid)
+	for entry in items:
+		grid.add_child(_backpack_grid_cell(str(entry.category), str(entry.id), bool(entry.equipped)))
+
+const BACKPACK_CELL_SIZE := Vector2(104, 100)
+
+## 单一的物品信息查询函数——网格格子和详情面板都只从这里取数据，不各自
+## 重复目录查询逻辑。category 是 "weapon"/"armor"/"move"/"internal"/
+## "lightness"/"good"/"specimen"。返回字段见下方各分支。
+func _backpack_describe_item(category: String, id: String, equipped: bool) -> Dictionary:
+	match category:
+		"weapon", "armor":
+			var catalog: Dictionary = SHOP_RULES.WEAPONS if category == "weapon" else SHOP_RULES.ARMORS
+			var owned_field := "owned_weapons" if category == "weapon" else "owned_armors"
+			var bonus_key := "attack_bonus" if category == "weapon" else "defense_bonus"
+			var bonus_label := "攻击" if category == "weapon" else "防御"
+			var item: Dictionary = catalog.get(id, {})
+			if item.is_empty() and id != "":
+				item = CRAFTING_RULES.RECIPES.get(id, {})
+			var fallback_name := "赤手" if category == "weapon" else "无护具"
+			var fallback_desc := "赤手迎敌，未装备任何兵器。" if category == "weapon" else "未着护具，没有防御加成。"
+			var name_text := str(item.get("item_name", item.get("title", fallback_name))) if id != "" else fallback_name
+			var bonus := int(item.get(bonus_key, 0))
+			var owned_count := EQUIPMENT_RULES.owned_count(GameState.data, owned_field, id) if id != "" else -1
+			var claimed_count := EQUIPMENT_RULES.claimed_count(GameState.data, category, id, "hero") if id != "" else -1
+			var available := true if id == "" else EQUIPMENT_RULES.is_available_for(GameState.data, owned_field, category, id, "hero")
+			var detail_text := str(item.get("description", fallback_desc))
+			if id != "":
+				detail_text += "\n%s +%d\n拥有 %d 件 · 已被同伴装备 %d 件" % [bonus_label, bonus, owned_count, claimed_count]
+			return {
+				"name": name_text, "icon": UI_THEME.item_icon(id) if id != "" else null,
+				"equipped": equipped, "available": available,
+				"owned_count": owned_count, "claimed_count": claimed_count, "count": -1, "level": -1,
+				"cell_badge": ("+%d ×%d" % [bonus, owned_count] if owned_count > 1 else "+%d" % bonus) if id != "" else "",
+				"detail_text": detail_text,
+				"action_label": "" if (equipped or id == "") else ("装备" if available else "均已被占用"),
+				"action_enabled": available,
+			}
+		"move", "internal", "lightness":
+			var catalog: Dictionary = WUXUE_RULES.MOVES if category == "move" else (WUXUE_RULES.INTERNAL if category == "internal" else WUXUE_RULES.LIGHTNESS)
+			var item: Dictionary = catalog.get(id, {})
+			var level: int = WUXUE_RULES.move_level(GameState.data, id) if category == "move" else (WUXUE_RULES.internal_level(GameState.data, id) if category == "internal" else WUXUE_RULES.lightness_level(GameState.data, id))
+			return {
+				"name": "%s Lv.%d" % [str(item.get("title", id)), level], "icon": UI_THEME.item_icon(id),
+				"equipped": equipped, "available": true,
+				"owned_count": -1, "claimed_count": -1, "count": -1, "level": level,
+				"cell_badge": "Lv.%d" % level,
+				"detail_text": str(item.get("description", "")),
+				"action_label": "" if (equipped or category == "move") else "装备",
+				"action_enabled": true,
+			}
+		"good":
+			var item: Dictionary = SHOP_RULES.GOODS.get(id, {})
+			var count := int(GameState.data.materials.get(id, 0)) if id in ["herbs", "ore"] else int(GameState.data.consumables.get(id, 0))
+			return {
+				"name": str(item.get("title", id)), "icon": UI_THEME.item_icon(id),
+				"equipped": false, "available": true,
+				"owned_count": -1, "claimed_count": -1, "count": count, "level": -1,
+				"cell_badge": "×%d" % count,
+				"detail_text": "携带 %d 份。购置/出售仍需前往洛阳城西市。" % count,
+				"action_label": "", "action_enabled": false,
+			}
+		_: # "specimen"
+			var is_herb := HERBARIUM_RULES.SPECIMENS.has(id)
+			var catalog: Dictionary = HERBARIUM_RULES.SPECIMENS if is_herb else MINERALOGY_RULES.SPECIMENS
+			var collection: Dictionary = GameState.data.get("herbarium", {}) if is_herb else GameState.data.get("mineralogy", {})
+			var item: Dictionary = catalog.get(id, {})
+			var count := int(collection.get(id, 0))
+			return {
+				"name": "%s（%s）" % [str(item.get("name", id)), str(item.get("rarity", ""))], "icon": UI_THEME.item_icon(id),
+				"equipped": false, "available": true,
+				"owned_count": -1, "claimed_count": -1, "count": count, "level": -1,
+				"cell_badge": "×%d" % count,
+				"detail_text": "%s\n携带 %d 份。" % [str(item.get("description", "")), count],
+				"action_label": "", "action_enabled": false,
+			}
+
+## 从 GameState 现读某物品是否"当前装备"，跟格子构建时传入的 equipped
+## 参数分开算——装备后详情面板要立刻反映最新状态，而不是沿用点击那一刻
+## 早已过期的旧状态。
+func _backpack_item_is_equipped(category: String, id: String) -> bool:
+	match category:
+		"weapon": return str(GameState.data.get("equipped_weapon", "")) == id
+		"armor": return str(GameState.data.get("equipped_armor", "")) == id
+		"internal": return str(GameState.data.get("equipped_internal", "")) == id
+		"lightness": return str(GameState.data.get("equipped_lightness", "")) == id
+		_: return true
+
+## 固定尺寸的图标格子，复用战棋网格 (~3130行) 已验证的写法：Button 原生带
+## icon/text，按状态换 stylebox，pressed 绑定选中。点击只选中/刷新详情面板，
+## 不会直接装备——装备是详情面板里那个明确的按钮，避免误触网格换装。
+func _backpack_grid_cell(category: String, id: String, equipped: bool) -> Button:
+	var info := _backpack_describe_item(category, id, equipped)
+	var cell := Button.new()
+	cell.name = "backpack_cell_%s_%s" % [category, id if id != "" else "none"]
+	cell.custom_minimum_size = BACKPACK_CELL_SIZE
+	cell.text = "%s\n%s" % [str(info.name), str(info.cell_badge)] if str(info.cell_badge) != "" else str(info.name)
+	cell.clip_text = true
+	cell.icon = info.icon
+	cell.expand_icon = info.icon != null
+	if info.icon != null:
+		cell.add_theme_constant_override("icon_max_width", 48)
+	cell.add_theme_font_size_override("font_size", 14)
+	var selected := str(backpack_selected.get("category", "")) == category and str(backpack_selected.get("id", "")) == id
+	var base_color := Color("#294438") if equipped else (Color("#4b514d") if bool(info.available) else Color("#4b514d").darkened(0.35))
+	cell.add_theme_stylebox_override("normal", UI_THEME.selectable_box(base_color, selected))
+	cell.add_theme_color_override("font_color", Color("#f2dfb3") if equipped else (Color("#dbe0d9") if bool(info.available) else Color("#8a8f89")))
+	cell.pressed.connect(_select_backpack_item.bind(category, id))
+	return cell
+
+func _select_backpack_item(category: String, id: String) -> void:
+	backpack_selected = {"category": category, "id": id}
+	_show_backpack()
+
+## 根据 backpack_selected 重建详情面板内容，_show_backpack() 末尾调用一次。
+## 这里的 Label 都设置了 autowrap_mode，是换行问题真正被修复的地方。
+func _refresh_backpack_detail_panel(detail_panel: PanelContainer) -> void:
+	for child in detail_panel.get_children():
+		child.queue_free()
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	detail_panel.add_child(box)
+	var category := str(backpack_selected.get("category", ""))
+	var id := str(backpack_selected.get("id", ""))
+	var equipped := _backpack_item_is_equipped(category, id)
+	var info := _backpack_describe_item(category, id, equipped)
+	if info.icon != null:
+		var icon := TextureRect.new()
+		icon.texture = info.icon
+		icon.custom_minimum_size = Vector2(88, 88)
+		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		box.add_child(icon)
+	var prefix := "" if not equipped else ("【可用】" if category == "move" else "【当前装备】")
+	var name_label := Label.new()
+	name_label.text = prefix + str(info.name)
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.add_theme_font_size_override("font_size", 22)
+	name_label.add_theme_color_override("font_color", Color("#f2dfb3"))
+	box.add_child(name_label)
+	var desc_label := Label.new()
+	desc_label.text = str(info.detail_text)
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_label.add_theme_font_size_override("font_size", 16)
+	desc_label.add_theme_color_override("font_color", Color("#dbe0d9"))
+	box.add_child(desc_label)
+	if str(info.action_label) != "":
+		var action_button := UI_THEME.action_button(str(info.action_label), Color("#294438"))
+		action_button.disabled = not bool(info.action_enabled)
+		if category in ["weapon", "armor"]:
+			action_button.pressed.connect(_equip_from_backpack.bind(category, id))
+		else:
+			action_button.pressed.connect(_equip_wuxue_from_backpack.bind(category, id))
+		box.add_child(action_button)
 
 func _equip_from_backpack(category: String, id: String) -> void:
 	var ok := SHOP_RULES.equip_weapon(GameState.data, id) if category == "weapon" else SHOP_RULES.equip_armor(GameState.data, id)
@@ -2659,25 +2815,6 @@ func _equip_from_backpack(category: String, id: String) -> void:
 		return
 	SaveManager.save_auto()
 	_show_backpack()
-
-## category is "move" (always shown as usable, no equip step -- 0.104.0),
-## "internal", or "lightness" (each single-slot, like weapon/armor).
-func _backpack_wuxue_row(category: String, id: String, equipped: bool) -> PanelContainer:
-	var catalog: Dictionary = WUXUE_RULES.MOVES if category == "move" else (WUXUE_RULES.INTERNAL if category == "internal" else WUXUE_RULES.LIGHTNESS)
-	var item: Dictionary = catalog.get(id, {})
-	var level: int = WUXUE_RULES.move_level(GameState.data, id) if category == "move" else (WUXUE_RULES.internal_level(GameState.data, id) if category == "internal" else WUXUE_RULES.lightness_level(GameState.data, id))
-	var name_text := "%s Lv.%d" % [str(item.get("title", id)), level]
-	var primary := (("【可用】" if category == "move" else "【当前装备】") + name_text) if equipped else name_text
-	var secondary := str(item.get("description", ""))
-	var panel_color := Color("#294438") if equipped else Color("#4b514d")
-	var text_color := Color("#f2dfb3") if equipped else Color("#dbe0d9")
-	var action_button: Button = null
-	if not equipped:
-		action_button = UI_THEME.action_button("装备", Color("#294438"))
-		action_button.custom_minimum_size = Vector2(96, 44)
-		action_button.add_theme_font_size_override("font_size", 16)
-		action_button.pressed.connect(_equip_wuxue_from_backpack.bind(category, id))
-	return _backpack_row(UI_THEME.item_icon(id), primary, secondary, panel_color, text_color, action_button)
 
 func _equip_wuxue_from_backpack(category: String, id: String) -> void:
 	var ok := false
@@ -2689,47 +2826,6 @@ func _equip_wuxue_from_backpack(category: String, id: String) -> void:
 		return
 	SaveManager.save_auto()
 	_show_backpack()
-
-func _backpack_goods_row(good_id: String) -> PanelContainer:
-	var item: Dictionary = SHOP_RULES.GOODS.get(good_id, {})
-	var count := int(GameState.data.materials.get(good_id, 0)) if good_id in ["herbs", "ore"] else int(GameState.data.consumables.get(good_id, 0))
-	return _backpack_row(UI_THEME.item_icon(good_id), str(item.get("title", good_id)), "携带 %d 份" % count, Color("#4b514d"), Color("#dbe0d9"), null)
-
-## 特殊材料 (0.119.0)：药谱/矿谱里已发现的稀有品种，纯展示（炼药坊/锻造坊
-## 消耗它们，背包本身不提供任何操作按钮）。
-func _backpack_specimen_row(specimen_id: String) -> PanelContainer:
-	var is_herb := HERBARIUM_RULES.SPECIMENS.has(specimen_id)
-	var catalog: Dictionary = HERBARIUM_RULES.SPECIMENS if is_herb else MINERALOGY_RULES.SPECIMENS
-	var collection: Dictionary = GameState.data.get("herbarium", {}) if is_herb else GameState.data.get("mineralogy", {})
-	var item: Dictionary = catalog.get(specimen_id, {})
-	var count := int(collection.get(specimen_id, 0))
-	return _backpack_row(UI_THEME.item_icon(specimen_id), "%s（%s）" % [str(item.get("name", specimen_id)), str(item.get("rarity", ""))], "携带 %d 份 · %s" % [count, str(item.get("description", ""))], Color("#4b514d"), Color("#dbe0d9"), null)
-
-func _backpack_row(icon_texture: Texture2D, primary_text: String, secondary_text: String, panel_color: Color, text_color: Color, action_button: Button) -> PanelContainer:
-	var row := PanelContainer.new()
-	row.add_theme_stylebox_override("panel", _box(panel_color))
-	var row_content := HBoxContainer.new()
-	row_content.add_theme_constant_override("separation", 14)
-	row.add_child(row_content)
-	if icon_texture != null:
-		var icon := TextureRect.new()
-		icon.texture = icon_texture
-		icon.custom_minimum_size = Vector2(52, 52)
-		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		row_content.add_child(icon)
-	var entry := Label.new()
-	entry.text = "%s\n%s" % [primary_text, secondary_text]
-	entry.custom_minimum_size.y = 52
-	entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	entry.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	entry.add_theme_font_size_override("font_size", 17)
-	entry.add_theme_color_override("font_color", text_color)
-	row_content.add_child(entry)
-	if action_button != null:
-		action_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		row_content.add_child(action_button)
-	return row
 
 func _show_settings() -> void:
 	_clear_content()

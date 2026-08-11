@@ -36,6 +36,17 @@ static func box(color: Color) -> StyleBoxFlat:
 	b.content_margin_bottom = 8
 	return b
 
+## Selectable variant of box() for grid cells (背包网格, 0.120.0) -- identical
+## flat fill/1px lightened border when unselected; a thicker gold border
+## (matching the game's existing #dfbf74 accent) when selected, so the base
+## fill color (equipped/available/unavailable) stays legible underneath.
+static func selectable_box(color: Color, selected: bool) -> StyleBoxFlat:
+	var b := box(color)
+	if selected:
+		b.border_color = Color("#dfbf74")
+		b.set_border_width_all(3)
+	return b
+
 ## Dark-jade multiply tint matching the game's existing dark-panel palette
 ## (#172820/#294438), for screens that pair the frame with light text.
 const DARK_TINT := Color(0.24, 0.3, 0.26)
