@@ -782,6 +782,19 @@ func _migrate_and_validate() -> void:
 		data.learned_lightness.append("basic_footwork")
 	if str(data.get("equipped_lightness", "")).is_empty():
 		data.equipped_lightness = "basic_footwork"
+	for pair in [["companion_move", "learned_moves"], ["companion_internal", "learned_internal"], ["companion_lightness", "learned_lightness"]]:
+		var normalized := {}
+		for companion_id in data.companions:
+			var selection := str(data[pair[0]].get(companion_id, ""))
+			if selection in data[pair[1]]:
+				normalized[companion_id] = selection
+		data[pair[0]] = normalized
+	var normalized_tasks := {}
+	for companion_id in data.companions:
+		var task_id := str(data.companion_tasks.get(companion_id, ""))
+		if WEEKLY_TASK_RULES.is_valid_task(task_id):
+			normalized_tasks[companion_id] = task_id
+	data.companion_tasks = normalized_tasks
 	if typeof(data.get("move_levels", {})) != TYPE_DICTIONARY:
 		data.move_levels = {}
 	data.move_levels = _clamped_levels(data.move_levels, data.learned_moves)

@@ -20,5 +20,17 @@ func _initialize() -> void:
 	assert(EQUIPMENT.claimed_count(state.data, "weapon", "iron_sword") == 1, "Loading must enforce the actual number of owned equipment copies.")
 	var recovered: Dictionary = state.data.duplicate(true)
 	assert(state.import_data(recovered) and state.data.companion_gear == recovered.companion_gear, "Repeated loads must not progressively remove valid equipment.")
+	saved.learned_moves = ["cloud_sword"]
+	saved.learned_internal = ["purple_mist_art"]
+	saved.learned_lightness = ["ripple_steps"]
+	saved.companion_move = {"zhou_mubai": "cloud_sword", "liu_ruyan": "blade_technique", "nobody": "cloud_sword"}
+	saved.companion_internal = {"zhou_mubai": "purple_mist_art", "liu_ruyan": "missing"}
+	saved.companion_lightness = {"zhou_mubai": "ripple_steps", "liu_ruyan": "missing"}
+	saved.companion_tasks = {"zhou_mubai": "train", "liu_ruyan": "missing", "nobody": "earn"}
+	assert(state.import_data(saved))
+	assert(state.data.companion_move == {"zhou_mubai": "cloud_sword"})
+	assert(state.data.companion_internal == {"zhou_mubai": "purple_mist_art"})
+	assert(state.data.companion_lightness == {"zhou_mubai": "ripple_steps"})
+	assert(state.data.companion_tasks == {"zhou_mubai": "train"}, "Only joined companions with valid tasks may retain assignments.")
 	print("Companion save validation tests passed.")
 	quit()
