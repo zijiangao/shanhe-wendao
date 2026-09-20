@@ -20,20 +20,14 @@ func load_slot(slot: int) -> bool:
 	return _load("user://save_%d.json" % slot)
 
 func slot_exists(slot: int) -> bool:
-	return FileAccess.file_exists("user://save_%d.json" % slot)
+	return not slot_summary(slot).is_empty()
 
 func slot_summary(slot: int) -> Dictionary:
+	if slot < 1 or slot > SLOT_COUNT:
+		return {}
 	var path := "user://save_%d.json" % slot
-	if not FileAccess.file_exists(path):
-		return {}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return {}
-	var json := JSON.new()
-	if json.parse(file.get_as_text()) != OK:
-		return {}
-	var parsed = json.data
-	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	var primary := _read_dictionary(path)
+	return primary if not primary.is_empty() else _read_dictionary(path + ".bak")
 
 func _write(path: String, value: Dictionary) -> bool:
 	var temporary_path := path + ".tmp"

@@ -21,6 +21,15 @@ func _initialize() -> void:
 	assert(int(game_state.data.week) == 8, "Backup recovery should restore the previous generation.")
 
 	_cleanup()
+	assert(str(ProjectSettings.get_setting("application/config/name")).ends_with("-tests"))
+	assert(save_manager.save_slot(3))
+	game_state.data.week = 10
+	assert(save_manager.save_slot(3))
+	DirAccess.remove_absolute("user://save_3.json")
+	assert(save_manager.slot_exists(3), "Backup-only slots must remain available.")
+	assert(int(save_manager.slot_summary(3).week) == 8)
+	assert(save_manager.load_slot(3) and int(game_state.data.week) == 8)
+	assert(not save_manager.slot_exists(0) and save_manager.slot_summary(4).is_empty())
 	print("SaveManager tests passed.")
 	quit()
 
