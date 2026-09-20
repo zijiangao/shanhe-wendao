@@ -747,6 +747,20 @@ func _migrate_and_validate() -> void:
 		data.equipped_weapon = ""
 	if EQUIPMENT_RULES.owned_count(data, "owned_armors", str(data.get("equipped_armor", ""))) <= 0:
 		data.equipped_armor = ""
+	var normalized_gear := {}
+	for companion_id in data.companions:
+		var saved_gear: Variant = data.companion_gear.get(companion_id)
+		if typeof(saved_gear) != TYPE_DICTIONARY:
+			continue
+		var slots := {}
+		for pair in [["weapon", "owned_weapons"], ["armor", "owned_armors"]]:
+			var item_id := str(saved_gear.get(pair[0], ""))
+			slots[pair[0]] = item_id if EQUIPMENT_RULES.owned_count(data, pair[1], item_id) > 0 else ""
+		normalized_gear[companion_id] = slots
+	data.companion_gear = normalized_gear
+	for pair in [["weapon", "owned_weapons"], ["armor", "owned_armors"]]:
+		for item_id in data[pair[1]]:
+			EQUIPMENT_RULES.reconcile_wearers(data, pair[1], pair[0], str(item_id))
 	if typeof(data.get("learned_moves", [])) != TYPE_ARRAY:
 		data.learned_moves = []
 	data.learned_moves = Array(data.learned_moves).filter(func(id): return WUXUE_RULES.MOVES.has(str(id)))
