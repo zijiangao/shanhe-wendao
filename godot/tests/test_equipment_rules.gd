@@ -3,6 +3,19 @@ extends SceneTree
 const RULES := preload("res://scripts/progression/equipment_rules.gd")
 
 func _init() -> void:
+	var missing := {}
+	RULES.add_owned(missing, "owned_weapons", "iron_sword", 1)
+	assert(RULES.owned_count(missing, "owned_weapons", "iron_sword") == 1, "The first item must initialize a missing equipment category.")
+	var corrupted := {"owned_armors": []}
+	assert(RULES.owned_count(corrupted, "owned_armors", "hedgehog_mail") == 0)
+	RULES.add_owned(corrupted, "owned_armors", "hedgehog_mail", 1)
+	assert(RULES.owned_count(corrupted, "owned_armors", "hedgehog_mail") == 1)
+	missing.owned_weapons.iron_sword = -3
+	RULES.add_owned(missing, "owned_weapons", "iron_sword", 1)
+	assert(int(missing.owned_weapons.iron_sword) == 1, "Invalid negative ownership must not swallow a newly acquired item.")
+	var unchanged := missing.duplicate(true)
+	RULES.add_owned(missing, "owned_weapons", "", 1)
+	assert(missing == unchanged, "Empty item identifiers must not create inventory entries.")
 	assert(RULES.owned_count({}, "owned_weapons", "iron_sword") == 0, "An empty state should report zero owned copies of anything.")
 	var state := {"owned_weapons": {}, "equipped_weapon": "", "companion_gear": {}}
 	RULES.add_owned(state, "owned_weapons", "iron_sword", 2)

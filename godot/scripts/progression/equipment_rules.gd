@@ -18,12 +18,16 @@ extends RefCounted
 static func owned_count(state: Dictionary, field: String, id: String) -> int:
 	if id == "":
 		return 0
-	return int(Dictionary(state.get(field, {})).get(id, 0))
+	if typeof(state.get(field, {})) != TYPE_DICTIONARY:
+		return 0
+	return maxi(0, int(Dictionary(state.get(field, {})).get(id, 0)))
 
 static func add_owned(state: Dictionary, field: String, id: String, delta: int) -> void:
-	if typeof(state.get(field, {})) != TYPE_DICTIONARY:
+	if id == "" or delta == 0:
+		return
+	if typeof(state.get(field)) != TYPE_DICTIONARY:
 		state[field] = {}
-	var next_count := int(state[field].get(id, 0)) + delta
+	var next_count := owned_count(state, field, id) + delta
 	if next_count <= 0:
 		state[field].erase(id)
 	else:
