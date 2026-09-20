@@ -423,5 +423,14 @@ func _initialize() -> void:
 	assert(state.data.companions == ["lin_qingshuang", "zhou_mubai"] and str(state.data.active_disciple) == "", "Loaded rosters must contain each valid companion once and only disciples may fill the sparring slot.")
 	assert(state.end_week())
 	assert(WEEKLY_TASK_RULES.companion_xp(state.data, "zhou_mubai") == 12, "Duplicate roster entries must never multiply weekly rewards.")
+	state.new_game()
+	var old_progress: Dictionary = state.data.duplicate(true)
+	old_progress.xp = 100
+	old_progress.erase("character_level")
+	assert(state.import_data(old_progress))
+	var old_strength: int = state.data.strength
+	assert(state.train("insight"))
+	assert(int(state.data.strength) == old_strength, "Legacy XP must not pay historical level rewards again.")
+	assert(int(state.data.character_level) == 5)
 	print("GameState tests passed.")
 	quit()

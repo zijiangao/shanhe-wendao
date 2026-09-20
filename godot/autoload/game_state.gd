@@ -605,6 +605,8 @@ func import_data(value: Dictionary) -> bool:
 	for key in value:
 		if data.has(key):
 			data[key] = value[key]
+	if not value.has("character_level"):
+		data.character_level = GROWTH_RULES.character_level(int(data.get("xp", 0)))
 	_migrate_and_validate()
 	data.save_version = SAVE_VERSION
 	state_changed.emit()
