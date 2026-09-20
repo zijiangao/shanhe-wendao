@@ -442,5 +442,10 @@ func _initialize() -> void:
 	state.data.consumables.healing_powder = 0
 	assert(state.retry_last_battle())
 	assert(int(state.data.consumables.healing_powder) == 3, "Retry inventory must remain an independent snapshot.")
+	state.finish_battle(true)
+	var settled_battle: Dictionary = state.data.duplicate(true)
+	state.finish_battle(true)
+	state.finish_battle(false)
+	assert(state.data == settled_battle, "Repeated completion callbacks must neither award twice nor apply defeat after victory.")
 	print("GameState tests passed.")
 	quit()

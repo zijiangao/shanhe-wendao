@@ -450,6 +450,8 @@ func start_final_battle() -> bool:
 	return true
 
 func finish_battle(victory: bool) -> void:
+	if data.battle.is_empty():
+		return
 	var battle_id: String = str(data.battle.get("battle_id", "blackreed"))
 	var battle_difficulty: String = str(data.battle.get("difficulty", "standard"))
 	var battle_turns: int = int(data.battle.get("turn", 1))
