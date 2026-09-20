@@ -101,14 +101,22 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 			_animate_skill_name(skill_name)
 
 	var side := PanelContainer.new()
+	side.name = "BattleSidebar"
 	side.position = Vector2(840, 104)
 	side.size = Vector2(400, 540)
 	side.add_theme_stylebox_override("panel", _box(Color("#14271ff2")))
 	add_child(side)
+	var scroll := ScrollContainer.new()
+	scroll.name = "BattleSidebarScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	side.add_child(scroll)
 	var side_box := VBoxContainer.new()
+	side_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	side_box.add_theme_constant_override("separation", 4)
-	side.add_child(side_box)
+	scroll.add_child(side_box)
 	var status := Label.new()
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var is_ally_turn := str(battle.get("active_unit", "hero")) == "ally"
 	var active_name: String = str(battle.get("ally", {}).get("name", "同伴")) if is_ally_turn else "沈羽"
 	var active_hp: int = int(battle.ally.hp) if is_ally_turn else int(player.hp)
@@ -172,6 +180,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	end_button.pressed.connect(func(): end_turn_requested.emit())
 	action_grid.add_child(end_button)
 	var help := Label.new()
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.text = BATTLE_ENGINE.hero_action_help(player) if not is_ally_turn else "%s：突进%d格内并攻击 · 消耗%d真气\n寒锋守势：获得护卫并恢复至多3真气 · 均消耗1行动点" % [BATTLE_ENGINE.ally_dash_title(battle), 2 + BATTLE_ENGINE.ally_dash_bonus_range(battle), BATTLE_ENGINE.ally_dash_qi_cost(battle)]
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
