@@ -62,6 +62,7 @@ static func options_weapons(state: Dictionary) -> Array:
 			var available := EQUIPMENT_RULES.is_available_for(state, "owned_weapons", "weapon", id, "hero")
 			var note := "已购入 %d 件，可随时换回。" % owned_count if available else "已购入 %d 件，但均已被同伴装备，可再购买一件。" % owned_count
 			options.append(["换装 · %s" % str(item.title), "%s%s" % [str(item.description), note], "equip_%s" % id, not available])
+			options.append(["卖出一件 · %s" % str(item.title), "拥有 %d 件，回收 %d 银；剩余数量不足时会自动卸下正在穿戴的装备。" % [owned_count, weapon_sell_price(id)], "sell_%s" % id, false])
 		else:
 			options.append(["购买并装备 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "buy_%s" % id, silver < int(item.price)])
 	options.append(["返回", "不消耗行动点，返回西市。", "leave"])
@@ -82,6 +83,7 @@ static func options_armor(state: Dictionary) -> Array:
 			var available := EQUIPMENT_RULES.is_available_for(state, "owned_armors", "armor", id, "hero")
 			var note := "已购入 %d 件，可随时换回。" % owned_count if available else "已购入 %d 件，但均已被同伴装备，可再购买一件。" % owned_count
 			options.append(["换装 · %s" % str(item.title), "%s%s" % [str(item.description), note], "equip_%s" % id, not available])
+			options.append(["卖出一件 · %s" % str(item.title), "拥有 %d 件，回收 %d 银；剩余数量不足时会自动卸下正在穿戴的装备。" % [owned_count, armor_sell_price(id)], "sell_%s" % id, false])
 		else:
 			options.append(["购买并装备 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "buy_%s" % id, silver < int(item.price)])
 	options.append(["返回", "不消耗行动点，返回西市。", "leave"])

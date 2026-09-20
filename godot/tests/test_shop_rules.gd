@@ -110,6 +110,15 @@ func _initialize() -> void:
 	var equipped_row := geared_options.filter(func(o): return str(o[2]) == "sell_cold_crow_blade")
 	assert(equipped_row.size() == 1, "The currently equipped weapon should offer a sell action, not a buy action.")
 	var goods_options: Array = RULES.options_goods(_state())
+	var surplus := _state()
+	surplus.silver = 1000
+	RULES.buy_weapon(surplus, "iron_sword")
+	RULES.buy_weapon(surplus, "cold_crow_blade")
+	assert(RULES.options_weapons(surplus).any(func(o): return str(o[2]) == "sell_iron_sword" and not bool(o[3])), "Unused weapons must be sellable without equipping them first.")
+	assert(RULES.sell_weapon(surplus, "iron_sword") and str(surplus.equipped_weapon) == "cold_crow_blade", "Selling spare gear must preserve the hero's other equipped weapon.")
+	RULES.buy_armor(surplus, "dark_iron_armor")
+	RULES.buy_armor(surplus, "cold_jade_armor")
+	assert(RULES.options_armor(surplus).any(func(o): return str(o[2]) == "sell_dark_iron_armor" and not bool(o[3])), "Unused armor must also be directly sellable.")
 	assert(goods_options.size() == RULES.GOODS.size() * 2 + 1, "Goods should list a buy and sell row per item plus one leave row.")
 
 	print("Shop rules tests passed.")
