@@ -32,5 +32,9 @@ func _initialize() -> void:
 	assert(state.data.companion_internal == {"zhou_mubai": "purple_mist_art"})
 	assert(state.data.companion_lightness == {"zhou_mubai": "ripple_steps"})
 	assert(state.data.companion_tasks == {"zhou_mubai": "train"}, "Only joined companions with valid tasks may retain assignments.")
+	saved.equipped_internal = ""
+	saved.equipped_lightness = ""
+	assert(state.import_data(saved))
+	assert(state.data.equipped_internal == "" and state.data.equipped_lightness == "", "Explicit unequip choices must survive loading.")
 	print("Companion save validation tests passed.")
 	quit()

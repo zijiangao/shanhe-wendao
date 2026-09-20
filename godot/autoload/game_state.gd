@@ -775,18 +775,14 @@ func _migrate_and_validate() -> void:
 	if typeof(data.get("learned_lightness", [])) != TYPE_ARRAY:
 		data.learned_lightness = []
 	data.learned_lightness = Array(data.learned_lightness).filter(func(id): return WUXUE_RULES.LIGHTNESS.has(str(id)))
-	if str(data.get("equipped_internal", "")) not in data.learned_internal:
-		data.equipped_internal = ""
-	if str(data.get("equipped_lightness", "")) not in data.learned_lightness:
-		data.equipped_lightness = ""
+	if str(data.get("equipped_internal", "")) != "" and str(data.equipped_internal) not in data.learned_internal:
+		data.equipped_internal = "foundational_qi"
+	if str(data.get("equipped_lightness", "")) != "" and str(data.equipped_lightness) not in data.learned_lightness:
+		data.equipped_lightness = "basic_footwork"
 	if "foundational_qi" not in data.learned_internal:
 		data.learned_internal.append("foundational_qi")
-	if str(data.get("equipped_internal", "")).is_empty():
-		data.equipped_internal = "foundational_qi"
 	if "basic_footwork" not in data.learned_lightness:
 		data.learned_lightness.append("basic_footwork")
-	if str(data.get("equipped_lightness", "")).is_empty():
-		data.equipped_lightness = "basic_footwork"
 	for pair in [["companion_move", "learned_moves"], ["companion_internal", "learned_internal"], ["companion_lightness", "learned_lightness"]]:
 		var normalized := {}
 		for companion_id in data.companions:
