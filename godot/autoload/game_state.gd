@@ -560,6 +560,7 @@ func capture_battle_checkpoint() -> void:
 		"week": int(data.week),
 		"acted_this_week": bool(data.get("acted_this_week", false)),
 		"skill_mastery": data.skill_mastery.duplicate(true),
+		"consumables": data.consumables.duplicate(true),
 		"log": data.log.duplicate(true)
 	}
 
@@ -577,6 +578,8 @@ func retry_last_battle() -> bool:
 	data.acted_this_week = bool(checkpoint.get("acted_this_week", data.get("acted_this_week", false)))
 	if typeof(checkpoint.get("skill_mastery", {})) == TYPE_DICTIONARY:
 		data.skill_mastery = checkpoint.skill_mastery.duplicate(true)
+	if checkpoint.has("consumables") and typeof(checkpoint.consumables) == TYPE_DICTIONARY:
+		data.consumables = checkpoint.consumables.duplicate(true)
 	if typeof(checkpoint.get("log", [])) == TYPE_ARRAY:
 		data.log = checkpoint.log.duplicate(true)
 	data.battle = checkpoint.battle.duplicate(true)

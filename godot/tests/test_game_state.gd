@@ -432,5 +432,15 @@ func _initialize() -> void:
 	assert(state.train("insight"))
 	assert(int(state.data.strength) == old_strength, "Legacy XP must not pay historical level rewards again.")
 	assert(int(state.data.character_level) == 5)
+	state.new_game()
+	state.data.consumables.healing_powder = 3
+	assert(state.start_blackreed_battle())
+	state.data.consumables.healing_powder = 1
+	state.finish_battle(false)
+	assert(state.retry_last_battle())
+	assert(int(state.data.consumables.healing_powder) == 3, "Retry must restore the original combat supply inventory.")
+	state.data.consumables.healing_powder = 0
+	assert(state.retry_last_battle())
+	assert(int(state.data.consumables.healing_powder) == 3, "Retry inventory must remain an independent snapshot.")
 	print("GameState tests passed.")
 	quit()
