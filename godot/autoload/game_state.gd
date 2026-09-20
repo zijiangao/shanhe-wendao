@@ -666,7 +666,8 @@ func _migrate_and_validate() -> void:
 		data.faction_relations = {"qingyun": 1, "huashan": 0, "emei": 0, "shaolin": 0}
 	if typeof(data.companions) != TYPE_ARRAY:
 		data.companions = []
-	if str(data.get("active_disciple", "")) not in Array(data.companions):
+	data.companions = COMPANION_RULES.roster(data)
+	if not COMPANION_RULES.is_valid_disciple(str(data.get("active_disciple", ""))) or str(data.get("active_disciple", "")) not in Array(data.companions):
 		data.active_disciple = ""
 	if typeof(data.get("companion_gear", {})) != TYPE_DICTIONARY:
 		data.companion_gear = {}

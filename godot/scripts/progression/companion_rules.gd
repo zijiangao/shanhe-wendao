@@ -50,7 +50,7 @@ static func roster(state: Dictionary) -> Array:
 	if "lin_qingshuang" in Array(state.get("companions", [])):
 		ids.append("lin_qingshuang")
 	for id in Array(state.get("companions", [])):
-		if is_valid_disciple(str(id)):
+		if is_valid_disciple(str(id)) and str(id) not in ids:
 			ids.append(str(id))
 	return ids
 

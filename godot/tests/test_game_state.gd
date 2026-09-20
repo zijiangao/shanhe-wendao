@@ -411,5 +411,14 @@ func _initialize() -> void:
 	assert(str(state.data.ending.id) == "preserve" and str(state.data.ending.title) == "问道藏锋", "The chosen legacy should produce the matching ending.")
 	assert(str(state.data.ending.rank) == "传说", "Strong relationships and timely completion should earn the top ending rank.")
 
+	state.new_game()
+	var duplicate_roster: Dictionary = state.data.duplicate(true)
+	duplicate_roster.companions = ["zhou_mubai", "zhou_mubai", "lin_qingshuang", "nobody"]
+	duplicate_roster.active_disciple = "lin_qingshuang"
+	duplicate_roster.companion_tasks = {"zhou_mubai": "train"}
+	assert(state.import_data(duplicate_roster))
+	assert(state.data.companions == ["lin_qingshuang", "zhou_mubai"] and str(state.data.active_disciple) == "", "Loaded rosters must contain each valid companion once and only disciples may fill the sparring slot.")
+	assert(state.end_week())
+	assert(WEEKLY_TASK_RULES.companion_xp(state.data, "zhou_mubai") == 12, "Duplicate roster entries must never multiply weekly rewards.")
 	print("GameState tests passed.")
 	quit()
