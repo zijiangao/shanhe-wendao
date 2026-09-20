@@ -174,6 +174,8 @@ static func hero_action_help(player: Dictionary) -> String:
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
 	if str(battle.get("active_unit", "hero")) not in ["hero", "ally"]:
 		return _failure("敌方正在行动，请稍候。")
+	if str(battle.get("active_unit", "hero")) == "ally" and (typeof(battle.get("ally")) != TYPE_DICTIONARY or int(battle.ally.get("hp", 0)) <= 0):
+		return _failure("同伴已无法行动。")
 	if int(battle.action_points) <= 0:
 		return _failure("行动点已用尽，请结束回合。")
 	match action:

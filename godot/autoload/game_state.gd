@@ -842,4 +842,24 @@ func _valid_battle(value: Variant) -> bool:
 			enemy.armor = maxi(0, int(enemy.armor))
 		if int(enemy.x) < 0 or int(enemy.x) >= width or int(enemy.y) < 0 or int(enemy.y) >= height:
 			return false
+	var active_unit := str(battle.get("active_unit", "hero"))
+	if active_unit == "ally":
+		if typeof(battle.get("ally")) != TYPE_DICTIONARY:
+			return false
+		for key in ["hp", "max_hp", "qi", "max_qi", "guard", "attack", "x", "y"]:
+			if not battle.ally.has(key):
+				return false
+		if int(battle.ally.hp) <= 0 or int(battle.ally.x) < 0 or int(battle.ally.x) >= width or int(battle.ally.y) < 0 or int(battle.ally.y) >= height:
+			return false
+	elif active_unit.begins_with("enemy:"):
+		var index_text := active_unit.trim_prefix("enemy:")
+		if not index_text.is_valid_int():
+			return false
+		var enemy_index := int(index_text)
+		if enemy_index < 0 or enemy_index >= battle.enemies.size() or int(battle.enemies[enemy_index].hp) <= 0:
+			return false
+	elif active_unit != "hero":
+		return false
+	battle.active_unit = active_unit
+	battle.action_points = 0 if active_unit.begins_with("enemy:") else clampi(int(battle.action_points), 0, 2)
 	return true
