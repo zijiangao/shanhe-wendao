@@ -54,6 +54,8 @@ static func options_weapons(state: Dictionary) -> Array:
 	for id in WEAPONS:
 		var item: Dictionary = WEAPONS[id]
 		var owned_count := EQUIPMENT_RULES.owned_count(state, "owned_weapons", id)
+		if owned_count > 0:
+			options.append(["再买一件并装备 · %s · %d 银" % [str(item.title), int(item.price)], "当前拥有 %d 件，购买后可分别装备给沈羽与同伴。" % owned_count, "buy_%s" % id, silver < int(item.price)])
 		if id == equipped:
 			options.append(["卖出 · %s" % str(item.title), "%s（当前装备，拥有 %d 件，回收 %d 银）" % [str(item.description), owned_count, weapon_sell_price(id)], "sell_%s" % id, false])
 		elif owned_count > 0:
@@ -72,6 +74,8 @@ static func options_armor(state: Dictionary) -> Array:
 	for id in ARMORS:
 		var item: Dictionary = ARMORS[id]
 		var owned_count := EQUIPMENT_RULES.owned_count(state, "owned_armors", id)
+		if owned_count > 0:
+			options.append(["再买一件并装备 · %s · %d 银" % [str(item.title), int(item.price)], "当前拥有 %d 件，购买后可分别装备给沈羽与同伴。" % owned_count, "buy_%s" % id, silver < int(item.price)])
 		if id == equipped:
 			options.append(["卖出 · %s" % str(item.title), "%s（当前装备，拥有 %d 件，回收 %d 银）" % [str(item.description), owned_count, armor_sell_price(id)], "sell_%s" % id, false])
 		elif owned_count > 0:

@@ -100,6 +100,13 @@ func _initialize() -> void:
 	geared.silver = 1000
 	RULES.buy_weapon(geared, "cold_crow_blade")
 	var geared_options: Array = RULES.options_weapons(geared)
+	var repeat_buy := geared_options.filter(func(o): return str(o[2]) == "buy_cold_crow_blade")
+	assert(repeat_buy.size() == 1 and not bool(repeat_buy[0][3]), "Owned weapons must still have an affordable repeat-purchase menu entry.")
+	geared.silver = 0
+	assert(bool(RULES.options_weapons(geared).filter(func(o): return str(o[2]) == "buy_cold_crow_blade")[0][3]), "Repeat buying must respect available silver.")
+	armored.silver = 1000
+	var repeat_armor := RULES.options_armor(armored).filter(func(o): return str(o[2]) == "buy_dark_iron_armor")
+	assert(repeat_armor.size() == 1 and not bool(repeat_armor[0][3]), "Owned armor must also remain purchasable.")
 	var equipped_row := geared_options.filter(func(o): return str(o[2]) == "sell_cold_crow_blade")
 	assert(equipped_row.size() == 1, "The currently equipped weapon should offer a sell action, not a buy action.")
 	var goods_options: Array = RULES.options_goods(_state())
