@@ -30,6 +30,12 @@ func _initialize() -> void:
 	assert(int(save_manager.slot_summary(3).week) == 8)
 	assert(save_manager.load_slot(3) and int(game_state.data.week) == 8)
 	assert(not save_manager.slot_exists(0) and save_manager.slot_summary(4).is_empty())
+	assert(save_manager.save_auto())
+	game_state.data.week = 12
+	assert(save_manager.save_auto())
+	DirAccess.remove_absolute(save_manager.AUTO_PATH)
+	assert(save_manager.auto_exists(), "Continue must work with a backup-only autosave.")
+	assert(save_manager.load_auto() and int(game_state.data.week) == 8)
 	print("SaveManager tests passed.")
 	quit()
 

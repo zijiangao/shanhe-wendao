@@ -648,7 +648,7 @@ func _show_menu() -> void:
 	panel.add_child(new_button)
 
 	var continue_button := _action_button("继续自动存档", Color("#315746"))
-	continue_button.disabled = not FileAccess.file_exists(SaveManager.AUTO_PATH)
+	continue_button.disabled = not SaveManager.auto_exists()
 	continue_button.pressed.connect(_continue_auto_save)
 	panel.add_child(continue_button)
 
@@ -1957,7 +1957,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.145.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.146.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

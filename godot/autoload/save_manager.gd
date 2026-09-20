@@ -14,6 +14,9 @@ func save_slot(slot: int) -> bool:
 func load_auto() -> bool:
 	return _load(AUTO_PATH)
 
+func auto_exists() -> bool:
+	return not _read_dictionary(AUTO_PATH).is_empty() or not _read_dictionary(AUTO_PATH + ".bak").is_empty()
+
 func load_slot(slot: int) -> bool:
 	if slot < 1 or slot > SLOT_COUNT:
 		return false
