@@ -3,7 +3,7 @@ extends RefCounted
 
 const OVERLAY_SCREENS := ["backpack", "quests", "character", "achievements", "save", "settings", "controls", "credits", "dev"]
 const PAUSABLE_SCREENS := ["map", "location", "dialogue", "choice", "palace", "battle", "victory", "defeat", "final_choice", "ending", "demo_complete", "training"]
-const MODAL_GAMEPLAY_SCREENS := ["dialogue", "choice", "battle", "defeat", "training", "pause"]
+const MODAL_GAMEPLAY_SCREENS := ["dialogue", "choice", "battle", "defeat", "training", "pause", "victory", "final_choice"]
 
 static func can_pause(screen: String) -> bool:
 	return screen in PAUSABLE_SCREENS

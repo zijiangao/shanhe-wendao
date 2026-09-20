@@ -17,5 +17,12 @@ func _run() -> void:
 	state.data.pending_reward = {}
 	state.complete_game("preserve")
 	assert(main._screen_after_load() == "ending", "Completed journeys must return to their ending.")
+	for modal in ["victory", "final_choice"]:
+		main.screen = modal
+		main._switch_screen("map")
+		assert(main.screen == modal, "Header navigation must not discard unresolved story choices.")
+		var week: int = state.data.week
+		main._end_week_requested()
+		assert(int(state.data.week) == week)
 	print("Progression return flow tests passed.")
 	quit()
