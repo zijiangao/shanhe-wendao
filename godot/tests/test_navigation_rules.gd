@@ -22,6 +22,7 @@ func _initialize() -> void:
 	for action in ["ui_up", "ui_down", "ui_left", "ui_right"]:
 		assert(_has_joypad_event(action), "%s should include a joypad direction mapping." % action)
 	assert(RULES.back_action("controls", "settings").target == "settings", "The key-binding overlay should return to settings.")
+	assert(RULES.back_action("backpack", "location").target == "location")
 	print("NavigationRules tests passed.")
 	quit()
 
