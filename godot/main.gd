@@ -75,6 +75,7 @@ var active_tutorial_step: String = ""
 var last_defeat_battle: String = ""
 var store_capture_active: bool = false
 var enemy_turn_active: bool = false
+var quit_after_battle_turn: bool = false
 var active_battle_view: TacticalBattleView
 var last_battle_id: String = "blackreed"
 var training_discipline: String = ""
@@ -734,6 +735,10 @@ func _pause_to_menu() -> void:
 	_rebuild()
 
 func _safe_quit() -> void:
+	if enemy_turn_active:
+		quit_after_battle_turn = true
+		_toast("正在结算战斗，完成后保存并退出。")
+		return
 	# The autoload owns a default in-memory state even before the player starts or
 	# loads a journey. Never overwrite an existing autosave when quitting at menu.
 	if NAVIGATION_RULES.should_save_on_quit(screen, GameState.data) and not SaveManager.save_auto():
@@ -743,6 +748,11 @@ func _safe_quit() -> void:
 			_rebuild()
 		return
 	get_tree().quit()
+
+func _finish_queued_quit() -> void:
+	if quit_after_battle_turn:
+		quit_after_battle_turn = false
+		_safe_quit()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -1943,7 +1953,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.132.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.133.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3440,6 +3450,7 @@ func _advance_battle_queue(resume_current: bool = false) -> void:
 			GameState.finish_battle(false)
 			screen = "defeat"
 			_rebuild()
+			_finish_queued_quit()
 			return
 		if Array(outcome.get("events", [])).is_empty():
 			AudioFeedback.play("skill" if bool(outcome.get("boss_transition", false)) else ("enemy_hit" if int(outcome.total_hurt) > 0 else "turn"))
@@ -3449,9 +3460,11 @@ func _advance_battle_queue(resume_current: bool = false) -> void:
 	if _check_tactical_victory(battle):
 		SaveManager.save_auto()
 		_rebuild()
+		_finish_queued_quit()
 		return
 	SaveManager.save_auto()
 	_rebuild()
+	_finish_queued_quit()
 
 ## _show_battle_legacy()（确认死代码，本次不动）还引用着这个旧名字，留一
 ## 个薄封装避免编译失败；真正的行动条推进逻辑都在 _advance_battle_queue()。
