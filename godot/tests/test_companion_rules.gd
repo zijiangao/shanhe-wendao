@@ -70,7 +70,7 @@ func _initialize() -> void:
 	# 兵器/护具数量制 (0.119.0) 取代了"拥有即可无限多人共穿"：数量决定了
 	# 能同时装备的人数上限，见下面的排他性测试。
 	var gear_state := _state()
-	gear_state.companions = ["zhou_mubai"]
+	gear_state.companions = ["zhou_mubai", "lin_qingshuang"]
 	gear_state.active_disciple = "zhou_mubai"
 	gear_state.owned_weapons = {"cold_crow_blade": 1}
 	gear_state.owned_armors = {"cold_jade_armor": 1}
@@ -137,6 +137,13 @@ func _initialize() -> void:
 	var ripple_row := lightness_options.filter(func(o): return str(o[0]).begins_with("凌波微步"))
 	assert(ripple_row.size() == 1 and bool(ripple_row[0][3]) and "Lv.4" in str(ripple_row[0][0]), "The equipped lightness skill's row should show the hero's own trained level and appear selected.")
 
+	var before_unjoined := gear_state.duplicate(true)
+	assert(not RULES.equip_companion_weapon(gear_state, "liu_ruyan", ""))
+	assert(not RULES.equip_companion_armor(gear_state, "liu_ruyan", ""))
+	assert(not RULES.equip_companion_move(gear_state, "liu_ruyan", "cloud_sword"))
+	assert(not RULES.equip_companion_internal(gear_state, "liu_ruyan", "purple_mist_art"))
+	assert(not RULES.equip_companion_lightness(gear_state, "liu_ruyan", "ripple_steps"))
+	assert(gear_state == before_unjoined, "Unrecruited companions must not acquire equipment slots or skill assignments.")
 	print("Companion rules tests passed.")
 	quit()
 

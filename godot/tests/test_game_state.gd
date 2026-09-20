@@ -199,6 +199,7 @@ func _initialize() -> void:
 	state.new_game()
 	state.data.owned_weapons = {"cold_crow_blade": 1}
 	state.data.learned_moves = ["blade_technique"]
+	state.data.companions = ["lin_qingshuang"]
 	assert(COMPANION_RULES.equip_companion_weapon(state.data, "lin_qingshuang", "cold_crow_blade"), "The hero should be able to gear up 林清霜 before the 华山 trial.")
 	assert(COMPANION_RULES.equip_companion_move(state.data, "lin_qingshuang", "blade_technique"), "The hero should be able to pick 林清霜's dash move before the 华山 trial.")
 	assert(state.start_huashan_trial_battle(), "The 华山 trial should still start normally with 林清霜 geared up.")

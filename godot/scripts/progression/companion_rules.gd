@@ -133,19 +133,19 @@ static func _companion_gear_slot(state: Dictionary, id: String) -> Dictionary:
 ## 兵器/护具数量制 (0.119.0): 同伴换装现在也要过"是否还有空闲的一份"这一关
 ## （EQUIPMENT_RULES.is_available_for），不再是拥有即可无限多人共穿。
 static func equip_companion_weapon(state: Dictionary, id: String, weapon_id: String) -> bool:
-	if not is_valid_companion(id) or not EQUIPMENT_RULES.is_available_for(state, "owned_weapons", "weapon", weapon_id, id):
+	if not is_valid_companion(id) or not is_recruited(state, id) or not EQUIPMENT_RULES.is_available_for(state, "owned_weapons", "weapon", weapon_id, id):
 		return false
 	_companion_gear_slot(state, id).weapon = weapon_id
 	return true
 
 static func equip_companion_armor(state: Dictionary, id: String, armor_id: String) -> bool:
-	if not is_valid_companion(id) or not EQUIPMENT_RULES.is_available_for(state, "owned_armors", "armor", armor_id, id):
+	if not is_valid_companion(id) or not is_recruited(state, id) or not EQUIPMENT_RULES.is_available_for(state, "owned_armors", "armor", armor_id, id):
 		return false
 	_companion_gear_slot(state, id).armor = armor_id
 	return true
 
 static func equip_companion_move(state: Dictionary, id: String, move_id: String) -> bool:
-	if not is_valid_companion(id) or (move_id != "" and move_id not in Array(state.get("learned_moves", []))):
+	if not is_valid_companion(id) or not is_recruited(state, id) or (move_id != "" and move_id not in Array(state.get("learned_moves", []))):
 		return false
 	if not state.has("companion_move") or typeof(state.companion_move) != TYPE_DICTIONARY:
 		state.companion_move = {}
@@ -153,7 +153,7 @@ static func equip_companion_move(state: Dictionary, id: String, move_id: String)
 	return true
 
 static func equip_companion_internal(state: Dictionary, id: String, internal_id: String) -> bool:
-	if not is_valid_companion(id) or (internal_id != "" and internal_id not in Array(state.get("learned_internal", []))):
+	if not is_valid_companion(id) or not is_recruited(state, id) or (internal_id != "" and internal_id not in Array(state.get("learned_internal", []))):
 		return false
 	if not state.has("companion_internal") or typeof(state.companion_internal) != TYPE_DICTIONARY:
 		state.companion_internal = {}
@@ -161,7 +161,7 @@ static func equip_companion_internal(state: Dictionary, id: String, internal_id:
 	return true
 
 static func equip_companion_lightness(state: Dictionary, id: String, lightness_id: String) -> bool:
-	if not is_valid_companion(id) or (lightness_id != "" and lightness_id not in Array(state.get("learned_lightness", []))):
+	if not is_valid_companion(id) or not is_recruited(state, id) or (lightness_id != "" and lightness_id not in Array(state.get("learned_lightness", []))):
 		return false
 	if not state.has("companion_lightness") or typeof(state.companion_lightness) != TYPE_DICTIONARY:
 		state.companion_lightness = {}
