@@ -1957,7 +1957,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.155.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.156.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3109,6 +3109,10 @@ func _screen_after_load() -> String:
 		return "victory"
 	if DEMO_POLICY.is_demo_complete(GameState.data):
 		return "demo_complete"
+	if str(GameState.data.get("quest_stage", "")) == "game_complete" and not GameState.data.ending.is_empty():
+		return "ending"
+	if str(GameState.data.get("quest_stage", "")) == "final_choice":
+		return "final_choice"
 	return "map"
 
 func _show_battle() -> void:
