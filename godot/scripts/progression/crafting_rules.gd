@@ -247,6 +247,8 @@ static func can_craft(state: Dictionary, recipe_id: String) -> bool:
 static func apply(state: Dictionary, recipe_id: String) -> bool:
 	if not can_craft(state, recipe_id):
 		return false
+	state.herbarium_catches = HERBARIUM_RULES.lifetime_catches(state)
+	state.mineralogy_catches = MINERALOGY_RULES.lifetime_catches(state)
 	var cost: Dictionary = effective_cost(state, recipe_id)
 	state.materials.herbs = int(state.materials.get("herbs", 0)) - int(cost.herbs)
 	state.materials.ore = int(state.materials.get("ore", 0)) - int(cost.ore)

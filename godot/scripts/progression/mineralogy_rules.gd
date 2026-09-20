@@ -49,14 +49,17 @@ static func total_catches(collection: Variant) -> int:
 		total += int(safe_collection[specimen_id])
 	return total
 
-static func gather_level(collection: Variant) -> int:
-	return mini(MAX_GATHER_LEVEL, 1 + total_catches(collection) / CATCHES_PER_LEVEL)
+static func gather_level(collection: Variant, lifetime: int = -1) -> int:
+	return mini(MAX_GATHER_LEVEL, 1 + maxi(total_catches(collection), lifetime) / CATCHES_PER_LEVEL)
 
-static func catches_to_next_level(collection: Variant) -> int:
-	var level := gather_level(collection)
+static func catches_to_next_level(collection: Variant, lifetime: int = -1) -> int:
+	var level := gather_level(collection, lifetime)
 	if level >= MAX_GATHER_LEVEL:
 		return 0
-	return level * CATCHES_PER_LEVEL - total_catches(collection)
+	return level * CATCHES_PER_LEVEL - maxi(total_catches(collection), lifetime)
+
+static func lifetime_catches(state: Dictionary) -> int:
+	return maxi(total_catches(state.get("mineralogy", {})), int(state.get("mineralogy_catches", 0)))
 
 static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionary:
 	if not GRADE_POOLS.has(grade):
@@ -64,7 +67,8 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 	if typeof(state.get("mineralogy", {})) != TYPE_DICTIONARY:
 		state.mineralogy = {}
 	var collection: Dictionary = state.mineralogy
-	var level := gather_level(collection)
+	var lifetime := lifetime_catches(state)
+	var level := gather_level(collection, lifetime)
 	var pool: Array = GRADE_POOLS[grade].filter(func(specimen_id): return int(LEVEL_UNLOCK.get(specimen_id, 1)) <= level)
 	if pool.is_empty():
 		pool = [GRADE_POOLS[grade][0]]
@@ -78,7 +82,8 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 	var first_discovery := int(collection.get(specimen_id, 0)) <= 0
 	collection[specimen_id] = int(collection.get(specimen_id, 0)) + 1
 	state.mineralogy = collection
-	var new_level := gather_level(collection)
+	state.mineralogy_catches = lifetime + 1
+	var new_level := gather_level(collection, lifetime + 1)
 	var spec: Dictionary = SPECIMENS[specimen_id]
 	return {
 		"id": specimen_id,
@@ -90,7 +95,7 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 		"silver": 2 if first_discovery else 0,
 		"gather_level": new_level,
 		"leveled_up": new_level > level,
-		"catches_to_next_level": catches_to_next_level(collection)
+		"catches_to_next_level": catches_to_next_level(collection, lifetime + 1)
 	}
 
 static func discovered_count(collection: Variant) -> int:

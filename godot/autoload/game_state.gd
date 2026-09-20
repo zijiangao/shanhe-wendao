@@ -60,6 +60,8 @@ func new_game() -> void:
 		"materials": {"herbs": 0, "ore": 0},
 		"herbarium": {},
 		"mineralogy": {},
+		"herbarium_catches": 0,
+		"mineralogy_catches": 0,
 		"alchemy_crafts": 0,
 		"forge_crafts": 0,
 		"consumables": {"healing_powder": 0, "thunder_stone": 0},
@@ -748,6 +750,8 @@ func _migrate_and_validate() -> void:
 		if count > 0:
 			normalized_mineralogy[specimen_id] = count
 	data.mineralogy = normalized_mineralogy
+	data.herbarium_catches = HERBARIUM_RULES.lifetime_catches(data)
+	data.mineralogy_catches = MINERALOGY_RULES.lifetime_catches(data)
 	data.consumables.healing_powder = maxi(0, int(data.consumables.get("healing_powder", 0)))
 	data.consumables.thunder_stone = maxi(0, int(data.consumables.get("thunder_stone", 0)))
 	# 兵器/护具数量制 (0.119.0): owned_weapons/owned_armors 从"不重复id列表"
