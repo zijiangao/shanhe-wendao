@@ -160,7 +160,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 		actions.append(["运气护体 · 回3气", "brace"])
 		actions.append(["回春散 · 回%d" % BATTLE_ENGINE.healing_amount(player), "heal"])
 		actions.append(["霹雳石 ×%d" % int(player.get("consumables", {}).get("thunder_stone", 0)), "thunder_stone"])
-		actions.append(["取消选择", "inspect"])
+	actions.append(["取消选择", "inspect"])
 	for action in actions:
 		var button := _action_button(action[0], Color("#8b493b") if mode == action[1] else Color("#315f4b"))
 		button.custom_minimum_size.x = 174

@@ -58,5 +58,18 @@ func _run() -> void:
 	await process_frame
 	assert(int(state.data.battle.turn) == previous_turn + 1 and int(state.data.battle.action_points) == 2, "An exhausted saved player turn must advance exactly once.")
 	assert(main.battle_mode == "move", "A new actor must not inherit the previous actor's exclusive skill selection.")
+	state.data.battle.ally = {"name": "林清霜", "hp": 30, "max_hp": 30, "qi": 15, "max_qi": 15, "guard": 0, "attack": 5, "x": 1, "y": 4, "speed": 6, "gauge": 0}
+	state.data.battle.active_unit = "ally"
+	main.battle_mode = "frost_dash"
+	main._rebuild()
+	await process_frame
+	var cancel_buttons: Array = main.active_battle_view.find_children("*", "Button", true, false).filter(func(button: Button): return button.text == "取消选择")
+	assert(cancel_buttons.size() == 1, "A companion must have a cancel-selection control too.")
+	cancel_buttons[0].pressed.emit()
+	assert(main.battle_mode == "inspect")
+	main.toast_label.text = "unchanged"
+	var inspect_before: Dictionary = state.data.duplicate(true)
+	main._tactical_cell(2, 1)
+	assert(state.data == inspect_before and main.toast_label.text == "unchanged", "Inspecting a cell must not spend resources or emit an unknown-action error.")
 	print("Battle turn flow tests passed.")
 	quit()

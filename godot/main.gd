@@ -1943,7 +1943,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.127.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.128.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3368,6 +3368,8 @@ func _show_battle_legacy() -> void:
 ## 行动条改版：点击自己/同伴棋子不再能免费切换 active_unit——一次只有一个
 ## 单位能行动，由行动条（身法）决定，不是玩家自由挑选。
 func _tactical_cell(x: int, y: int) -> void:
+	if enemy_turn_active or battle_mode == "inspect" or GameState.data.battle.is_empty():
+		return
 	var battle: Dictionary = GameState.data.battle
 	if int(battle.action_points) <= 0:
 		_toast("行动点已用尽，请稍候。")
