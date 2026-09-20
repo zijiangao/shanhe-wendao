@@ -52,9 +52,11 @@ func _run() -> void:
 	for enemy in state.data.battle.enemies:
 		enemy.gauge = 0
 	var previous_turn := int(state.data.battle.turn)
+	main.battle_mode = "frost_dash"
 	main._rebuild()
 	await process_frame
 	await process_frame
 	assert(int(state.data.battle.turn) == previous_turn + 1 and int(state.data.battle.action_points) == 2, "An exhausted saved player turn must advance exactly once.")
+	assert(main.battle_mode == "move", "A new actor must not inherit the previous actor's exclusive skill selection.")
 	print("Battle turn flow tests passed.")
 	quit()
