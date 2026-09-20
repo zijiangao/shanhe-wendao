@@ -34,9 +34,11 @@ static func is_valid_task(task_id: String) -> bool:
 static func options_hero(state: Dictionary) -> Array:
 	var options := []
 	var current := str(state.get("weekly_task_hero", ""))
+	var unavailable := bool(state.get("acted_this_week", false)) or not current.is_empty()
 	for task_id in TASKS:
 		var item: Dictionary = TASKS[task_id]
-		options.append(["%s%s" % [str(item.title), "（本周已分派）" if current == task_id else ""], str(item.description), "assign_hero_%s" % task_id, current == task_id])
+		var note := " 本周行动已用完，请结束本周后再分派。" if unavailable else " 占用本周行动，结束本周时结算。"
+		options.append(["%s%s" % [str(item.title), "（本周已分派）" if current == task_id else ""], str(item.description) + note, "assign_hero_%s" % task_id, unavailable])
 	options.append(["返回", "不消耗行动点，返回人物信息。", "leave"])
 	return options
 

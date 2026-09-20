@@ -59,6 +59,11 @@ func _initialize() -> void:
 	var options_state := _hero_state()
 	options_state.weekly_task_hero = "train"
 	var hero_options: Array = RULES.options_hero(options_state)
+	assert(hero_options.slice(0, RULES.TASKS.size()).all(func(o): return bool(o[3])), "A pending assignment must block all competing tasks.")
+	var spent_state := _hero_state()
+	spent_state.acted_this_week = true
+	assert(RULES.options_hero(spent_state).slice(0, RULES.TASKS.size()).all(func(o): return bool(o[3])), "A completed weekly action must disable assignment controls.")
+	assert(RULES.options_hero(_hero_state()).slice(0, RULES.TASKS.size()).all(func(o): return not bool(o[3])), "A fresh week must enable all assignments.")
 	assert(hero_options.size() == RULES.TASKS.size() + 1, "Every task plus one leave row should always be listed.")
 	var train_row := hero_options.filter(func(o): return str(o[2]) == "assign_hero_train")
 	assert(train_row.size() == 1 and bool(train_row[0][3]) and "已分派" in str(train_row[0][0]), "The currently-assigned task's row should be marked and disabled.")
