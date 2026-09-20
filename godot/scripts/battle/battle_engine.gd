@@ -210,7 +210,7 @@ static func _move(battle: Dictionary, player: Dictionary, target: Vector2i) -> D
 	# ally's damage formula entirely separate from the hero's equipment/qi.
 	var lightness_bonus := 0 if str(battle.get("active_unit", "hero")) == "ally" else WUXUE_RULES.lightness_move_bonus(player)
 	if not RULES.can_move_to(battle, target, lightness_bonus):
-		return _failure("只能移动到两格内的空地。")
+		return _failure("只能沿可通行路径移动到%d格内的空地。" % (2 + lightness_bonus))
 	var active_name := _active_name(battle)
 	RULES.set_active_position(battle, target)
 	battle.action_points = int(battle.action_points) - 1

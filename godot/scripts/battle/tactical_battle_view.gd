@@ -114,7 +114,8 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	var active_hp: int = int(battle.ally.hp) if is_ally_turn else int(player.hp)
 	var active_max_hp: int = int(battle.ally.max_hp) if is_ally_turn else int(player.max_hp)
 	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if is_ally_turn else "真气 %d/20 · 护体 %d" % [player.qi, int(battle.get("hero_guard", 0))]
-	status.text = "当前角色：%s    气血 %d/%d    %s\n本次行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.action_points, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
+	var mode_title := BATTLE_ENGINE.ally_dash_title(battle) if mode == "frost_dash" else _mode_name(mode)
+	status.text = "当前角色：%s    气血 %d/%d    %s\n本次行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.action_points, mode_title, BATTLE_ENGINE.objective_text(battle)]
 	if str(battle.get("battle_id", "")) == "qingyun_spar":
 		status.text += "\n演武课题：%s · 兵器方向：%s" % [battle.get("name", "青云切磋"), SPARRING_RULES.discipline_name(str(battle.get("discipline", "swordsmanship")))]
 	status.add_theme_font_size_override("font_size", 17)
@@ -171,7 +172,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	end_button.pressed.connect(func(): end_turn_requested.emit())
 	action_grid.add_child(end_button)
 	var help := Label.new()
-	help.text = BATTLE_ENGINE.hero_action_help(player) if active_name == "沈羽" else "%s：突进两格并攻击 · 消耗%d真气\n寒锋守势：获得护卫并恢复3真气 · 均消耗1行动点" % [BATTLE_ENGINE.ally_dash_title(battle), BATTLE_ENGINE.ally_dash_qi_cost(battle)]
+	help.text = BATTLE_ENGINE.hero_action_help(player) if not is_ally_turn else "%s：突进%d格内并攻击 · 消耗%d真气\n寒锋守势：获得护卫并恢复至多3真气 · 均消耗1行动点" % [BATTLE_ENGINE.ally_dash_title(battle), 2 + BATTLE_ENGINE.ally_dash_bonus_range(battle), BATTLE_ENGINE.ally_dash_qi_cost(battle)]
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", Color("#cfc8b8"))
 	side_box.add_child(help)
@@ -374,6 +375,8 @@ func _animate_skill_name(label: Control) -> void:
 	tween.tween_property(label, "modulate:a", 1.0, 0.12)
 
 func _mode_name(mode: String) -> String:
+	if mode == "armor_splitting_spear":
+		return "裂甲枪"
 	return {"move": "移动", "attack": "普通攻击", "skill": "流云剑法", "blade_skill": "断岳刀法", "thunder_stone": "霹雳石", "brace": "运气护体", "frost_dash": "霜华刺", "frost_guard": "寒锋守势", "stone_splitting_fist": "裂石拳", "night_triple_blade": "暗夜三刀", "inspect": "查看战场"}.get(mode, mode)
 
 func _battle_token(index: int) -> Texture2D:
