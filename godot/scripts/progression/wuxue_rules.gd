@@ -186,6 +186,8 @@ static func options_training(state: Dictionary) -> Array:
 static func _training_row(state: Dictionary, title: String, description: String, level: int, id: String, route: String) -> Array:
 	if level >= MAX_LEVEL:
 		return ["修炼 · %s · 已大成" % title, "%s（已修炼至第10层，无需再练）" % description, route, true]
+	if bool(state.get("acted_this_week", false)) or str(state.get("weekly_task_hero", "")) != "":
+		return ["修炼 · %s · 本周已行动" % title, "休息至下一周后，可继续修炼。", route, true]
 	return ["修炼 · %s Lv.%d（%d/%d 经验）" % [title, level, wuxue_xp(state, id), xp_needed(level)], description, route, false]
 
 static func options_manuals(state: Dictionary) -> Array:

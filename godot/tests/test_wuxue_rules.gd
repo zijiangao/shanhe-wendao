@@ -203,6 +203,13 @@ func _initialize() -> void:
 	var staff_rows: Array = RULES.options_library_category(learned, "staff")
 	assert(staff_rows.size() == 1 and str(staff_rows[0][0]).begins_with("裂甲枪"), "枪棍 should now show the learned 裂甲枪 instead of the empty placeholder.")
 
+	learned.acted_this_week = true
+	var training_rows: Array = RULES.options_training(learned)
+	for row in training_rows:
+		if str(row[2]) != "leave":
+			assert(bool(row[3]), "Spent weekly actions must disable martial training.")
+	learned.acted_this_week = false
+	assert(not bool(RULES.options_training(learned)[0][3]), "A fresh week must reopen training.")
 	print("Wuxue rules tests passed.")
 	quit()
 
