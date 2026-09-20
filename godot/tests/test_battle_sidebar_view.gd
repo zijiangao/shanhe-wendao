@@ -20,6 +20,7 @@ func _run() -> void:
 	var side: Control = main.active_battle_view.get_node("BattleSidebar")
 	var scroll: ScrollContainer = side.get_node("BattleSidebarScroll")
 	assert(side.size.y <= 540 and side.size.x <= 400, "The fully learned battle panel must stay inside its assigned bounds.")
+	assert(side.get_global_rect().end.y <= main.toast_label.get_global_rect().position.y, "The battle sidebar must end above the persistent footer.")
 	assert(scroll.get_v_scroll_bar().max_value > scroll.get_v_scroll_bar().page, "Long battle content must scroll rather than stretch the panel.")
 	var end_buttons: Array = side.find_children("*", "Button", true, false).filter(func(button: Button): return button.text == "结束回合")
 	assert(end_buttons.size() == 1)
@@ -29,6 +30,7 @@ func _run() -> void:
 	var button_rect: Rect2 = end_buttons[0].get_global_rect()
 	var viewport_rect := scroll.get_global_rect()
 	assert(button_rect.position.y >= viewport_rect.position.y - 1 and button_rect.end.y <= viewport_rect.end.y + 1, "Keyboard focus must scroll the entire end-turn button into view.")
+	assert(button_rect.end.y <= main.toast_label.get_global_rect().position.y, "The focused end-turn control must not be hidden by the footer.")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://battle_sidebar_preview.png")

@@ -106,6 +106,9 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	side.size = Vector2(400, 540)
 	side.add_theme_stylebox_override("panel", _box(Color("#14271ff2")))
 	add_child(side)
+	side.anchor_bottom = 1.0
+	side.offset_top = 104.0
+	side.offset_bottom = -8.0
 	var scroll := ScrollContainer.new()
 	scroll.name = "BattleSidebarScroll"
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
