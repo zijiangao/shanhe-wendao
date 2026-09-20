@@ -57,6 +57,12 @@ static func roster(state: Dictionary) -> Array:
 static func is_recruited(state: Dictionary, id: String) -> bool:
 	return id in Array(state.get("companions", []))
 
+static func select_disciple(state: Dictionary, id: String) -> bool:
+	if id != "" and (not is_valid_disciple(id) or not is_recruited(state, id)):
+		return false
+	state.active_disciple = id
+	return true
+
 static func recruit(state: Dictionary, id: String) -> bool:
 	if not is_valid_disciple(id) or is_recruited(state, id) or int(state.get("silver", 0)) < int(DISCIPLES[id].price):
 		return false
@@ -75,10 +81,11 @@ static func options_inn(state: Dictionary) -> Array:
 		var item: Dictionary = DISCIPLES[id]
 		if is_recruited(state, id):
 			var active_note := "（当前随行）" if str(state.get("active_disciple", "")) == id else "（已加入门派）"
-			options.append(["已招募 · %s%s" % [str(item.title), active_note], str(item.description), "none", true])
+			options.append(["已招募 · %s%s" % [str(item.title), active_note], "选择为切磋时的随行弟子。" + str(item.description), "follow_%s" % id, str(state.get("active_disciple", "")) == id])
 		else:
 			options.append(["招募 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "recruit_%s" % id, silver < int(item.price)])
-	options.append(["返回", "不消耗行动点，返回舆图。", "leave"])
+	options.append(["独自切磋", "本次不带随行弟子，可随时再选。", "follow_", str(state.get("active_disciple", "")) == ""])
+	options.append(["返回", "不消耗行动点，返回青云门。", "leave"])
 	return options
 
 ## start_qingyun_spar_battle() (game_state.gd) uses this to build a

@@ -1308,6 +1308,10 @@ func _resolve_choice(route: String) -> void:
 			_toast("弟子已加入门派，随行出战青云门切磋。")
 			SaveManager.save_auto()
 			_show_qingyun_tavern()
+		elif route.begins_with("follow_"):
+			if COMPANION_RULES.select_disciple(GameState.data, route.trim_prefix("follow_")):
+				SaveManager.save_auto()
+				_show_qingyun_tavern()
 		return
 	elif choice_event == "companion_weapon":
 		if route == "leave":
@@ -1953,7 +1957,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.135.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.136.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

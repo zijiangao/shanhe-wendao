@@ -21,16 +21,16 @@ func _initialize() -> void:
 	# options_inn() must reflect affordability and current roster state for the choice-menu UI.
 	var poor := _state()
 	var poor_options: Array = RULES.options_inn(poor)
-	assert(poor_options.size() == RULES.DISCIPLES.size() + 1, "Every catalog entry plus one leave row should always be listed.")
+	assert(poor_options.size() == RULES.DISCIPLES.size() + 2, "Every disciple plus solo and leave rows should be listed.")
 	for option in poor_options.slice(0, poor_options.size() - 1):
 		assert(bool(option[3]), "Every unrecruited disciple should be disabled when the hero has no silver.")
 	var leave_row: Array = poor_options.back()
 	assert(str(leave_row[2]) == "leave" and not (leave_row.size() > 3 and bool(leave_row[3])), "Leaving the tavern must always stay enabled.")
 
 	var rich_options: Array = RULES.options_inn(state)
-	var zhou_row := rich_options.filter(func(o): return str(o[2]) == "none" and str(o[0]).begins_with("已招募 · 周慕白"))
-	assert(zhou_row.size() == 1 and "已加入门派" in str(zhou_row[0][0]), "A recruited-but-not-active disciple should show a read-only joined row.")
-	var liu_row := rich_options.filter(func(o): return str(o[2]) == "none" and str(o[0]).begins_with("已招募 · 柳如烟"))
+	var zhou_row := rich_options.filter(func(o): return str(o[2]) == "follow_zhou_mubai")
+	assert(zhou_row.size() == 1 and not bool(zhou_row[0][3]), "An earlier recruit must remain selectable.")
+	var liu_row := rich_options.filter(func(o): return str(o[2]) == "follow_liu_ruyan")
 	assert(liu_row.size() == 1 and "当前随行" in str(liu_row[0][0]), "The active disciple's row should be marked as currently accompanying the hero.")
 
 	# active_disciple_ally() feeds GameState.start_qingyun_spar_battle()'s
@@ -39,6 +39,11 @@ func _initialize() -> void:
 	assert(empty_ally.is_empty(), "A hero with no active disciple should get no spar ally at all.")
 	var liu_ally := RULES.active_disciple_ally(state)
 	assert(str(liu_ally.name) == "柳如烟" and int(liu_ally.hp) == int(liu_ally.max_hp) and int(liu_ally.hp) == int(RULES.DISCIPLES.liu_ruyan.hp), "The active disciple's ally dict should start at full hp matching the catalog.")
+	var silver_before := int(state.silver)
+	assert(RULES.select_disciple(state, "zhou_mubai") and str(RULES.active_disciple_ally(state).name) == "周慕白")
+	assert(not RULES.select_disciple(state, "nobody") and str(state.active_disciple) == "zhou_mubai")
+	assert(RULES.select_disciple(state, "") and RULES.active_disciple_ally(state).is_empty())
+	assert(int(state.silver) == silver_before, "Switching companions must not charge recruitment fees again.")
 
 	# 人物界面左右分栏浏览器 (0.111.0) -- roster()/companion_entry()/
 	# is_valid_companion() feed that screen's left-column roster and each
