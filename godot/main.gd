@@ -1957,7 +1957,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.146.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.147.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2948,7 +2948,7 @@ func _show_settings() -> void:
 	panel.add_child(utility_row)
 	var controls := _action_button("键位设置", Color("#315746"))
 	controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	controls.pressed.connect(func(): previous_screen = "settings"; screen = "controls"; rebinding_action = ""; _rebuild())
+	controls.pressed.connect(func(): screen = "controls"; rebinding_action = ""; _rebuild())
 	utility_row.add_child(controls)
 	var reset := _action_button("恢复默认设置", Color("#806c4f"))
 	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -3003,7 +3003,7 @@ func _show_controls() -> void:
 	reset_keys.pressed.connect(func(): rebinding_action = ""; SettingsManager.reset_key_bindings(); _rebuild())
 	panel.add_child(reset_keys)
 	var back := _action_button("返回设置", Color("#315746"))
-	back.pressed.connect(func(): rebinding_action = ""; screen = "settings"; previous_screen = "map"; _rebuild())
+	back.pressed.connect(func(): rebinding_action = ""; screen = "settings"; _rebuild())
 	panel.add_child(back)
 
 func _add_volume_setting(parent: VBoxContainer, label_text: String, key: String) -> void:

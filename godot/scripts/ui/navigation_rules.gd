@@ -15,6 +15,8 @@ static func should_save_on_quit(screen: String, state: Dictionary) -> bool:
 	return screen != "menu" and not state.is_empty()
 
 static func back_action(screen: String, previous_screen: String = "map") -> Dictionary:
+	if screen == "controls":
+		return {"allowed": true, "target": "settings", "message": ""}
 	if screen in ["battle", "dialogue", "choice", "defeat"]:
 		return {"allowed": false, "target": "", "message": _blocked_message(screen)}
 	if screen in OVERLAY_SCREENS:
