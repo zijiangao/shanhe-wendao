@@ -380,7 +380,8 @@ static func _frost_dash(battle: Dictionary, player: Dictionary, target: Vector2i
 		return _failure("%s需要%d点真气，并只能突进攻击%d格内的敌人。" % [ally_dash_title(battle), qi_cost, 2 + bonus_range])
 	var move := ally_dash_move(battle)
 	var enemy_index := RULES.enemy_at(battle, target)
-	var damage := int(battle.ally.attack) + 6 + int(move.get("level_damage_bonus", 0)) + int(player.skill_mastery.frost / 3) + _roll_bonus(rng)
+	var learned_bonus := WUXUE_RULES.move_damage_bonus(player, str(battle.ally.get("move_id", "")))
+	var damage := int(battle.ally.attack) + 6 + int(move.get("level_damage_bonus", 0)) + learned_bonus + int(player.skill_mastery.frost / 3) + _roll_bonus(rng)
 	battle.ally.qi = int(battle.ally.qi) - qi_cost
 	player.skill_mastery.frost = int(player.skill_mastery.frost) + 1
 	_apply_enemy_damage(battle, enemy_index, target, damage, "skill")

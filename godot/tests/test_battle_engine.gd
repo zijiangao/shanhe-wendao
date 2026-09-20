@@ -6,6 +6,7 @@ const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 func _initialize() -> void:
 	_test_victory_detection()
 	_test_actual_exposure_gain()
+	_test_companion_move_levels()
 	_test_enemy_telegraphs()
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
@@ -1102,6 +1103,26 @@ func _test_actual_exposure_gain() -> void:
 			var expected := mini(2 - stacks, 1 if actor == "ally" else 2)
 			assert(int(battle.enemies[0].exposure) == stacks + expected, "Companions must not inherit the hero's blade mastery.")
 			assert(("制造%d层破绽" % expected in str(battle.result)) if expected > 0 else not "制造" in str(battle.result), "Combat feedback must report the actual capped exposure gain.")
+
+func _test_companion_move_levels() -> void:
+	for move_id in WUXUE_RULES.MOVES:
+		var base := _fixture()
+		base.active_unit = "ally"
+		base.action_points = 2
+		base.ally.x = 2
+		base.ally.y = 1
+		base.ally.move_id = move_id
+		base.enemies[0].hp = 200
+		var upgraded := base.duplicate(true)
+		var novice := _player_fixture()
+		novice.move_levels = {move_id: 1}
+		var master := novice.duplicate(true)
+		master.move_levels[move_id] = 10
+		var base_hit := ENGINE.player_action(base, novice, "frost_dash", Vector2i(4, 1), _seeded_rng())
+		var upgraded_hit := ENGINE.player_action(upgraded, master, "frost_dash", Vector2i(4, 1), _seeded_rng())
+		assert(base_hit.ok and upgraded_hit.ok)
+		assert(int(upgraded_hit.damage) == int(base_hit.damage) + 9, "Every borrowed move must use its trained level for companion damage.")
+		assert(base.ally.qi == upgraded.ally.qi and base.action_points == upgraded.action_points, "Move levels must not change qi or action costs.")
 
 func _seeded_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
