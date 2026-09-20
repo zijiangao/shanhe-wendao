@@ -5,6 +5,7 @@ const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 
 func _initialize() -> void:
 	_test_victory_detection()
+	_test_actual_exposure_gain()
 	_test_enemy_telegraphs()
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
@@ -1083,6 +1084,24 @@ func _test_turn_order_queue() -> void:
 	assert(first_preview == second_preview, "Two consecutive preview_queue() calls with no real turn taken between them must return identical results.")
 	assert(first_preview.size() == 4, "preview_queue() should return exactly as many entries as requested while units remain alive.")
 	assert(str(snapshot_before.hero_gauge) == str(preview_battle.hero_gauge) and str(snapshot_before.ally.gauge) == str(preview_battle.ally.gauge) and str(snapshot_before.enemies[0].gauge) == str(preview_battle.enemies[0].gauge), "preview_queue() must never mutate the real battle dict's gauge fields.")
+
+func _test_actual_exposure_gain() -> void:
+	for actor in ["hero", "ally"]:
+		for stacks in range(3):
+			var battle := _fixture()
+			battle.active_unit = actor
+			battle.action_points = 2
+			battle.enemies[0].x = 2
+			battle.enemies[0].y = 1 if actor == "hero" else 3
+			battle.enemies[0].hp = 200
+			battle.enemies[0].exposure = stacks
+			var player := _player_fixture()
+			player.bladesmanship = 100
+			var outcome := ENGINE.player_action(battle, player, "attack", Vector2i(2, int(battle.enemies[0].y)), _seeded_rng())
+			assert(outcome.ok)
+			var expected := mini(2 - stacks, 1 if actor == "ally" else 2)
+			assert(int(battle.enemies[0].exposure) == stacks + expected, "Companions must not inherit the hero's blade mastery.")
+			assert(("制造%d层破绽" % expected in str(battle.result)) if expected > 0 else not "制造" in str(battle.result), "Combat feedback must report the actual capped exposure gain.")
 
 func _seeded_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

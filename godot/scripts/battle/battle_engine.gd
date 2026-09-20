@@ -227,11 +227,15 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	var damage := maxi(1, base_damage + _roll_bonus(rng) - armor)
 	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
 	var target_survived := int(battle.enemies[enemy_index].hp) > 0
+	var exposure_added := 0
 	if target_survived:
-		battle.enemies[enemy_index].exposure = mini(2, RULES.enemy_exposure(battle.enemies[enemy_index]) + TRAINING_RULES.attack_exposure_gain(int(player.get("bladesmanship", 0))))
+		var old_exposure := RULES.enemy_exposure(battle.enemies[enemy_index])
+		var exposure_gain := 1 if str(battle.get("active_unit", "hero")) == "ally" else TRAINING_RULES.attack_exposure_gain(int(player.get("bladesmanship", 0)))
+		battle.enemies[enemy_index].exposure = mini(2, old_exposure + exposure_gain)
+		exposure_added = int(battle.enemies[enemy_index].exposure) - old_exposure
 	battle.action_points = int(battle.action_points) - 1
 	var armor_note := "（护甲抵消%d）" % armor if armor > 0 else ""
-	var exposure_note := "，并制造1层破绽" if target_survived else ""
+	var exposure_note := "，并制造%d层破绽" % exposure_added if exposure_added > 0 else ""
 	battle.result = "%s对%s造成%d点伤害%s%s。" % [_active_name(battle), battle.enemies[enemy_index].name, damage, armor_note, exposure_note]
 	battle.skill_flash = false
 	battle.skill_name = ""
