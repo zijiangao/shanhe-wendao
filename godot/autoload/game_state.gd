@@ -153,7 +153,12 @@ func end_week() -> bool:
 			var companion_title := str(companion_entry.get("title", companion_id))
 			match str(companion_result.get("task", "")):
 				"earn": add_log("%s跑了一趟买卖，赚回%d两银子。" % [companion_title, int(companion_result.get("silver", 0))])
-				"train": add_log("%s潜心修炼，战力更进一层。" % companion_title if int(companion_result.get("attack_bonus_gained", 0)) > 0 else "%s潜心修炼，但已到当前的成长上限。" % companion_title)
+				"train":
+					var levels_gained := int(companion_result.get("levels_gained", 0))
+					var progress := "%s潜心修炼，获得%d点修为。" % [companion_title, int(companion_result.get("xp_gained", 0))]
+					if levels_gained > 0:
+						progress += "提升%d级，四维属性与气血上限提高。" % levels_gained
+					add_log(progress)
 				"gather": add_log("%s采回%d份药材、%d份矿石。" % [companion_title, int(companion_result.get("herbs", 0)), int(companion_result.get("ore", 0))])
 	data.week = mini(FINAL_WEEK, int(data.week) + 1)
 	data.acted_this_week = false

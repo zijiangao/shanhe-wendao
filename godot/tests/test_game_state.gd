@@ -222,6 +222,9 @@ func _initialize() -> void:
 	assert(int(state.data.silver) > 700, "Ending the week should have credited 沈羽's 赚钱 task's silver (700 remained after recruiting 周慕白 for 300).")
 	assert(WEEKLY_TASK_RULES.companion_xp(state.data, "zhou_mubai") == WEEKLY_TASK_RULES.COMPANION_TRAIN_XP, "Ending the week should have resolved 周慕白's persistent 修炼 task too, granting companion xp.")
 	assert(str(state.data.companion_tasks.zhou_mubai) == "train", "A companion's task assignment must survive end_week() -- it's persistent, unlike 沈羽's.")
+	assert(state.data.log.any(func(entry): return "周慕白" in str(entry) and "获得12点修为" in str(entry)), "Weekly training must report earned experience, not a nonexistent cap.")
+	assert(state.end_week() and state.end_week())
+	assert(state.data.log.any(func(entry): return "周慕白" in str(entry) and "提升1级" in str(entry)), "Level-crossing training must explicitly report the level gained.")
 	assert(state.assign_companion_task("zhou_mubai", ""), "A companion's task can be cancelled by assigning an empty task id.")
 	assert(not state.assign_companion_task("liu_ruyan", "earn"), "Assigning a task to a disciple who hasn't even been recruited must be rejected.")
 
