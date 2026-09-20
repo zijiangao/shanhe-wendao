@@ -1,5 +1,10 @@
 # Building 山河问道
 
+## 0.124.0 — full game
+
+更新新手引导以匹配独立回合、行动条压制和每周行动规则
+
+
 ## 0.123.0 — accurate battle warnings (full game)
 
 Enemy intent and boss danger cells now predict the next action, including the

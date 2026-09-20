@@ -114,7 +114,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	var active_hp: int = int(battle.ally.hp) if is_ally_turn else int(player.hp)
 	var active_max_hp: int = int(battle.ally.max_hp) if is_ally_turn else int(player.max_hp)
 	var qi_text: String = "真气 %d/%d · 护卫 %d" % [battle.ally.qi, battle.ally.max_qi, battle.ally.guard] if is_ally_turn else "真气 %d/20 · 护体 %d" % [player.qi, int(battle.get("hero_guard", 0))]
-	status.text = "当前角色：%s    气血 %d/%d    %s\n共享行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.action_points, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
+	status.text = "当前角色：%s    气血 %d/%d    %s\n本次行动点 %d/2    当前：%s\n目标：%s" % [active_name, active_hp, active_max_hp, qi_text, battle.action_points, _mode_name(mode), BATTLE_ENGINE.objective_text(battle)]
 	if str(battle.get("battle_id", "")) == "qingyun_spar":
 		status.text += "\n演武课题：%s · 兵器方向：%s" % [battle.get("name", "青云切磋"), SPARRING_RULES.discipline_name(str(battle.get("discipline", "swordsmanship")))]
 	status.add_theme_font_size_override("font_size", 17)
