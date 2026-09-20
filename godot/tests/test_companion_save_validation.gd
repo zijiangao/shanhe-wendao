@@ -36,5 +36,13 @@ func _initialize() -> void:
 	saved.equipped_lightness = ""
 	assert(state.import_data(saved))
 	assert(state.data.equipped_internal == "" and state.data.equipped_lightness == "", "Explicit unequip choices must survive loading.")
+	var original_power: int = state.power()
+	saved.learned_moves.append("cloud_sword")
+	saved.learned_internal.append("purple_mist_art")
+	saved.learned_lightness.append("ripple_steps")
+	assert(state.import_data(saved))
+	assert(state.data.learned_moves == ["cloud_sword"])
+	assert(state.data.learned_internal.count("purple_mist_art") == 1 and state.data.learned_lightness.count("ripple_steps") == 1)
+	assert(state.power() == original_power, "Duplicate learned skills must not inflate combat power.")
 	print("Companion save validation tests passed.")
 	quit()

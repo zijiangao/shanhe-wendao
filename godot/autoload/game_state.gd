@@ -768,13 +768,13 @@ func _migrate_and_validate() -> void:
 			EQUIPMENT_RULES.reconcile_wearers(data, pair[1], pair[0], str(item_id))
 	if typeof(data.get("learned_moves", [])) != TYPE_ARRAY:
 		data.learned_moves = []
-	data.learned_moves = Array(data.learned_moves).filter(func(id): return WUXUE_RULES.MOVES.has(str(id)))
+	data.learned_moves = _unique_learned(data.learned_moves, WUXUE_RULES.MOVES)
 	if typeof(data.get("learned_internal", [])) != TYPE_ARRAY:
 		data.learned_internal = []
-	data.learned_internal = Array(data.learned_internal).filter(func(id): return WUXUE_RULES.INTERNAL.has(str(id)))
+	data.learned_internal = _unique_learned(data.learned_internal, WUXUE_RULES.INTERNAL)
 	if typeof(data.get("learned_lightness", [])) != TYPE_ARRAY:
 		data.learned_lightness = []
-	data.learned_lightness = Array(data.learned_lightness).filter(func(id): return WUXUE_RULES.LIGHTNESS.has(str(id)))
+	data.learned_lightness = _unique_learned(data.learned_lightness, WUXUE_RULES.LIGHTNESS)
 	if str(data.get("equipped_internal", "")) != "" and str(data.equipped_internal) not in data.learned_internal:
 		data.equipped_internal = "foundational_qi"
 	if str(data.get("equipped_lightness", "")) != "" and str(data.equipped_lightness) not in data.learned_lightness:
@@ -825,6 +825,14 @@ func _migrate_and_validate() -> void:
 		data.location = "qingyun"
 	if not data.battle.is_empty() and data.battle_retry.is_empty():
 		capture_battle_checkpoint()
+
+func _unique_learned(learned: Array, catalog: Dictionary) -> Array:
+	var result := []
+	for value in learned:
+		var id := str(value)
+		if catalog.has(id) and id not in result:
+			result.append(id)
+	return result
 
 func _clamped_levels(levels: Dictionary, learned: Array) -> Dictionary:
 	var cleaned := {}
