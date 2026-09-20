@@ -89,6 +89,7 @@ static func advance_turn(battle: Dictionary) -> String:
 		elif id.begins_with("enemy:"):
 			battle.enemies[int(id.split(":")[1])].gauge = gauge
 	battle.active_unit = winner
+	battle.action_points = 0
 	if winner == "hero" or winner == "ally":
 		battle.action_points = 2
 	if winner == "hero":
@@ -171,6 +172,8 @@ static func hero_action_help(player: Dictionary) -> String:
 	return text
 
 static func player_action(battle: Dictionary, player: Dictionary, action: String, target: Vector2i = Vector2i.ZERO, rng: RandomNumberGenerator = null) -> Dictionary:
+	if str(battle.get("active_unit", "hero")) not in ["hero", "ally"]:
+		return _failure("敌方正在行动，请稍候。")
 	if int(battle.action_points) <= 0:
 		return _failure("行动点已用尽，请结束回合。")
 	match action:

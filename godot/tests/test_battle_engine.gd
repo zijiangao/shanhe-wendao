@@ -1016,7 +1016,16 @@ func _test_turn_order_queue() -> void:
 	battle.ally.gauge = 0
 	battle.enemies[0].speed = 20
 	battle.enemies[0].gauge = 0
+	battle.action_points = 2
 	var first_winner := ENGINE.advance_turn(battle)
+	assert(int(battle.action_points) == 0, "An enemy turn must not retain player action points.")
+	var blocked_player := _player_fixture()
+	battle.action_points = 2
+	var battle_before := battle.duplicate(true)
+	var player_before := blocked_player.duplicate(true)
+	var blocked_action := ENGINE.player_action(battle, blocked_player, "attack", Vector2i(4, 1))
+	assert(not bool(blocked_action.ok), "Player input must be rejected during an enemy turn, even with stale action points.")
+	assert(battle == battle_before and blocked_player == player_before, "Rejected out-of-turn input must preserve all battle and player state.")
 	assert(first_winner == "enemy:0", "The fastest unit (speed 20) should reach the action threshold first and act before anyone else.")
 	assert(int(battle.enemies[0].gauge) == 0, "Acting should decrement the winner's gauge by exactly the threshold (100), and 20*5=100 leaves a clean zero remainder.")
 	assert(int(battle.hero_gauge) == 50 and int(battle.ally.gauge) == 25, "Every other unit's gauge should have advanced by their own speed times the same number of ticks the winner needed.")

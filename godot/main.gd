@@ -1943,7 +1943,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.121.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.122.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3114,8 +3114,20 @@ func _show_battle() -> void:
 	view.cell_selected.connect(_tactical_cell)
 	view.mode_selected.connect(_battle_mode_selected)
 	view.end_turn_requested.connect(_end_active_turn)
+	_resume_battle_turn.call_deferred()
+
+func _resume_battle_turn() -> void:
+	if screen != "battle" or enemy_turn_active or GameState.data.battle.is_empty():
+		return
+	var battle: Dictionary = GameState.data.battle
+	if str(battle.get("active_unit", "hero")).begins_with("enemy:"):
+		_advance_battle_queue(true)
+	elif int(battle.action_points) <= 0:
+		_advance_battle_queue()
 
 func _battle_mode_selected(next_mode: String) -> void:
+	if enemy_turn_active:
+		return
 	if next_mode in ["frost_guard", "brace", "heal"]:
 		_execute_player_action(next_mode)
 		return
@@ -3363,6 +3375,8 @@ func _tactical_cell(x: int, y: int) -> void:
 	_execute_player_action(battle_mode, Vector2i(x, y))
 
 func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) -> void:
+	if enemy_turn_active or GameState.data.battle.is_empty():
+		return
 	var outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, action, target)
 	if not bool(outcome.ok):
 		AudioFeedback.play("error")
@@ -3384,7 +3398,11 @@ func _execute_player_action(action: String, target: Vector2i = Vector2i.ZERO) ->
 
 ## "结束回合"按钮：放弃当前单位剩余的行动点，直接推进行动条到下一位。
 func _end_active_turn() -> void:
+	if enemy_turn_active or GameState.data.battle.is_empty():
+		return
 	var battle: Dictionary = GameState.data.battle
+	if str(battle.get("active_unit", "hero")) not in ["hero", "ally"]:
+		return
 	battle.action_points = 0
 	GameState.data.battle = battle
 	_advance_battle_queue()
@@ -3393,14 +3411,15 @@ func _end_active_turn() -> void:
 ## BATTLE_ENGINE.advance_turn() 推进到下一位单位；轮到敌人就解析这一个
 ## 敌人的行动并播放其动画，再继续推进，直到轮到沈羽或同伴为止——玩家
 ## 体验上仍然是"看几个敌人依次行动，然后轮到我"，不需要额外点击。
-func _advance_battle_queue() -> void:
+func _advance_battle_queue(resume_current: bool = false) -> void:
 	if enemy_turn_active:
 		return
 	enemy_turn_active = true
 	var battle: Dictionary = GameState.data.battle
 	var hero_hp := int(GameState.data.hp)
 	while true:
-		var winner := BATTLE_ENGINE.advance_turn(battle)
+		var winner := str(battle.active_unit) if resume_current else BATTLE_ENGINE.advance_turn(battle)
+		resume_current = false
 		if winner == "hero" or winner == "ally":
 			break
 		var enemy_index := int(winner.split(":")[1])

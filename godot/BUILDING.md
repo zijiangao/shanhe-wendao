@@ -1,11 +1,33 @@
 # Building 山河问道
 
+## 0.122.0 — battle turn continuation
+
+Enemy-first openings now execute the selected enemy before advancing the queue.
+Loading a pending enemy turn or an exhausted player turn resumes automatically.
+Player actions are rejected during enemy turns and their presentation. The battle
+engine, battle rules, game state, save recovery, and new turn-flow regression tests
+passed in an isolated test project.
+
 ## Requirements
 
 - Godot 4.7.1 stable
 - Godot 4.7.1 Windows export templates
 
 ## Run automated tests
+
+### Battle turn continuation regression
+
+`tests/test_battle_turn_flow.gd` covers enemy-first openings, loading a pending enemy
+turn, rejecting input during enemy presentation, and continuing an exhausted player
+turn. It writes autosaves, so run it only in an isolated copy of the project: change
+that copy's `application/config/name` to `ShanheWendao-iteration-tests` and point the
+test process's `APPDATA` at a temporary directory. The test refuses the shipping
+project name to protect player saves. Run with `--headless --script
+res://tests/test_battle_turn_flow.gd`; success prints `Battle turn flow tests passed.`
+
+The continuation fix resolves the already-selected opening enemy before advancing
+the queue again. Enemy turns clear player action points, and both the engine and
+the screen controller reject player actions while enemies are acting.
 
 From the repository root, run each test scene headlessly:
 
