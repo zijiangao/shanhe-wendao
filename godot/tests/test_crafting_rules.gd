@@ -144,6 +144,13 @@ func _initialize() -> void:
 	smith2.forge_crafts = 4
 	assert(RULES.apply(smith2, "star_marrow_blade") and int(smith2.owned_weapons.get("star_marrow_blade", 0)) == 1, "Reaching 锻造坊 level 5 (via 4 prior crafts, e.g. all existing gear) should unlock 星陨寒锋.")
 
+	var poor := _state()
+	poor.materials = {"herbs": 0, "ore": 0}
+	poor.silver = 0
+	assert("药材 0/2" in str(RULES.options_alchemy(poor)[0][1]))
+	assert("银两 0/15" in str(RULES.options_alchemy(poor)[1][1]))
+	assert("矿石 0/5" in str(RULES.options_forge(poor)[0][1]))
+	assert("材料不足" not in str(RULES.options_alchemy(_state())[0][1]))
 	print("Crafting rules tests passed.")
 	quit()
 

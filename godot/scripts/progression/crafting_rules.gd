@@ -149,6 +149,8 @@ static func options_alchemy(state: Dictionary) -> Array:
 		[RECIPES.constitution_pill.title, "%s%s 当前根骨 %d。" % [RECIPES.constitution_pill.description, _specimens_note(state, RECIPES.constitution_pill.cost.specimens), int(state.get("constitution", 0))], "constitution_pill", not can_craft(state, "constitution_pill")],
 		[RECIPES.vitality_pill.title, "%s%s%s" % [RECIPES.vitality_pill.description, _specimens_note(state, RECIPES.vitality_pill.cost.specimens), _level_note(state, "vitality_pill")], "vitality_pill", not can_craft(state, "vitality_pill")],
 	]
+	for row in options:
+		row[1] = str(row[1]) + _resource_note(state, str(row[2]))
 	options.append(["离开炼药坊", "不消耗材料，直接返回青云门。", "leave"])
 	return options
 
@@ -169,7 +171,18 @@ static func _gear_row(state: Dictionary, id: String, owned_key: String) -> Array
 	var owned_note := "（已拥有 %d 件）" % owned_count if owned_count > 0 else ""
 	var cost: Dictionary = effective_cost(state, id)
 	var discount_note := "（挖矿大成减免）" if int(cost.ore) < int(RECIPES[id].cost.ore) else ""
-	return ["%s · 矿石%d%s%s" % [str(item.title), int(cost.ore), discount_note, owned_note], "%s%s%s" % [str(item.description), _specimens_note(state, cost.specimens), _level_note(state, id)], id, not can_craft(state, id)]
+	return ["%s · 矿石%d%s%s" % [str(item.title), int(cost.ore), discount_note, owned_note], "%s%s%s%s" % [str(item.description), _specimens_note(state, cost.specimens), _level_note(state, id), _resource_note(state, id)], id, not can_craft(state, id)]
+
+static func _resource_note(state: Dictionary, id: String) -> String:
+	var cost := effective_cost(state, id)
+	var missing: Array[String] = []
+	var names := {"herbs": "药材", "ore": "矿石", "silver": "银两"}
+	for key in names:
+		var have := int(state.get("silver", 0)) if key == "silver" else int(state.get("materials", {}).get(key, 0))
+		var need := int(cost.get(key, 0))
+		if have < need:
+			missing.append("%s %d/%d" % [names[key], have, need])
+	return " 【材料不足：%s】" % "、".join(missing) if not missing.is_empty() else ""
 
 ## 炼药坊/锻造坊等级 (0.118.0) 门槛提示，跟 _specimens_note() 同款风格——
 ## 只有真正被 RECIPE_LEVEL_REQUIREMENT 卡住的配方才会显示，已解锁的配方
