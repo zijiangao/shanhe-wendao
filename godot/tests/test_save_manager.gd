@@ -19,6 +19,14 @@ func _initialize() -> void:
 	corrupt.close()
 	assert(save_manager._load(TEST_PATH), "Loading should recover from a valid backup.")
 	assert(int(game_state.data.week) == 8, "Backup recovery should restore the previous generation.")
+	game_state.data.week = 11
+	assert(save_manager._write(TEST_PATH, game_state.data))
+	assert(int(save_manager._read_dictionary(TEST_PATH + ".bak").week) == 8, "Saving after recovery must preserve the last healthy backup.")
+	assert(DirAccess.make_dir_absolute(TEST_PATH + ".tmp") == OK)
+	assert(not save_manager._write(TEST_PATH, game_state.data), "An unavailable temporary file must fail safely.")
+	assert(int(save_manager._read_dictionary(TEST_PATH).week) == 11 and int(save_manager._read_dictionary(TEST_PATH + ".bak").week) == 8)
+	assert(DirAccess.remove_absolute(TEST_PATH + ".tmp") == OK)
+	game_state.data.week = 8
 
 	_cleanup()
 	assert(str(ProjectSettings.get_setting("application/config/name")).ends_with("-tests"))

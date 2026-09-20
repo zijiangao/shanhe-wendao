@@ -39,7 +39,12 @@ func _write(path: String, value: Dictionary) -> bool:
 		push_error("Unable to open temporary save file: %s" % temporary_path)
 		return false
 	file.store_string(JSON.stringify(value, "  "))
+	file.flush()
+	var write_error := file.get_error()
 	file.close()
+	if write_error != OK:
+		push_error("Unable to finish writing temporary save file: %s" % temporary_path)
+		return false
 	var directory := DirAccess.open("user://")
 	if directory == null:
 		push_error("Unable to access the save directory.")
@@ -47,9 +52,14 @@ func _write(path: String, value: Dictionary) -> bool:
 	var relative_path := path.trim_prefix("user://")
 	var relative_temporary_path := temporary_path.trim_prefix("user://")
 	var backup_path := relative_path + ".bak"
+	# A recovered journey must not replace its healthy backup with a corrupt primary.
+	if FileAccess.file_exists(path) and _read_dictionary(path).is_empty():
+		if directory.remove(relative_path) != OK:
+			return false
 	if FileAccess.file_exists(path):
 		if directory.file_exists(backup_path):
-			directory.remove(backup_path)
+			if directory.remove(backup_path) != OK:
+				return false
 		var backup_error := directory.rename(relative_path, backup_path)
 		if backup_error != OK:
 			push_error("Unable to back up save file: %s" % path)
