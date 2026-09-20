@@ -771,7 +771,7 @@ func _switch_screen(next: String) -> void:
 		return
 	if next != "menu" and screen == "menu" and GameState.data.is_empty():
 		GameState.new_game()
-	if next in NAVIGATION_RULES.OVERLAY_SCREENS:
+	if next in NAVIGATION_RULES.OVERLAY_SCREENS and screen not in NAVIGATION_RULES.OVERLAY_SCREENS:
 		previous_screen = screen
 	# 背包网格改版 (0.120.0)：只在真正切入背包时重置选中项，背包内部的装备
 	# 操作走 _show_backpack() 直接刷新，不经过这里，选中格因此不会被打断。
@@ -1957,7 +1957,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.152.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.153.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

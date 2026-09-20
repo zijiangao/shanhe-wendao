@@ -24,5 +24,16 @@ func _run() -> void:
 		assert(main.screen == "settings")
 		main._unhandled_input(cancel)
 		assert(main.screen == origin, "Settings must retain its source after editing controls.")
+	for origin in ["location", "map", "menu"]:
+		main.screen = origin
+		for overlay in ["backpack", "quests", "character", "character", "settings"]:
+			main._switch_screen(overlay)
+			await process_frame
+			assert(main.previous_screen == origin, "Switching overlays must not replace the gameplay return destination.")
+		var cancel := InputEventAction.new()
+		cancel.action = "ui_cancel"
+		cancel.pressed = true
+		main._unhandled_input(cancel)
+		assert(main.screen == origin, "Back must leave the overlay chain instead of looping between pages.")
 	print("Settings return flow tests passed.")
 	quit()
