@@ -39,6 +39,7 @@ func _initialize() -> void:
 	# 取模"，直接播种 actions_taken，不再靠 battle.turn。
 	battle.enemies[0].actions_taken = 3
 	assert(RULES.is_aimed_shot_turn(battle.enemies[0]), "Archers should telegraph an aimed shot every third of their own actions.")
+	battle.enemies[0].actions_taken = 2
 	assert("穿云箭" in RULES.enemy_preview(battle) and "拖慢其行动条" in RULES.enemy_preview(battle), "Enemy preview should teach the aimed shot and its counterplay stakes.")
 
 	battle.active_unit = "ally"
@@ -56,7 +57,7 @@ func _initialize() -> void:
 	battle.enemies[0].y = 2
 	battle.enemies[0].range = 1
 	battle.enemies[0].role = "brute"
-	battle.enemies[0].actions_taken = 2
+	battle.enemies[0].actions_taken = 1
 	var preview: String = RULES.enemy_preview(battle)
 	assert("蓄力重击林清霜" in preview, "Enemy previews should identify a brute's target and heavy attack.")
 	assert(RULES.enemy_armor(battle.enemies[0]) == 2 and "护甲2" in preview, "Brutes should expose their default armor in the enemy preview.")
@@ -68,6 +69,8 @@ func _initialize() -> void:
 	battle.enemies = [boss]
 	assert(RULES.boss_phase(boss) == 2 and RULES.enemy_move_steps(boss) == 2, "A half-health boss should enter phase two and move faster.")
 	assert(RULES.is_boss_sweep_turn(boss), "The phase-two boss should telegraph a sweep every third of its own actions.")
+	boss.phase_two_started = true
+	boss.actions_taken = 2
 	assert(RULES.in_boss_sweep_range(boss, Vector2i(1, 2)) and not RULES.in_boss_sweep_range(boss, Vector2i(0, 2)), "The boss sweep should have an exact two-cell Manhattan radius.")
 	assert(RULES.is_boss_sweep_cell(battle, Vector2i(1, 2)) and not RULES.is_boss_sweep_cell(battle, Vector2i(0, 2)), "Battle cells should expose the telegraphed sweep danger zone to the UI.")
 	assert("立即撤离" in RULES.enemy_preview(battle), "The boss sweep preview should clearly teach its counterplay.")

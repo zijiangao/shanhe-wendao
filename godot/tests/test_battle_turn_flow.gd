@@ -22,6 +22,8 @@ func _run() -> void:
 	assert(str(state.data.battle.active_unit) == "hero", "An enemy opening must automatically hand control back to the hero.")
 	assert(int(state.data.battle.enemies[2].get("actions_taken", 0)) == 1, "The selected opening enemy must act exactly once, without being skipped.")
 	assert(int(state.data.battle.action_points) == 2)
+	var first_turn_titles: Array = main.find_children("*", "Label", true, false).filter(func(label: Label): return "第 1 回合" in label.text)
+	assert(first_turn_titles.size() == 1, "The first playable hero turn must display round 1, not round 2.")
 
 	# Loading a save with a pending enemy turn uses the same continuation path.
 	state.data.battle = opening.duplicate(true)

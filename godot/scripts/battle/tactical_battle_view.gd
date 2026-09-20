@@ -32,10 +32,8 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	add_child(shade)
 	var title := Label.new()
 	title.position = Vector2(30, 14)
-	# battle.turn 内部从0开始计数"沈羽轮到自己回合的次数"（配合"坚持N回合"
-	# 目标的判定逻辑），标题这里+1只是显示层面的美化——身法快的敌人可能在
-	# 沈羽第一次行动前就已出手，不加1会让开局一瞬间显示"第 0 回合"。
-	title.text = "%s  ·  %s难度  ·  第 %d 回合" % [scene_style.get("title", battle.name), DIFFICULTY_RULES.display_name(str(battle.get("difficulty", "standard"))), int(battle.turn) + 1]
+	# The first hero turn is already 1; enemy-first openings are displayed as 1 too.
+	title.text = "%s  ·  %s难度  ·  第 %d 回合" % [scene_style.get("title", battle.name), DIFFICULTY_RULES.display_name(str(battle.get("difficulty", "standard"))), maxi(1, int(battle.turn))]
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color("#f1e3c6"))
 	add_child(title)

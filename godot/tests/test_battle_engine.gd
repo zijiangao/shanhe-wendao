@@ -5,6 +5,7 @@ const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 
 func _initialize() -> void:
 	_test_victory_detection()
+	_test_enemy_telegraphs()
 	_test_player_move_and_attack()
 	_test_player_skills_and_resources()
 	_test_healing_powder()
@@ -903,9 +904,35 @@ func _test_survival_objective() -> void:
 	assert("0/2" in ENGINE.objective_text(battle), "Objective text should show initial survival progress.")
 	battle.turn = 2
 	assert(not ENGINE.is_victory(battle), "Reaching exactly the required hero-turn count should not yet trigger victory -- one more hero turn must start.")
-	assert("2/2" in ENGINE.objective_text(battle), "Objective text should show completed survival progress once the required count is reached.")
+	assert("1/2" in ENGINE.objective_text(battle), "The current hero turn is not yet a completed survival round.")
 	battle.turn = 3
 	assert(ENGINE.is_victory(battle), "One hero turn beyond the requirement should complete the survival objective with enemies alive.")
+	assert("2/2" in ENGINE.objective_text(battle), "Full progress must coincide with the actual survival victory.")
+	battle.turn = 1
+	assert("0/2" in ENGINE.objective_text(battle), "Starting the first hero turn must not award a completed survival round.")
+
+func _test_enemy_telegraphs() -> void:
+	for role in ["brute", "archer", "boss", "transition"]:
+		for actions_taken in range(6):
+			var battle := _fixture()
+			battle.erase("ally")
+			battle.enemies = [{"name": "预告测试", "role": "archer" if role == "archer" else "brute", "hp": 20, "max_hp": 50, "attack": 5, "range": 1, "x": 2, "y": 1, "actions_taken": actions_taken, "boss": role in ["boss", "transition"], "phase_two_started": role == "boss"}]
+			var before := battle.duplicate(true)
+			var preview: String = ENGINE.RULES.enemy_preview(battle)
+			var danger: bool = ENGINE.RULES.is_boss_sweep_cell(battle, Vector2i(1, 1))
+			assert(battle == before, "Reading enemy intent must not change combat state.")
+			var outcome := ENGINE.resolve_enemy_turn(battle, 0, 100, _seeded_rng())
+			var heavy := false
+			var sweep := false
+			for event in outcome.events:
+				if str(event.type) == "hit":
+					heavy = str(event.impact) == "heavy"
+				if str(event.type) == "technique" and str(event.get("text", "")) == "断 岳 刀 势":
+					sweep = true
+			assert(("断岳刀势" in preview) == sweep and danger == sweep, "Boss preview and highlighted cells must match the next executed sweep, including phase transitions.")
+			assert(("穿云箭" in preview) == ("穿云箭" in str(battle.result)), "Archer preview must match the next executed aimed shot.")
+			if not sweep:
+				assert(("蓄力重击" in preview) == heavy, "Heavy attacks must be warned before they occur, not after.")
 
 ## 行动条改版：resolve_enemy_turn() 本身不再重置沈羽的回合状态（那是
 ## advance_turn() 的职责）。这里的fixture身法全部相等，_living_units() 的

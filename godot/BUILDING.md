@@ -1,5 +1,16 @@
 # Building 山河问道
 
+## 0.123.0 — accurate battle warnings (full game)
+
+Enemy intent and boss danger cells now predict the next action, including the
+phase-two counter reset, instead of describing the action already completed.
+The first hero turn displays round 1, and survival progress counts completed
+rounds so the goal indicator agrees with the victory condition. Regression tests
+compare warnings to executed actions over 24 enemy/counter combinations.
+
+Only the full Windows game is being iterated and exported. Demo development and
+exports are deferred until the full game is ready; its last export is 0.122.0.
+
 ## 0.122.0 — battle turn continuation
 
 Enemy-first openings now execute the selected enemy before advancing the queue.

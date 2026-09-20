@@ -32,7 +32,7 @@ static func objective_text(battle: Dictionary) -> String:
 	var objective: Dictionary = battle.get("objective", {"type": "eliminate"})
 	if str(objective.get("type", "eliminate")) == "survive":
 		var required_rounds := maxi(1, int(objective.get("rounds", 1)))
-		var completed_rounds := mini(required_rounds, maxi(0, int(battle.get("turn", 0))))
+		var completed_rounds := mini(required_rounds, maxi(0, int(battle.get("turn", 0)) - 1))
 		return "坚持回合 %d/%d（或提前击败所有对手）" % [completed_rounds, required_rounds]
 	return "击败所有敌人"
 
@@ -468,7 +468,7 @@ static func resolve_enemy_turn(battle: Dictionary, enemy_index: int, hero_hp: in
 	var effects: Array = []
 	var events: Array = []
 	if int(enemy.hp) > 0:
-		enemy.actions_taken = int(enemy.get("actions_taken", 0)) + 1
+		enemy.actions_taken = RULES.next_enemy_action_count(enemy)
 		if bool(enemy.get("boss", false)) and RULES.boss_phase(enemy) == 2 and not bool(enemy.get("phase_two_started", false)):
 			enemy.phase_two_started = true
 			# 从二阶段开始重新计数"每3次自己的行动扫荡一次"，不延续一阶段

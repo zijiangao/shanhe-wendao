@@ -148,12 +148,14 @@ static func enemy_preview(battle: Dictionary) -> String:
 		var target_name: String = target_data.name
 		var can_attack := can_enemy_attack(battle, enemy, target)
 		var description := "向%s接近" % target_name
-		if is_boss_sweep_turn(enemy):
+		var upcoming: Dictionary = enemy.duplicate()
+		upcoming.actions_taken = next_enemy_action_count(enemy)
+		if is_boss_sweep_turn(upcoming):
 			description = "施展断岳刀势（周身两格，立即撤离）"
-		elif is_aimed_shot_turn(enemy) and can_attack:
+		elif is_aimed_shot_turn(upcoming) and can_attack:
 			description = "穿云箭瞄准%s（命中后拖慢其行动条）" % target_name
 		elif can_attack:
-			if is_heavy_turn(enemy):
+			if is_heavy_turn(upcoming):
 				description = "蓄力重击%s" % target_name
 			elif int(enemy.get("range", 1)) > 1:
 				description = "准备远程攻击%s" % target_name
@@ -170,6 +172,11 @@ static func enemy_preview(battle: Dictionary) -> String:
 ## 行动条改版：节奏判断从"共享回合数取模"改成"这个敌人自己的行动次数
 ## 取模"（actions_taken 由 BattleEngine.resolve_enemy_turn() 在真正行动
 ## 前自增），每个敌人按自己的节奏走，不再依赖全局共享的battle.turn。
+static func next_enemy_action_count(enemy: Dictionary) -> int:
+	if bool(enemy.get("boss", false)) and boss_phase(enemy) == 2 and not bool(enemy.get("phase_two_started", false)):
+		return 1
+	return int(enemy.get("actions_taken", 0)) + 1
+
 static func is_heavy_turn(enemy: Dictionary) -> bool:
 	return str(enemy.get("role", "melee")) == "brute" and int(enemy.get("actions_taken", 0)) % 2 == 0
 
@@ -189,7 +196,9 @@ static func in_boss_sweep_range(enemy: Dictionary, target: Vector2i) -> bool:
 
 static func is_boss_sweep_cell(battle: Dictionary, cell: Vector2i) -> bool:
 	for enemy in battle.get("enemies", []):
-		if int(enemy.get("hp", 0)) > 0 and is_boss_sweep_turn(enemy) and in_boss_sweep_range(enemy, cell):
+		var upcoming: Dictionary = enemy.duplicate()
+		upcoming.actions_taken = next_enemy_action_count(enemy)
+		if int(enemy.get("hp", 0)) > 0 and is_boss_sweep_turn(upcoming) and in_boss_sweep_range(enemy, cell):
 			return true
 	return false
 
