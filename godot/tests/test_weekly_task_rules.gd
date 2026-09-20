@@ -76,6 +76,14 @@ func _initialize() -> void:
 	var none_row := companion_options.filter(func(o): return str(o[0]) == "不分派任务")
 	assert(none_row.size() == 1 and not bool(none_row[0][3]), "The 'no task' row should stay enabled so the player can always cancel an assignment.")
 
+	var damaged := _hero_state()
+	damaged.companion_growth = {"zhou_mubai": {"xp": -20, "level": 99, "strength": -4, "constitution": []}}
+	assert(RULES.companion_level(damaged, "zhou_mubai") == 1)
+	assert(RULES.companion_xp(damaged, "zhou_mubai") == 0)
+	assert(RULES.companion_attack_growth(damaged, "zhou_mubai") == 0 and RULES.companion_hp_growth(damaged, "zhou_mubai") == 0)
+	assert(RULES.grant_companion_xp(damaged, "zhou_mubai", 25) == 1)
+	assert(RULES.companion_level(damaged, "zhou_mubai") == 2 and RULES.companion_attack_growth(damaged, "zhou_mubai") == 1)
+	assert(RULES.grant_companion_xp(damaged, "zhou_mubai", 1) == 0, "Recovered growth must not repeatedly pay level rewards.")
 	print("Weekly task rules tests passed.")
 	quit()
 

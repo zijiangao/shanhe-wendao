@@ -113,14 +113,16 @@ static func _companion_growth_bucket(state: Dictionary, id: String) -> Dictionar
 	if not state.companion_growth.has(id) or typeof(state.companion_growth[id]) != TYPE_DICTIONARY:
 		state.companion_growth[id] = {}
 	var bucket: Dictionary = state.companion_growth[id]
-	if not bucket.has("xp"):
-		bucket.xp = 0
-	if not bucket.has("level"):
-		bucket.level = 1
+	bucket.xp = _growth_number(bucket.get("xp", 0))
+	bucket.level = GROWTH_RULES.character_level(int(bucket.xp))
 	for key in COMPANION_GROWTH_KEYS:
-		if not bucket.has(key):
-			bucket[key] = 0
+		bucket[key] = _growth_number(bucket.get(key, 0))
 	return bucket
+
+static func _growth_number(value: Variant) -> int:
+	if typeof(value) in [TYPE_INT, TYPE_FLOAT]:
+		return maxi(0, int(value))
+	return 0
 
 ## 侠客升级 (0.116.0)：跟沈羽共用同一套 GrowthRules.character_level() 公式，
 ## 每升一级四维属性各+1，攻击随 strength 成长、气血随 constitution 成长
