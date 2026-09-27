@@ -24,5 +24,23 @@ func _run() -> void:
 		var week: int = state.data.week
 		main._end_week_requested()
 		assert(int(state.data.week) == week)
+	state.new_game()
+	state.data.acted_this_week = true
+	for blocked in ["battle", "training", "victory", "final_choice", "menu", "ending", "pause", "settings", "controls"]:
+		main.screen = blocked
+		main.previous_screen = "pause"
+		main._update_status()
+		assert(main.end_week_button.disabled, "Unavailable weekly actions must be visibly disabled.")
+		main._end_week_requested()
+		assert(int(state.data.week) == 1, "Settings reached from pause must not bypass weekly action protection.")
+	main.screen = "settings"
+	main.previous_screen = "location"
+	main._update_status()
+	assert(not main.end_week_button.disabled)
+	state.data.acted_this_week = false
+	main._update_status()
+	assert(main.end_week_button.disabled)
+	main._end_week_requested()
+	assert(int(state.data.week) == 1)
 	print("Progression return flow tests passed.")
 	quit()

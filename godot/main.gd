@@ -1957,7 +1957,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.162.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.163.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3777,13 +3777,21 @@ func _update_status() -> void:
 		status_label.text = "第 %d 周 · %s\n战力 %d" % [GameState.data.week, "期限已至" if GameState.deadline_reached() else "剩余 %d 周" % GameState.weeks_left(), GameState.power()]
 	if end_week_button != null:
 		var acted := bool(GameState.data.get("acted_this_week", false))
-		end_week_button.disabled = GameState.deadline_reached() or not acted
+		var available := NAVIGATION_RULES.can_end_week(screen, previous_screen)
+		end_week_button.disabled = GameState.deadline_reached() or not acted or not available
 		end_week_button.tooltip_text = "本周已行动，点击进入下一周，气血与真气将自然恢复。" if acted else "本周尚未行动，选择一件事情去做吧。"
+		if not available:
+			end_week_button.tooltip_text = "请先完成当前流程并返回游历场景，再结束本周。"
+		elif GameState.deadline_reached():
+			end_week_button.tooltip_text = "两年之期已至，无法再结束本周。"
 
 func _end_week_requested() -> void:
-	if NAVIGATION_RULES.blocks_header_navigation(screen):
+	if not NAVIGATION_RULES.can_end_week(screen, previous_screen):
 		AudioFeedback.play("error")
-		_toast("当前流程不能结束本周，请先按 Esc / 手柄 B 打开暂停菜单。")
+		_toast("请先完成当前流程并返回游历场景，再结束本周。")
+		return
+	if not bool(GameState.data.get("acted_this_week", false)):
+		_toast("本周尚未行动，先去做一件事吧。")
 		return
 	if not GameState.end_week():
 		_toast("两年之期已至，无法再结束本周。" if GameState.deadline_reached() else "本周还未行动，先去做一件事吧。")

@@ -11,6 +11,10 @@ static func can_pause(screen: String) -> bool:
 static func blocks_header_navigation(screen: String) -> bool:
 	return screen in MODAL_GAMEPLAY_SCREENS
 
+static func can_end_week(screen: String, previous_screen: String = "menu") -> bool:
+	var journey_screens := ["map", "location", "palace", "library"]
+	return screen in journey_screens or (screen in OVERLAY_SCREENS and previous_screen in journey_screens)
+
 static func should_save_on_quit(screen: String, state: Dictionary) -> bool:
 	return screen != "menu" and not state.is_empty()
 
