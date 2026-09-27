@@ -110,13 +110,16 @@ func new_game() -> void:
 	state_changed.emit()
 
 func power() -> int:
-	var specialties := int(data.get("swordsmanship", 0)) + int(data.get("bladesmanship", 0)) + int(data.get("fistsmanship", 0)) + int(data.get("staffsmanship", 0)) + int(data.get("herbalism", 0)) + int(data.get("mining", 0))
-	var equipment_power := SHOP_RULES.weapon_attack_bonus(data) + SHOP_RULES.armor_defense_bonus(data)
+	return power_for_state(data)
+
+func power_for_state(snapshot: Dictionary) -> int:
+	var specialties := int(snapshot.get("swordsmanship", 0)) + int(snapshot.get("bladesmanship", 0)) + int(snapshot.get("fistsmanship", 0)) + int(snapshot.get("staffsmanship", 0)) + int(snapshot.get("herbalism", 0)) + int(snapshot.get("mining", 0))
+	var equipment_power := SHOP_RULES.weapon_attack_bonus(snapshot) + SHOP_RULES.armor_defense_bonus(snapshot)
 	var learned_move_power := 0
-	for move_id in Array(data.get("learned_moves", [])):
-		learned_move_power += 3 + WUXUE_RULES.move_damage_bonus(data, str(move_id))
-	var wuxue_power := learned_move_power + WUXUE_RULES.internal_damage_bonus(data) + WUXUE_RULES.internal_healing_bonus(data) / 2 + WUXUE_RULES.lightness_move_bonus(data) * 2
-	return int(data.strength + data.agility + data.insight + data.constitution + data.skills.size() * 5 + specialties / 2 + equipment_power + wuxue_power)
+	for move_id in Array(snapshot.get("learned_moves", [])):
+		learned_move_power += 3 + WUXUE_RULES.move_damage_bonus(snapshot, str(move_id))
+	var wuxue_power := learned_move_power + WUXUE_RULES.internal_damage_bonus(snapshot) + WUXUE_RULES.internal_healing_bonus(snapshot) / 2 + WUXUE_RULES.lightness_move_bonus(snapshot) * 2
+	return int(int(snapshot.get("strength", 4)) + int(snapshot.get("agility", 5)) + int(snapshot.get("insight", 4)) + int(snapshot.get("constitution", 4)) + Array(snapshot.get("skills", [])).size() * 5 + specialties / 2 + equipment_power + wuxue_power)
 
 func weeks_left() -> int:
 	return maxi(0, FINAL_WEEK - int(data.week))

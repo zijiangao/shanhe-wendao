@@ -1957,7 +1957,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.161.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.162.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3074,7 +3074,7 @@ func _show_saves() -> void:
 		if saved.is_empty():
 			details.text = "空白行卷\n尚未写下任何江湖经历"
 		else:
-			details.text = "%s  ·  第 %d 周\n战力 %d    气血 %d/%d    声望 %d" % [GameState.place_name(str(saved.get("location", "qingyun"))), int(saved.get("week", 1)), int(saved.get("strength", 4)) + int(saved.get("agility", 5)) + int(saved.get("insight", 4)) + int(saved.get("constitution", 4)) + Array(saved.get("skills", [])).size() * 5, int(saved.get("hp", 45)), int(saved.get("max_hp", 45)), int(saved.get("renown", 0))]
+			details.text = "%s  ·  第 %d 周\n战力 %d    气血 %d/%d    声望 %d" % [GameState.place_name(str(saved.get("location", "qingyun"))), int(saved.get("week", 1)), GameState.power_for_state(saved), int(saved.get("hp", 45)), int(saved.get("max_hp", 45)), int(saved.get("renown", 0))]
 		row.add_child(details)
 		var save_button := _action_button("覆盖存档" if not saved.is_empty() else "写入存档", Color("#315f4b"))
 		save_button.custom_minimum_size.x = 120
