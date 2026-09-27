@@ -249,6 +249,8 @@ static func apply(state: Dictionary, recipe_id: String) -> bool:
 		return false
 	state.herbarium_catches = HERBARIUM_RULES.lifetime_catches(state)
 	state.mineralogy_catches = MINERALOGY_RULES.lifetime_catches(state)
+	state.herbarium_discovered = HERBARIUM_RULES.discoveries(state)
+	state.mineralogy_discovered = MINERALOGY_RULES.discoveries(state)
 	var cost: Dictionary = effective_cost(state, recipe_id)
 	state.materials.herbs = int(state.materials.get("herbs", 0)) - int(cost.herbs)
 	state.materials.ore = int(state.materials.get("ore", 0)) - int(cost.ore)

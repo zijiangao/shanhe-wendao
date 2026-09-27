@@ -78,9 +78,9 @@ func progress_text(api_name: String, state: Dictionary) -> String:
 				best = maxi(best, int(record.best_score))
 			return "最高 %d/%d" % [best, TRAINING_RULES.MAX_TOTAL_SCORE]
 		"ACH_HERBARIUM_COMPLETE":
-			return "药谱 %d/%d" % [HERBARIUM_RULES.discovered_count(state.get("herbarium", {})), HERBARIUM_RULES.SPECIMENS.size()]
+			return "药谱 %d/%d" % [HERBARIUM_RULES.discoveries(state).size(), HERBARIUM_RULES.SPECIMENS.size()]
 		"ACH_MINERALOGY_COMPLETE":
-			return "矿谱 %d/%d" % [MINERALOGY_RULES.discovered_count(state.get("mineralogy", {})), MINERALOGY_RULES.SPECIMENS.size()]
+			return "矿谱 %d/%d" % [MINERALOGY_RULES.discoveries(state).size(), MINERALOGY_RULES.SPECIMENS.size()]
 	return ""
 
 func release_data_errors() -> PackedStringArray:
@@ -138,9 +138,9 @@ func evaluate_state(state: Dictionary) -> void:
 		if int(records[discipline].best_score) >= TRAINING_RULES.MAX_TOTAL_SCORE:
 			unlock("ACH_PERFECT_TRAINING")
 			break
-	if HERBARIUM_RULES.discovered_count(state.get("herbarium", {})) >= HERBARIUM_RULES.SPECIMENS.size():
+	if HERBARIUM_RULES.discoveries(state).size() >= HERBARIUM_RULES.SPECIMENS.size():
 		unlock("ACH_HERBARIUM_COMPLETE")
-	if MINERALOGY_RULES.discovered_count(state.get("mineralogy", {})) >= MINERALOGY_RULES.SPECIMENS.size():
+	if MINERALOGY_RULES.discoveries(state).size() >= MINERALOGY_RULES.SPECIMENS.size():
 		unlock("ACH_MINERALOGY_COMPLETE")
 
 func _on_game_state_changed() -> void:

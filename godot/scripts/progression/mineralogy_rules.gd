@@ -61,6 +61,15 @@ static func catches_to_next_level(collection: Variant, lifetime: int = -1) -> in
 static func lifetime_catches(state: Dictionary) -> int:
 	return maxi(total_catches(state.get("mineralogy", {})), int(state.get("mineralogy_catches", 0)))
 
+static func discoveries(state: Dictionary) -> Array:
+	var known := []
+	var saved = state.get("mineralogy_discovered", [])
+	var collection = state.get("mineralogy", {})
+	for id in SPECIMENS:
+		if (typeof(saved) == TYPE_ARRAY and id in saved) or (typeof(collection) == TYPE_DICTIONARY and int(collection.get(id, 0)) > 0):
+			known.append(id)
+	return known
+
 static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionary:
 	if not GRADE_POOLS.has(grade):
 		return {}
@@ -68,6 +77,7 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 		state.mineralogy = {}
 	var collection: Dictionary = state.mineralogy
 	var lifetime := lifetime_catches(state)
+	var known := discoveries(state)
 	var level := gather_level(collection, lifetime)
 	var pool: Array = GRADE_POOLS[grade].filter(func(specimen_id): return int(LEVEL_UNLOCK.get(specimen_id, 1)) <= level)
 	if pool.is_empty():
@@ -76,10 +86,13 @@ static func record(state: Dictionary, grade: String, roll: int = 0) -> Dictionar
 	var specimen_id := str(pool[start])
 	for offset in range(pool.size()):
 		var candidate := str(pool[(start + offset) % pool.size()])
-		if int(collection.get(candidate, 0)) <= 0:
+		if candidate not in known:
 			specimen_id = candidate
 			break
-	var first_discovery := int(collection.get(specimen_id, 0)) <= 0
+	var first_discovery := specimen_id not in known
+	if first_discovery:
+		known.append(specimen_id)
+	state.mineralogy_discovered = known
 	collection[specimen_id] = int(collection.get(specimen_id, 0)) + 1
 	state.mineralogy = collection
 	state.mineralogy_catches = lifetime + 1
