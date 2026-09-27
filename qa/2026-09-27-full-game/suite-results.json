@@ -1,0 +1,386 @@
+[
+  {
+    "Test": "test_achievements_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_backpack_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_battle_engine.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_battle_quit_flow.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_battle_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_battle_save_validation.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_battle_scene_spec.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_battle_sidebar_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_battle_turn_flow.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_character_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_choice_view_icon.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_collection_progress.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_combat_feedback_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_combat_feedback.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_companion_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_companion_save_validation.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_controls_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_crafting_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_crafting_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_cue_synth.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_defense_tutorial_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_difficulty_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_encounter_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_equipment_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_full_journey.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_game_state.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_growth_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_herbarium_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_library_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_location_art.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_management_flow.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_manuals_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_map_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_market_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_mineralogy_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_navigation_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_onboarding_spec.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_pause_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_progression_return_flow.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_qingyun_spar_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_qingyun_spar.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_qingyun_tavern_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_quest_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_release_credits.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_reward_choice_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_reward_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_save_manager.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_save_power_flow.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_settings_manager.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_settings_return_flow.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_settings_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_shop_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_sparring_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_steam_service.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_store_capture_spec.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_training_event_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_training_keyboard_input.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_training_menu_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_training_minigame_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_training_minigame_view.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_tutorial_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_weekly_task_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_wuxue_rules.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  },
+  {
+    "Test": "test_tutorial_layout.gd",
+    "Exit": 0,
+    "Timeout": false,
+    "ScriptError": false
+  }
+]

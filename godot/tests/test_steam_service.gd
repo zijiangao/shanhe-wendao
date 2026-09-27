@@ -50,6 +50,13 @@ func _initialize() -> void:
 	if service.definitions.is_empty():
 		service._load_definitions()
 	var backend = LOCAL_BACKEND.new(TEST_PATH)
+	# Early sessions may persist only an achievement, with no nonzero stats.
+	var partial := ConfigFile.new()
+	partial.set_value("achievements", "PARTIAL_TEST", true)
+	assert(partial.save(TEST_PATH) == OK)
+	assert(backend.initialize() and backend.is_achievement_unlocked("PARTIAL_TEST"))
+	assert(backend.get_stat("STAT_HIGHEST_MASTERY") == 0)
+	backend.reset_for_tests()
 	assert(service.use_backend(backend), "The local Steam backend should initialize without the SDK.")
 	assert(not service.is_live(), "The local backend must never claim a live Steam connection.")
 	assert(service.RELEASE_ACHIEVEMENT_COUNT == 20 and service.definitions.size() == service.RELEASE_ACHIEVEMENT_COUNT, "The commercial achievement set and release gate should share one authoritative count.")

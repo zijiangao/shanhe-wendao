@@ -14,9 +14,10 @@ func _capture() -> void:
 	game_state.new_game()
 	game_state.data.acted_this_week = false
 	game_state.data.investigations = ["secret_route", "archer"]
-	game_state.data.swordsmanship = 10
-	game_state.data.bladesmanship = 10
-	game_state.data.herbalism = 10
+	game_state.data.swordsmanship = 100
+	game_state.data.bladesmanship = 100
+	game_state.data.herbalism = 100
+	game_state.data.agility = 100
 	game_state.data.hp = 30
 	game_state.data.consumables.healing_powder = 1
 	# 流云剑法 became a normal learnable/equippable move (0.95.0), no longer
@@ -42,7 +43,7 @@ func _capture() -> void:
 	await create_timer(0.065).timeout
 	for frame in range(3):
 		await process_frame
-	var mastery_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "流云剑法 · 6真气" in button.text or "回春散 · 回22" in button.text)
-	var mastery_help: Array = main_scene.find_children("*", "Label", true, false).filter(func(label: Label): return "制造2层破绽" in label.text and "6真气" in label.text and "恢复22气血" in label.text)
+	var mastery_buttons: Array = main_scene.find_children("*", "Button", true, false).filter(func(button: Button): return "流云剑法 · 6真气" in button.text or "回春散 · 回67" in button.text)
+	var mastery_help: Array = main_scene.find_children("*", "Label", true, false).filter(func(label: Label): return "制造2层破绽" in label.text and "6真气" in label.text and "恢复67气血" in label.text)
 	var valid: bool = str(game_state.data.battle.effect.get("type", "")) == "skill" and mastery_buttons.size() == 2 and mastery_help.size() == 1
 	quit(0 if valid else 11)

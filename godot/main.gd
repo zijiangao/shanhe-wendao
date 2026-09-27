@@ -788,10 +788,13 @@ func _start_new_game() -> void:
 
 func _rebuild() -> void:
 	SteamService.evaluate_state(GameState.data)
+	if not DEMO_POLICY.is_demo_build() and GameState.deadline_reached() and screen in ["map", "location", "palace", "library"] and str(GameState.data.quest_stage) != "game_complete":
+		screen = "deadline"
 	if DEMO_POLICY.should_redirect_screen(screen, GameState.data):
 		screen = "demo_complete"
 	match screen:
 		"menu": _show_menu()
+		"deadline": _show_deadline()
 		"map": _show_map()
 		"location": _show_location()
 		"quests": _show_quests()
@@ -1746,6 +1749,8 @@ func _begin_blackreed_battle() -> void:
 	if GameState.start_blackreed_battle():
 		battle_mode = "move"
 		SaveManager.save_auto()
+	else:
+		_toast(_time_action_failure_message())
 
 func _begin_huashan_trial() -> void:
 	if "lin_qingshuang" not in GameState.data.companions:
@@ -1957,7 +1962,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.163.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.164.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -3113,6 +3118,8 @@ func _screen_after_load() -> String:
 		return "ending"
 	if str(GameState.data.get("quest_stage", "")) == "final_choice":
 		return "final_choice"
+	if not DEMO_POLICY.is_demo_build() and GameState.deadline_reached():
+		return "deadline"
 	return "map"
 
 func _show_battle() -> void:
@@ -3714,8 +3721,48 @@ func _show_final_choice() -> void:
 	]
 	_show_choice()
 
+func _show_deadline() -> void:
+	_clear_content()
+	var shade := ColorRect.new()
+	shade.color = Color("#10291f")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
+	var panel := VBoxContainer.new()
+	panel.position = Vector2(300, 95)
+	panel.size = Vector2(680, 400)
+	panel.add_theme_constant_override("separation", 24)
+	content.add_child(panel)
+	var title := Label.new()
+	title.text = "两 年 之 期 已 至"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 40)
+	title.add_theme_color_override("font_color", Color("#dfbf74"))
+	panel.add_child(title)
+	var description := Label.new()
+	description.text = "已到第104周，本次旅程未能在期限内完成主线。\n\n你可以读取期限前的手动存档重新安排剩余时间，或返回主菜单开启新的江湖。当前存档仍然保留。"
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.add_theme_font_size_override("font_size", 22)
+	description.add_theme_color_override("font_color", Color("#eee5d3"))
+	panel.add_child(description)
+	var saves := _action_button("查看手动存档", Color("#315746"))
+	saves.pressed.connect(func(): _switch_screen("save"))
+	panel.add_child(saves)
+	var menu := _action_button("返回主菜单", Color("#806c4f"))
+	menu.pressed.connect(func(): screen = "menu"; _rebuild())
+	panel.add_child(menu)
+
 func _show_ending() -> void:
 	_clear_content()
+	var art := TextureRect.new()
+	art.texture = EMEI_TEXTURE
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#08130de8")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(shade)
 	var ending: Dictionary = GameState.data.get("ending", {})
 	var panel := VBoxContainer.new()
 	panel.position = Vector2(270, 45)
@@ -3837,12 +3884,18 @@ func _show_contextual_tutorial() -> void:
 	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	text_box.add_child(title)
+	var body_scroll := ScrollContainer.new()
+	body_scroll.custom_minimum_size.y = 190
+	body_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	text_box.add_child(body_scroll)
 	var body := Label.new()
 	body.text = str(tutorial.body)
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_font_size_override("font_size", 18)
 	body.add_theme_color_override("font_color", Color("#f4eee2"))
-	text_box.add_child(body)
+	body_scroll.add_child(body)
 	var continue_button := _action_button("我知道了 · 继续", Color("#8b493b"))
 	continue_button.pressed.connect(_dismiss_tutorial)
 	card.add_child(continue_button)

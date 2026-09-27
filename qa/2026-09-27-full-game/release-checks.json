@@ -1,0 +1,27 @@
+[
+  {
+    "Check": "verify-full-build",
+    "Exit": 0,
+    "Timeout": false
+  },
+  {
+    "Check": "verify-release-credits",
+    "Exit": 0,
+    "Timeout": false
+  },
+  {
+    "Check": "verify-steam-data",
+    "Exit": 0,
+    "Timeout": false
+  },
+  {
+    "Check": "verify-onboarding-flow",
+    "Exit": 0,
+    "Timeout": false
+  },
+  {
+    "Check": "verify-pause-flow",
+    "Exit": 0,
+    "Timeout": false
+  }
+]

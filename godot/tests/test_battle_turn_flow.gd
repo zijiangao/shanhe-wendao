@@ -17,8 +17,7 @@ func _run() -> void:
 	assert(state.start_blackreed_battle())
 	assert(str(state.data.battle.active_unit) == "enemy:2", "The faster archer must win the opening turn.")
 	var opening: Dictionary = state.data.battle.duplicate(true)
-	await process_frame
-	await process_frame
+	await _wait_for_player(main)
 	assert(str(state.data.battle.active_unit) == "hero", "An enemy opening must automatically hand control back to the hero.")
 	assert(int(state.data.battle.enemies[2].get("actions_taken", 0)) == 1, "The selected opening enemy must act exactly once, without being skipped.")
 	assert(int(state.data.battle.action_points) == 2)
@@ -32,8 +31,7 @@ func _run() -> void:
 	assert(root.get_node("SaveManager").load_auto())
 	main.screen = "battle"
 	main._rebuild()
-	await process_frame
-	await process_frame
+	await _wait_for_player(main)
 	assert(str(state.data.battle.active_unit) == "hero")
 	assert(int(state.data.battle.enemies[2].get("actions_taken", 0)) == 1, "A loaded pending enemy must not lose or repeat its action.")
 
@@ -73,3 +71,12 @@ func _run() -> void:
 	assert(state.data == inspect_before and main.toast_label.text == "unchanged", "Inspecting a cell must not spend resources or emit an unknown-action error.")
 	print("Battle turn flow tests passed.")
 	quit()
+
+func _wait_for_player(main: Node) -> void:
+	# Rendered enemy animations span more than two frames. Wait for settlement
+	# under both display backends, with a wall-clock bound for a genuine stall.
+	var deadline := Time.get_ticks_msec() + 10000
+	await process_frame
+	while (main.enemy_turn_active or str(root.get_node("GameState").data.battle.active_unit).begins_with("enemy:")) and Time.get_ticks_msec() < deadline:
+		await process_frame
+	assert(not main.enemy_turn_active, "Enemy animation did not settle within ten seconds.")

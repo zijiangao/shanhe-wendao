@@ -42,5 +42,14 @@ func _run() -> void:
 	assert(main.end_week_button.disabled)
 	main._end_week_requested()
 	assert(int(state.data.week) == 1)
+	state.data.investigations = ["secret_route", "archer"]
+	state.data.acted_this_week = true
+	main.toast_label.text = ""
+	main._begin_blackreed_battle()
+	assert(state.data.battle.is_empty())
+	assert("本周已经行动过了" in main.toast_label.text, "A blocked Blackreed battle must explain how to continue.")
+	state.data.week = state.FINAL_WEEK
+	main._begin_blackreed_battle()
+	assert("两年之期已至" in main.toast_label.text, "The deadline must have its own battle failure explanation.")
 	print("Progression return flow tests passed.")
 	quit()

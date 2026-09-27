@@ -1,5 +1,28 @@
 # Building 山河问道
 
+## 0.164.0 — full-game acceptance fixes
+
+Full-journey acceptance adds 18 rule-driven playthroughs across all three
+difficulties, three story routes, equipment/no-equipment runs, mid-battle save
+round-trips, all endings, defeat/retry, and the week-104 boundary. This does not
+replace a human real-time playtest. Results and limitations are recorded in
+`../qa/2026-09-27-full-game/REPORT.md`.
+
+The full game now explains blocked Blackreed battles, presents an expired
+journey with save/menu recovery options, and gives endings a readable dark
+background. Local achievement-only caches no longer report missing stat-section
+errors. Long tutorial pages scroll while both navigation buttons remain visible;
+the weapon tutorial explains learning requirements and the level-100 mastery.
+Two stale battle tests now use real animation completion and current
+mastery thresholds. Starting silver, battle balance, and the demo are unchanged.
+
+Run `tests/test_full_journey.gd` only in a project copy named
+`ShanheWendao-iteration-tests` with an isolated `APPDATA`. Use `--headless` for
+the rules pass; omit it and append `-- --capture-journey` for rendered evidence.
+The runner writes `user://full_journey_results.json`. Parse logs for assertions
+and script errors as well as checking exit status; Godot assertions can halt a
+test without terminating its process.
+
 ## 0.163.0 — full game
 
 结束本周按钮按流程禁用，阻止从暂停设置绕过战斗与剧情，并完成整批回归。

@@ -14,9 +14,9 @@ func initialize() -> bool:
 	var config := ConfigFile.new()
 	if config.load(path) != OK:
 		return true
-	for key in config.get_section_keys("achievements"):
+	for key in config.get_section_keys("achievements") if config.has_section("achievements") else PackedStringArray():
 		unlocked[str(key)] = bool(config.get_value("achievements", key, false))
-	for key in config.get_section_keys("stats"):
+	for key in config.get_section_keys("stats") if config.has_section("stats") else PackedStringArray():
 		stats[str(key)] = int(config.get_value("stats", key, 0))
 	return true
 
