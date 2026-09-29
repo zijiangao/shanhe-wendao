@@ -21,6 +21,31 @@ func setup(map_texture: Texture2D, state: Dictionary, available_places: Array[St
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color("#07110d28")
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	var route := Line2D.new()
+	route.width = 3.0
+	route.default_color = Color("#dfbf7480")
+	route.joint_mode = Line2D.LINE_JOINT_ROUND
+	route.z_index = 1
+	var route_points := PackedVector2Array([MARKERS.qingyun, MARKERS.luoyang, MARKERS.huashan, MARKERS.emei, MARKERS.blackreed])
+	route.points = route_points
+	add_child(route)
+	var map_card := PanelContainer.new()
+	map_card.position = Vector2(34, 16)
+	map_card.size = Vector2(290, 76)
+	map_card.add_theme_stylebox_override("panel", UI_THEME.box(Color("#07130ec8")))
+	add_child(map_card)
+	var map_label := Label.new()
+	map_label.text = "江 湖 行 路\n点击山河印记，进入下一站"
+	map_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	map_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	map_label.add_theme_font_size_override("font_size", 17)
+	map_label.add_theme_color_override("font_color", Color("#f2dfb3"))
+	map_card.add_child(map_label)
 
 	# The side panel (进入.../调息/江湖纪事) was removed entirely (0.100.0) --
 	# entering the current location now happens by clicking its own map

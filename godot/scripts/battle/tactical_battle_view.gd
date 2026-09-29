@@ -49,7 +49,20 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	board.size = Vector2(790, 450)
 	board.add_theme_constant_override("h_separation", 5)
 	board.add_theme_constant_override("v_separation", 5)
+	var board_frame := PanelContainer.new()
+	board_frame.position = Vector2(20, 94)
+	board_frame.size = Vector2(810, 510)
+	board_frame.add_theme_stylebox_override("panel", _box(Color("#07130dc7")))
+	board_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(board_frame)
 	add_child(board)
+	var board_label := Label.new()
+	board_label.text = "战  场"
+	board_label.position = Vector2(42, 82)
+	board_label.add_theme_font_size_override("font_size", 14)
+	board_label.add_theme_color_override("font_color", Color("#dfbf74"))
+	board_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(board_label)
 	for data in cells:
 		var cell := Button.new()
 		cell.custom_minimum_size = Vector2(94, 66)
@@ -104,7 +117,7 @@ func setup(background: Texture2D, battle: Dictionary, player: Dictionary, mode: 
 	side.name = "BattleSidebar"
 	side.position = Vector2(840, 104)
 	side.size = Vector2(400, 540)
-	side.add_theme_stylebox_override("panel", _box(Color("#14271ff2")))
+	side.add_theme_stylebox_override("panel", _box(Color("#10251df5")))
 	add_child(side)
 	side.anchor_bottom = 1.0
 	side.offset_top = 104.0

@@ -9,6 +9,7 @@ All files below were created specifically for this project under human art direc
 | Shipping files | Production purpose | Prompt direction summary |
 | --- | --- | --- |
 | `assets/art/jianghu-world-map.png` | World map | Wide Chinese ink-wash jianghu map with readable travel nodes and parchment texture |
+| `assets/art/menu-hero.png` | Full-game title-screen key art | Wide wuxia mountain vista at dawn, lone swordsman on a ridge at right, dark misty negative space reserved for the title card |
 | `assets/art/luoyang-battle-rain.png` | Tactical battle backdrop | Empty ancient Luoyang plaza at night in rain, dark readable center, warm lantern accents |
 | `assets/art/portrait-*.png` | Original character portraits | Original wuxia characters, consistent painterly rendering, no existing-person likeness requested |
 | `assets/art/battle-tokens.png` | Tactical unit atlas | Original simplified unit tokens prepared for grid readability |

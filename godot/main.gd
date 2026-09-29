@@ -1,6 +1,7 @@
 extends Control
 
 const MAP_TEXTURE := preload("res://assets/art/jianghu-world-map.png")
+const MENU_TEXTURE := preload("res://assets/art/menu-hero.png")
 const BATTLE_TEXTURE := preload("res://assets/art/luoyang-battle-rain.png")
 const QINGYUN_TEXTURE := preload("res://assets/art/locations/qingyun-courtyard.png")
 const LUOYANG_TEXTURE := preload("res://assets/art/locations/luoyang-market.png")
@@ -621,32 +622,44 @@ func _show_menu() -> void:
 	screen = "menu"
 	_clear_content()
 	var art := TextureRect.new()
-	art.texture = MAP_TEXTURE
+	art.texture = MENU_TEXTURE
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(art)
 
 	var shade := ColorRect.new()
-	shade.color = Color("#09130dbb")
+	shade.color = Color("#07110d55")
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(shade)
 
+	var menu_card := PanelContainer.new()
+	menu_card.position = Vector2(68, 18)
+	menu_card.size = Vector2(492, 558)
+	menu_card.add_theme_stylebox_override("panel", UI_THEME.panel_box(Color("#b7a47c")))
+	content.add_child(menu_card)
+
 	var panel := VBoxContainer.new()
-	panel.position = Vector2(95, 100)
-	panel.size = Vector2(410, 430)
-	panel.add_theme_constant_override("separation", 14)
+	panel.position = Vector2(104, 46)
+	panel.size = Vector2(420, 492)
+	panel.add_theme_constant_override("separation", 12)
 	content.add_child(panel)
 
 	var title := TextureRect.new()
 	title.texture = UI_THEME.LOGO_WORDMARK
 	title.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	title.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	title.custom_minimum_size = Vector2(390, 112)
+	title.custom_minimum_size = Vector2(410, 122)
 	panel.add_child(title)
+	var eyebrow := Label.new()
+	eyebrow.text = "两 年 之 约   ·   一 纸 玄 铁 令"
+	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	eyebrow.add_theme_font_size_override("font_size", 15)
+	eyebrow.add_theme_color_override("font_color", Color("#f0c778"))
+	panel.add_child(eyebrow)
 
 	var subtitle := Label.new()
-	subtitle.text = "两年之约 · 一纸玄铁令\n拜入青云，行走江湖，在厉千秋出关前阻止大劫。"
+	subtitle.text = "拜入青云，行走江湖\n在厉千秋出关前，阻止一场席卷山河的大劫。"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.add_theme_font_size_override("font_size", 16)
 	subtitle.add_theme_color_override("font_color", Color("#c9c7bc"))
@@ -662,7 +675,7 @@ func _show_menu() -> void:
 	panel.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "江湖路：青云 → 洛阳 → 华山 → 峨眉"
+	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "青云 · 洛阳 · 华山 · 峨眉  |  一段可回望的江湖路"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	var credits_button := _action_button("制作名单与版权", Color("#485e54"))
@@ -1971,7 +1984,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.165.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.166.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

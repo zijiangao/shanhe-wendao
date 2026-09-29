@@ -1,5 +1,17 @@
 # Building 山河问道
 
+## 0.166.0 — title presentation and visual hierarchy
+
+The full-game menu now opens on a dedicated wuxia key art scene with a framed
+title card. Location screens use a framed objective card, the world map draws a
+gold travel route and a small navigation hint, and tactical battles gain a
+layered board frame plus a clearer battlefield label. This is a presentation
+pass only: rules, saves, demo assets, and combat outcomes are unchanged.
+
+The new title art is registered in `ASSET_PROVENANCE.md`. The menu and Windows
+Desktop preset are synchronized at 0.166.0; the demo preset/build remains
+untouched.
+
 ## 0.165.0 — moderate preparation and chapter balance
 
 Full-game chapter encounters now have fixed, progressive opposition: Huashan
