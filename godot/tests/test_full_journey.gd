@@ -37,6 +37,7 @@ func _run() -> void:
 				current_run = "%s_%s_%d" % [difficulty, "equipped" if equipped else "bare", seed_value]
 				var ok: bool = await journey(equipped, seed_value)
 				records.append({"difficulty_requested": difficulty, "equipped": equipped, "seed": seed_value, "completed": ok, "week": state.data.week, "silver": state.data.silver, "xp": state.data.xp, "stage": state.data.quest_stage})
+				await process_frame
 	probe_defeat_and_deadline()
 	current_run = "standard_bare_0"
 	await capture("deadline")
@@ -71,6 +72,7 @@ func travel(place: String) -> void:
 
 func journey(equipped: bool, route_index: int) -> bool:
 	action("master")
+	prepare_chapter(0)
 	if equipped:
 		travel("luoyang")
 		assert(SHOP.buy_weapon(state.data, "dragon_etched_sword"))
@@ -99,6 +101,7 @@ func journey(equipped: bool, route_index: int) -> bool:
 	assert(main.choice_event == "chapter2_end")
 	main._resolve_choice(["public", "master", "keep"][route_index])
 	assert(state.end_week())
+	prepare_chapter(1)
 	travel("huashan")
 	action("huashan_gate")
 	action("meet_lin")
@@ -116,6 +119,7 @@ func journey(equipped: bool, route_index: int) -> bool:
 	action("elephant_pool")
 	action("emei_peak")
 	assert(state.end_week())
+	prepare_chapter(2)
 	action("emei_peak")
 	if not await battle(): return false
 	main._claim_battle_reward("temper")
@@ -157,6 +161,7 @@ func battle() -> bool:
 		if int(b.action_points) <= 0:
 			ENGINE.advance_turn(b)
 			continue
+		if tactical_action(b): continue
 		if active == "hero" and int(state.data.hp) <= int(state.data.max_hp) - 12 and int(state.data.consumables.healing_powder) > 0:
 			if ENGINE.player_action(b, state.data, "heal", Vector2i.ZERO, rng).ok: continue
 		var acted := false
@@ -174,7 +179,8 @@ func battle() -> bool:
 		for y in range(b.height):
 			for x in range(b.width):
 				var cell := Vector2i(x, y)
-				if not RULES.can_move_to(b, cell): continue
+				var move_bonus: int = 0 if active == "ally" else main.WUXUE_RULES.lightness_move_bonus(state.data)
+				if not RULES.can_move_to(b, cell, move_bonus): continue
 				for enemy in b.enemies:
 					if int(enemy.hp) <= 0: continue
 					var path := RULES.find_path(b, cell, Vector2i(enemy.x, enemy.y), true)
@@ -186,13 +192,19 @@ func battle() -> bool:
 		else:
 			ENGINE.advance_turn(b)
 	var victory: bool = int(state.data.hp) > 0 and ENGINE.is_victory(b)
-	records.append({"battle": b.battle_id, "difficulty": b.get("difficulty", ""), "week": state.data.week, "start_hp": start_hp, "end_hp": state.data.hp, "turns": b.turn, "actions": count, "medicines_used": meds - int(state.data.consumables.healing_powder), "victory": victory})
+	records.append({"run": current_run, "battle": b.battle_id, "difficulty": b.get("difficulty", ""), "week": state.data.week, "start_hp": start_hp, "end_hp": state.data.hp, "turns": b.turn, "actions": count, "medicines_used": meds - int(state.data.consumables.healing_powder), "victory": victory})
 	if victory:
 		assert(main._check_tactical_victory(b))
 		await capture(str(b.battle_id) + "_victory")
 	else:
 		state.finish_battle(false)
 	return victory
+
+func prepare_chapter(_chapter: int) -> void:
+	pass
+
+func tactical_action(_battle: Dictionary) -> bool:
+	return false
 
 func capture(label: String) -> void:
 	if not capture_enabled or current_run != "standard_bare_0": return

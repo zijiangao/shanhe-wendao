@@ -1,5 +1,25 @@
 # Building 山河问道
 
+## 0.165.0 — moderate preparation and chapter balance
+
+Full-game chapter encounters now have fixed, progressive opposition: Huashan
+tests survival and cooperation; the finale retains its archer, armored guard,
+and two-phase boss with stronger stats. No minimum week or player-stat scaling
+is added. Ten productive preparation weeks support the three tested training /
+crafting routes, completing the story in weeks 13–14 across all difficulties.
+These are scripted rule-driven results, not a claim about human play time.
+
+Starting silver remains 10,000. Existing shop prices remain unchanged, while
+optional premium gear provides a costly alternative to top-tier crafting.
+Chapter dialogue and location objectives explain preparation and battle goals.
+Existing battle saves and retry snapshots keep their original opponent values.
+See `../qa/2026-09-28-balance/REPORT.md` for profiles, measurements, and limits.
+
+The menu and Windows Desktop preset are both 0.165.0. The demo preset/build is
+untouched. The shop release verifier now resolves faster enemies' opening ATB
+turns before attempting the hero attack. The all-items backpack layout fixture
+funds the complete catalog and asserts that its setup purchases succeed.
+
 ## 0.164.0 — full-game acceptance fixes
 
 Full-journey acceptance adds 18 rule-driven playthroughs across all three

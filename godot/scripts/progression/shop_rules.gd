@@ -9,12 +9,14 @@ const WEAPONS := {
 	"iron_sword": {"title": "铁胎剑", "description": "锻工粗朴，胜在压手。攻击 +1。", "price": 30, "attack_bonus": 1},
 	"cold_crow_blade": {"title": "寒鸦刀", "description": "刀身泛青，出鞘带风。攻击 +2。", "price": 90, "attack_bonus": 2},
 	"dragon_etched_sword": {"title": "龙纹古剑", "description": "剑脊刻有前朝龙纹，锋锐罕见。攻击 +3。", "price": 220, "attack_bonus": 3},
+	"masterwork_sword": {"title": "百炼龙泉", "description": "名匠百炼成锋。攻击 +5；花银两购置，也可采矿锻造同等威力的星陨寒锋。", "price": 3500, "attack_bonus": 5},
 }
 
 const ARMORS := {
 	"hedgehog_mail": {"title": "软猬甲", "description": "轻软贴身，勉强挡刃。防御 +1。", "price": 40, "defense_bonus": 1},
 	"dark_iron_armor": {"title": "玄铁护甲", "description": "玄铁打底，护身周全。防御 +2。", "price": 110, "defense_bonus": 2},
 	"cold_jade_armor": {"title": "寒玉战甲", "description": "寒玉嵌甲，江湖罕见的防身重器。防御 +3。", "price": 260, "defense_bonus": 3},
+	"masterwork_armor": {"title": "百炼护心甲", "description": "名匠叠锻护心。防御 +4；花银两购置，也可采矿锻造同等防御的星陨玄甲。", "price": 4000, "defense_bonus": 4},
 }
 
 const GOODS := {

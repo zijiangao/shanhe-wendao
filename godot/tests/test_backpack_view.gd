@@ -34,10 +34,13 @@ func _capture() -> void:
 	# bit the character sheet before, and to exercise every code path
 	# (equipped cell, owned-but-unequipped cell, goods cell) at once.
 	game_state.data.silver = 5000
+	# This is an all-items layout fixture, not a starting-budget playthrough.
+	for item in SHOP_RULES.WEAPONS.values() + SHOP_RULES.ARMORS.values():
+		game_state.data.silver += int(item.price)
 	for id in SHOP_RULES.WEAPONS:
-		SHOP_RULES.buy_weapon(game_state.data, id)
+		assert(SHOP_RULES.buy_weapon(game_state.data, id))
 	for id in SHOP_RULES.ARMORS:
-		SHOP_RULES.buy_armor(game_state.data, id)
+		assert(SHOP_RULES.buy_armor(game_state.data, id))
 	for id in SHOP_RULES.GOODS:
 		SHOP_RULES.buy_good(game_state.data, id, 3)
 	# Buying each weapon/armor in catalog order leaves the LAST one equipped;

@@ -534,6 +534,8 @@ func claim_pending_reward(choice_id: String) -> bool:
 	return true
 
 func _apply_current_difficulty() -> void:
+	if not OS.has_feature("demo"):
+		data.battle = ENCOUNTER_RULES.prepare_story(data.battle, "su_trust" in data.flags)
 	var manager: Node = get_tree().root.get_node_or_null("SettingsManager") if is_inside_tree() else null
 	var level: String = str(manager.data.get("difficulty", "standard")) if manager != null else "standard"
 	data.battle = DIFFICULTY_RULES.apply_to_battle(data.battle, level)

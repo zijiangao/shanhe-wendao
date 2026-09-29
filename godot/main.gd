@@ -201,6 +201,15 @@ func _verify_shop_flow() -> void:
 	var power_after := int(GameState.power())
 	var help_text := BATTLE_ENGINE.hero_action_help(GameState.data)
 	var battle_ok := GameState.start_blackreed_battle()
+	# Faster enemies can open the ATB queue; resolve them before testing a
+	# hero action instead of assuming that the hero always moves first.
+	for step in range(20):
+		if str(GameState.data.battle.active_unit) == "hero": break
+		var active := str(GameState.data.battle.active_unit)
+		if active.begins_with("enemy:"):
+			var outcome := BATTLE_ENGINE.resolve_enemy_turn(GameState.data.battle, int(active.split(":")[1]), GameState.data.hp, null, SHOP_RULES.armor_defense_bonus(GameState.data))
+			GameState.data.hp = outcome.hero_hp
+		BATTLE_ENGINE.advance_turn(GameState.data.battle)
 	# The hero starts this battle at (1, 3); a plain melee "attack" requires
 	# an adjacent target (distance 1), unlike the ranged thunder_stone/skill
 	# actions other verifiers here use, which tolerate distance up to three.
@@ -1083,7 +1092,7 @@ func _location_action_requested(action_id: String) -> void:
 		"temple": _baima_event()
 		"palace": _enter_palace()
 		"huashan_gate": _start_dialogue("huashan_arrival", [["华山执事", "青云门沈羽，持武库名录而来？剑会只认剑，也认胆识。"], ["沈羽", "晚辈愿依华山规矩，查清残图下落。"]])
-		"meet_lin": _start_dialogue("meet_lin", [["林清霜", "论剑台今年改为双人试炼。你若不嫌我剑路太快，我可以与你同上。"], ["沈羽", "求之不得。厉无咎既盯上残图，我们更该彼此照应。"]])
+		"meet_lin": _start_dialogue("meet_lin", [["林清霜", "论剑台今年改为双人试炼。你若不嫌我剑路太快，我可以与你同上。"], ["林清霜", "不必硬拼每个对手，撑过五轮也算过关。先备好护甲与回春散，交替接敌；若根基不稳，回青云门修炼几周再来。"], ["沈羽", "求之不得。厉无咎既盯上残图，我们更该彼此照应。"]])
 		"huashan_trial": _begin_huashan_trial()
 		"huashan_cliff": _start_dialogue("huashan_cliff", [["林清霜", "石壁剑痕并非华山剑法，倒像有人故意留下的引路符号。"], ["沈羽", "符号指向峨眉。厉无咎已经先行一步。"]])
 		"emei_gate": _start_story_dialogue("emei_gate")
@@ -1091,7 +1100,7 @@ func _location_action_requested(action_id: String) -> void:
 		"elephant_pool": _start_dialogue("elephant_pool", [["苏晚晴", "洗象池旁有两条路：一边是受伤同门，一边是厉无咎留下的脚印。你先救谁？"], ["沈羽", "线索可以再追，人命不能重来。先救人。"], ["苏晚晴", "这个回答，至少不像厉无咎。"]])
 		"emei_peak":
 			if str(GameState.data.quest_stage) == "emei_trial":
-				_start_dialogue("emei_peak", [["苏晚晴", "金顶佛光下有一道逆行剑痕，正通往封闭百年的后山密道。"], ["林清霜", "厉无咎在等我们。他想用武库天门作最后一道局。"], ["沈羽", "那便让这场追逐在这里结束。武库属于谁，等打赢之后再问。"]])
+				_start_dialogue("emei_peak", [["苏晚晴", "金顶佛光下有一道逆行剑痕，正通往封闭百年的后山密道。"], ["林清霜", "厉无咎在等我们。先处理远处弩手，再合力对付重甲；见他蓄力，别留在横扫范围里。"], ["林清霜", "我们可以先回去整备：青云门修炼增长根基，洛阳学招、购甲，也可采矿锻造。准备妥当随时回来，不必等到两年之期。"], ["沈羽", "那便让这场追逐在这里结束。武库属于谁，等打赢之后再问。"]])
 			else:
 				_begin_final_battle()
 
@@ -1962,7 +1971,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.164.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.165.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2006,13 +2015,13 @@ func _quest_objective() -> String:
 		"luoyang_investigate": "潜入太守府夜宴，取得至少两件证据并与厉无咎对质。",
 		"chapter2_complete": "第二章完成：厉无咎逃离洛阳，武库名录指向华山。",
 		"huashan_meet_companion": "前往迎客峰寻找搭档，准备双人论剑试炼。",
-		"huashan_trial": "与林清霜登上论剑台，通过华山双人试炼。",
+		"huashan_trial": "双人试炼：撑过五轮或击败所有对手。可先回青云修炼、赴洛阳备甲备药。",
 		"huashan_trial_complete": "前往思过崖查看武库残图留下的剑痕。",
 		"chapter3_complete": "第三章完成：残图线索指向峨眉。",
 		"emei_meet_su": "在清音阁拜访苏晚晴，查明后山闯阵者。",
 		"emei_investigate": "前往洗象池接受峨眉试问，争取继续追查厉无咎。",
 		"emei_trial": "峨眉试问已通过：下一步前往金顶追查后山密道。"
-		,"final_assault": "武库天门已经开启：在金顶密道与厉无咎展开最终决战。"
+		,"final_assault": "金顶决战：先清弩手、留意横扫蓄力。可自由返程修炼整备，准备好即可挑战。"
 		,"final_choice": "厉无咎已败：决定武库与江湖的未来。"
 		,"game_complete": "山河已定。可在结局页回顾这段江湖旅程。"
 	}.get(str(GameState.data.get("quest_stage", "meet_master")), "继续调查江湖异动。")

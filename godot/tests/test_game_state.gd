@@ -399,6 +399,18 @@ func _initialize() -> void:
 	assert(state.start_final_battle(), "The final tactical encounter should start from a valid story state.")
 	assert(str(state.data.battle.battle_id) == "wuku_finale", "The finale must use its own stable battle identifier.")
 	assert(state.data.battle.has("ally") and state.data.battle.enemies.size() == 3, "The finale should include the companion and complete enemy squad.")
+	var prepared_opponents: Array = state.data.battle.enemies.duplicate(true)
+	# Balance updates apply at encounter creation, not when loading old combat.
+	var legacy_finale: Dictionary = state.data.duplicate(true)
+	legacy_finale.battle.enemies[0].hp = 19
+	legacy_finale.battle.enemies[0].max_hp = 46
+	legacy_finale.battle.enemies[0].attack = 8
+	assert(state.import_data(legacy_finale))
+	assert(int(state.data.battle.enemies[0].hp) == 19 and int(state.data.battle.enemies[0].max_hp) == 46 and int(state.data.battle.enemies[0].attack) == 8, "Loading existing combat must preserve its original balance and damage.")
+	assert(state.retry_last_battle())
+	for enemy_index in range(prepared_opponents.size()):
+		for key in prepared_opponents[enemy_index]:
+			assert(state.data.battle.enemies[enemy_index][key] == prepared_opponents[enemy_index][key], "Retry must preserve original enemy fields; migration may add defaults such as exposure.")
 	state.finish_battle(true)
 	assert("武库钥印" in state.data.items and int(state.data.xp) == 60, "Final victory rewards should be granted exactly once.")
 	assert(str(state.data.pending_reward.battle_id) == "wuku_finale", "Victory should persist an unresolved reward choice.")
