@@ -164,7 +164,7 @@ func _verify_training_flow() -> void:
 	var valid := screen == "training" and str(training_result.get("grade", "")) == "S"
 	valid = valid and int(training_result.get("score", 0)) == 315 and int(training_result.get("best_streak", 0)) == 3
 	valid = valid and bool(training_result.get("weekly_focus", false)) and int(training_result.get("weekly_focus_bonus", 0)) == TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS
-	valid = valid and int(GameState.data.swordsmanship) == 3 and int(GameState.data.week) == start_week + 1
+	valid = valid and int(GameState.data.swordsmanship) == 1 and int(GameState.data.week) == start_week and bool(GameState.data.acted_this_week)
 	print("Training flow verification passed." if valid else "Training flow verification failed.")
 	get_tree().quit(0 if valid else 14)
 
@@ -185,6 +185,16 @@ func _verify_crafting_flow() -> void:
 	GameState.data.battle.enemies[0].x = 4
 	GameState.data.battle.enemies[0].y = 3
 	GameState.data.hp = 20
+	# The live battle uses the agility-driven queue, so an enemy can open the
+	# encounter. Resolve the opening queue before exercising player consumables.
+	for step in range(20):
+		if str(GameState.data.battle.active_unit) == "hero":
+			break
+		var active_unit := str(GameState.data.battle.active_unit)
+		if active_unit.begins_with("enemy:"):
+			var enemy_outcome: Dictionary = BATTLE_ENGINE.resolve_enemy_turn(GameState.data.battle, int(active_unit.split(":")[1]), GameState.data.hp, null, SHOP_RULES.armor_defense_bonus(GameState.data))
+			GameState.data.hp = int(enemy_outcome.get("hero_hp", GameState.data.hp))
+		BATTLE_ENGINE.advance_turn(GameState.data.battle)
 	var stone_outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, "thunder_stone", Vector2i(4, 3))
 	var heal_outcome: Dictionary = BATTLE_ENGINE.player_action(GameState.data.battle, GameState.data, "heal")
 	var valid := medicine_ok and stone_ok and forge_ok and battle_ok and bool(stone_outcome.get("ok", false)) and bool(heal_outcome.get("ok", false))
