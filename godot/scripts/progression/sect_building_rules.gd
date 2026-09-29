@@ -81,12 +81,12 @@ static func cost_for_next(state: Dictionary, id: String) -> Dictionary:
 		return {}
 	return Dictionary(BUILDINGS[id].costs[next_level]).duplicate(true)
 
-static func can_upgrade(state: Dictionary, id: String) -> bool:
+static func can_upgrade(state: Dictionary, id: String, check_action: bool = true) -> bool:
 	if not BUILDINGS.has(id) or level(state, id) >= MAX_LEVEL:
 		return false
 	if int(state.get("week", 1)) >= 104:
 		return false
-	if bool(state.get("acted_this_week", false)):
+	if check_action and bool(state.get("acted_this_week", false)):
 		return false
 	var cost := cost_for_next(state, id)
 	if _stage_rank(str(state.get("quest_stage", "meet_master"))) < _stage_rank(str(cost.get("stage", "chapter_complete"))):
@@ -97,7 +97,7 @@ static func can_upgrade(state: Dictionary, id: String) -> bool:
 	return int(materials.get("herbs", 0)) >= int(cost.get("herbs", 0)) and int(materials.get("ore", 0)) >= int(cost.get("ore", 0))
 
 static func upgrade(state: Dictionary, id: String) -> Dictionary:
-	if not can_upgrade(state, id):
+	if not can_upgrade(state, id, false):
 		return {"ok": false}
 	var cost := cost_for_next(state, id)
 	var next_level := level(state, id) + 1
