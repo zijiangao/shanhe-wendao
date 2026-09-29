@@ -1,6 +1,8 @@
 class_name WuxueRules
 extends RefCounted
 
+const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
+
 const MAX_LEVEL := 10
 const LIGHTNESS_LEVEL_DIVISOR := 3
 const TRAIN_XP_MIN := 8
@@ -212,10 +214,11 @@ static func _move_options(state: Dictionary) -> Array:
 		if id in learned:
 			options.append(["已习得 · %s Lv.%d" % [str(item.title), move_level(state, id)], "%s（战斗中可直接使用）" % str(item.description), "none", true])
 		else:
-			options.append(["学习 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "learn_move_%s" % id, silver < int(item.price)])
+			var price := effective_manual_cost(state, int(item.price))
+			options.append(["学习 · %s · %d 银" % [str(item.title), price], str(item.description), "learn_move_%s" % id, silver < price])
 		if id in learned:
 			var level := move_level(state, id)
-			options.append(_level_row(str(item.title), level, upgrade_cost(MOVES, id, level), silver, "upgrade_move_%s" % id))
+			options.append(_level_row(str(item.title), level, effective_manual_cost(state, upgrade_cost(MOVES, id, level)), silver, "upgrade_move_%s" % id))
 	return options
 
 static func _internal_options(state: Dictionary) -> Array:
@@ -230,10 +233,11 @@ static func _internal_options(state: Dictionary) -> Array:
 		elif id in learned:
 			options.append(["修炼 · %s Lv.%d" % [str(item.title), internal_level(state, id)], str(item.description), "equip_internal_%s" % id, false])
 		else:
-			options.append(["学习 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "learn_internal_%s" % id, silver < int(item.price)])
+			var price := effective_manual_cost(state, int(item.price))
+			options.append(["学习 · %s · %d 银" % [str(item.title), price], str(item.description), "learn_internal_%s" % id, silver < price])
 		if id in learned:
 			var level := internal_level(state, id)
-			options.append(_level_row(str(item.title), level, upgrade_cost(INTERNAL, id, level), silver, "upgrade_internal_%s" % id))
+			options.append(_level_row(str(item.title), level, effective_manual_cost(state, upgrade_cost(INTERNAL, id, level)), silver, "upgrade_internal_%s" % id))
 	return options
 
 static func _lightness_options(state: Dictionary) -> Array:
@@ -248,31 +252,44 @@ static func _lightness_options(state: Dictionary) -> Array:
 		elif id in learned:
 			options.append(["修炼 · %s Lv.%d" % [str(item.title), lightness_level(state, id)], str(item.description), "equip_lightness_%s" % id, false])
 		else:
-			options.append(["学习 · %s · %d 银" % [str(item.title), int(item.price)], str(item.description), "learn_lightness_%s" % id, silver < int(item.price)])
+			var price := effective_manual_cost(state, int(item.price))
+			options.append(["学习 · %s · %d 银" % [str(item.title), price], str(item.description), "learn_lightness_%s" % id, silver < price])
 		if id in learned:
 			var level := lightness_level(state, id)
-			options.append(_level_row(str(item.title), level, upgrade_cost(LIGHTNESS, id, level), silver, "upgrade_lightness_%s" % id))
+			options.append(_level_row(str(item.title), level, effective_manual_cost(state, upgrade_cost(LIGHTNESS, id, level)), silver, "upgrade_lightness_%s" % id))
 	return options
 
+static func effective_manual_cost(state: Dictionary, base_cost: int) -> int:
+	return maxi(0, base_cost - SECT_BUILDING_RULES.library_discount(state, base_cost))
+
 static func learn_move(state: Dictionary, id: String) -> bool:
-	if not MOVES.has(id) or id in Array(state.get("learned_moves", [])) or int(state.get("silver", 0)) < int(MOVES[id].price):
+	if not MOVES.has(id) or id in Array(state.get("learned_moves", [])):
 		return false
-	state.silver = int(state.get("silver", 0)) - int(MOVES[id].price)
+	var cost := effective_manual_cost(state, int(MOVES[id].price))
+	if int(state.get("silver", 0)) < cost:
+		return false
+	state.silver = int(state.get("silver", 0)) - cost
 	state.learned_moves.append(id)
 	return true
 
 static func learn_internal(state: Dictionary, id: String) -> bool:
-	if not INTERNAL.has(id) or id in Array(state.get("learned_internal", [])) or int(state.get("silver", 0)) < int(INTERNAL[id].price):
+	if not INTERNAL.has(id) or id in Array(state.get("learned_internal", [])):
 		return false
-	state.silver = int(state.get("silver", 0)) - int(INTERNAL[id].price)
+	var cost := effective_manual_cost(state, int(INTERNAL[id].price))
+	if int(state.get("silver", 0)) < cost:
+		return false
+	state.silver = int(state.get("silver", 0)) - cost
 	state.learned_internal.append(id)
 	state.equipped_internal = id
 	return true
 
 static func learn_lightness(state: Dictionary, id: String) -> bool:
-	if not LIGHTNESS.has(id) or id in Array(state.get("learned_lightness", [])) or int(state.get("silver", 0)) < int(LIGHTNESS[id].price):
+	if not LIGHTNESS.has(id) or id in Array(state.get("learned_lightness", [])):
 		return false
-	state.silver = int(state.get("silver", 0)) - int(LIGHTNESS[id].price)
+	var cost := effective_manual_cost(state, int(LIGHTNESS[id].price))
+	if int(state.get("silver", 0)) < cost:
+		return false
+	state.silver = int(state.get("silver", 0)) - cost
 	state.learned_lightness.append(id)
 	state.equipped_lightness = id
 	return true
@@ -307,7 +324,7 @@ static func upgrade_move(state: Dictionary, id: String) -> bool:
 	var level := move_level(state, id)
 	if level >= MAX_LEVEL:
 		return false
-	var cost := upgrade_cost(MOVES, id, level)
+	var cost := effective_manual_cost(state, upgrade_cost(MOVES, id, level))
 	if int(state.get("silver", 0)) < cost:
 		return false
 	state.silver = int(state.get("silver", 0)) - cost
@@ -322,7 +339,7 @@ static func upgrade_internal(state: Dictionary, id: String) -> bool:
 	var level := internal_level(state, id)
 	if level >= MAX_LEVEL:
 		return false
-	var cost := upgrade_cost(INTERNAL, id, level)
+	var cost := effective_manual_cost(state, upgrade_cost(INTERNAL, id, level))
 	if int(state.get("silver", 0)) < cost:
 		return false
 	state.silver = int(state.get("silver", 0)) - cost
@@ -337,7 +354,7 @@ static func upgrade_lightness(state: Dictionary, id: String) -> bool:
 	var level := lightness_level(state, id)
 	if level >= MAX_LEVEL:
 		return false
-	var cost := upgrade_cost(LIGHTNESS, id, level)
+	var cost := effective_manual_cost(state, upgrade_cost(LIGHTNESS, id, level))
 	if int(state.get("silver", 0)) < cost:
 		return false
 	state.silver = int(state.get("silver", 0)) - cost

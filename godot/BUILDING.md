@@ -630,3 +630,16 @@ After exporting the full Windows release, run the shipping executable with `--ca
 ```
 
 Before a public Steam release, review `ASSET_PROVENANCE.md` and `THIRD_PARTY_NOTICES.md`, replace the current provisional application icon only after the final brand and art-rights review, and configure code signing in the Windows export preset.
+## 0.167.0 — Qingyun sect construction
+
+The full game now includes the Qingyun sect construction system. After the
+first chapter, players can spend one weekly action and existing silver,
+herbs, and ore to upgrade four fixed buildings: the training ground, library,
+herb garden, and forge. Each building has three story-gated levels with a
+clear preparation benefit. The save migration adds `sect.buildings` with all
+levels at zero for older saves, and the herb garden, training ground, library,
+and forge bonuses are applied to weekly income, training, manual prices, and
+crafted equipment respectively.
+
+The menu and Windows Desktop preset are both 0.167.0; the demo preset/build
+remains untouched.

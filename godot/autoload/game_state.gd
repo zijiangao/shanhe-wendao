@@ -16,12 +16,13 @@ const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
+const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
 
 signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 11
+const SAVE_VERSION := 12
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -58,6 +59,7 @@ func new_game() -> void:
 		"skills": ["cloud"],
 		"items": ["金疮药", "青锋剑"],
 		"materials": {"herbs": 0, "ore": 0},
+		"sect": SECT_BUILDING_RULES.normalized_sect({}),
 		"herbarium": {},
 		"mineralogy": {},
 		"herbarium_catches": 0,
@@ -167,6 +169,10 @@ func end_week() -> bool:
 						progress += "提升%d级，四维属性与气血上限提高。" % levels_gained
 					add_log(progress)
 				"gather": add_log("%s采回%d份药材、%d份矿石。" % [companion_title, int(companion_result.get("herbs", 0)), int(companion_result.get("ore", 0))])
+	var sect_herbs := SECT_BUILDING_RULES.herb_weekly_bonus(data)
+	if sect_herbs > 0:
+		data.materials.herbs = int(data.materials.get("herbs", 0)) + sect_herbs
+		add_log("药圃收成入库，门派获得%d份药材。" % sect_herbs)
 	data.week = mini(FINAL_WEEK, int(data.week) + 1)
 	data.acted_this_week = false
 	data.hp = data.max_hp
@@ -231,7 +237,7 @@ func train_wuxue(category: String, id: String, xp_roll: int = -1) -> Dictionary:
 	if not can_train_wuxue(category, id) or not spend_action():
 		return {"ok": false}
 	var base_xp := xp_roll if xp_roll >= 0 else randi_range(WUXUE_RULES.TRAIN_XP_MIN, WUXUE_RULES.TRAIN_XP_MAX)
-	var xp_gain := base_xp + WUXUE_RULES.insight_xp_bonus(data)
+	var xp_gain := base_xp + WUXUE_RULES.insight_xp_bonus(data) + SECT_BUILDING_RULES.training_xp_bonus(data)
 	var result: Dictionary
 	match category:
 		"move": result = WUXUE_RULES.train_move(data, id, xp_gain)
@@ -251,6 +257,10 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 		outcome.weekly_focus = true
 		outcome.weekly_focus_bonus = TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS
 		outcome.xp = int(outcome.xp) + TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS
+	var sect_xp_bonus := SECT_BUILDING_RULES.training_xp_bonus(data)
+	if sect_xp_bonus > 0:
+		outcome.xp = int(outcome.xp) + sect_xp_bonus
+		outcome.sect_training_bonus = sect_xp_bonus
 	outcome.score = safe_score
 	outcome.best_streak = clampi(best_streak, 0, TRAINING_RULES.ROUND_COUNT)
 	outcome.record = TRAINING_RULES.record_attempt(data.training_records, discipline, safe_score, best_streak)
@@ -312,6 +322,22 @@ func craft(recipe_id: String) -> bool:
 	add_log("%s完成：%s。" % [building, str(CRAFTING_RULES.RECIPES[recipe_id].title)])
 	state_changed.emit()
 	return true
+
+## 门派建设 (0.167.0): upgrades are deliberate weekly preparation, so they
+## share the same action budget as training, gathering, and crafting.
+func upgrade_sect_building(id: String) -> Dictionary:
+	if str(data.get("location", "")) != "qingyun" or deadline_reached() or not SECT_BUILDING_RULES.can_upgrade(data, id):
+		return {"ok": false}
+	if not spend_action():
+		return {"ok": false}
+	var result := SECT_BUILDING_RULES.upgrade(data, id)
+	if not bool(result.get("ok", false)):
+		data.acted_this_week = false
+		return result
+	var title := str(SECT_BUILDING_RULES.BUILDINGS[id].title)
+	add_log("门派建设完成：%s提升至%d级。" % [title, int(result.level)])
+	state_changed.emit()
+	return result
 
 func add_investigation(clue: String, message: String) -> bool:
 	if clue in data.investigations:
@@ -650,6 +676,7 @@ func _migrate_and_validate() -> void:
 		data.items = []
 	if typeof(data.materials) != TYPE_DICTIONARY:
 		data.materials = {"herbs": 0, "ore": 0}
+	data.sect = SECT_BUILDING_RULES.normalized_sect(data.get("sect", {}))
 	if typeof(data.get("herbarium", {})) != TYPE_DICTIONARY:
 		data.herbarium = {}
 	if typeof(data.get("mineralogy", {})) != TYPE_DICTIONARY:

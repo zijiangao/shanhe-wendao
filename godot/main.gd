@@ -37,6 +37,7 @@ const EQUIPMENT_RULES := preload("res://scripts/progression/equipment_rules.gd")
 const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
+const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
 ## 藏经阁 (0.103.0): left-column category buttons, in display order. The
 ## first four match WuxueRules.MOVES' "category" field; 内功/轻功 aren't
 ## move categories at all, so they're handled separately in
@@ -908,6 +909,7 @@ func _location_actions(location_id: String) -> Array:
 		var gathering_text := "后山 · 本周%s" % weekly_focus_name if weekly_focus in ["herbalism", "mining"] else "后山 · 采药与挖矿"
 		return [
 			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
+			{"id": "sect_building", "text": "门派建设 · 青云营造图", "x": 90, "y": 75},
 			{"id": "train", "text": train_text, "x": 420, "y": 205},
 			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
 			{"id": "workshop", "text": "炼药坊 · 丹药炼制", "x": 710, "y": 330},
@@ -976,6 +978,13 @@ func _show_gathering_menu() -> void:
 	choice_prompt = "选择本周的采集方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
 	choice_options = TRAINING_RULES.gathering_options(GameState.data)
 	choice_options.append(["暂不采集", "不消耗行动点，返回青云门。", "leave"])
+	screen = "choice"
+	_rebuild()
+
+func _show_sect_building() -> void:
+	choice_event = "sect_building"
+	choice_prompt = "青云门 · 门派建设 · 银两 %d · 药材 %d · 矿石 %d" % [int(GameState.data.silver), int(GameState.data.materials.get("herbs", 0)), int(GameState.data.materials.get("ore", 0))]
+	choice_options = SECT_BUILDING_RULES.options(GameState.data)
 	screen = "choice"
 	_rebuild()
 
@@ -1063,6 +1072,7 @@ func _location_action_requested(action_id: String) -> void:
 	match action_id:
 		"map": screen = "map"; _rebuild()
 		"master": _qingyun_master_event()
+		"sect_building": _show_sect_building()
 		"train":
 			if GameState.deadline_reached() or bool(GameState.data.get("acted_this_week", false)):
 				_toast(_time_action_failure_message())
@@ -1262,12 +1272,28 @@ func _show_choice() -> void:
 		choice_title = "炼 药 坊"
 	elif choice_event == "forge":
 		choice_title = "锻 造 坊"
+	elif choice_event == "sect_building":
+		choice_title = "青云门 · 营 造 图"
 	if choice_event.begins_with("market"):
 		choice_title = "西 市 坊 市"
 	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_title)
 	view.option_selected.connect(_resolve_choice)
 
 func _resolve_choice(route: String) -> void:
+	if choice_event == "sect_building":
+		if route == "leave":
+			screen = "location"
+			_rebuild()
+			return
+		if route.begins_with("upgrade_"):
+			var result := GameState.upgrade_sect_building(route.trim_prefix("upgrade_"))
+			if not bool(result.get("ok", false)):
+				_toast("需要推进剧情、准备足够材料，且本周尚未行动。")
+				return
+			_toast("%s已提升至%d级。" % [str(SECT_BUILDING_RULES.BUILDINGS[result.id].title), int(result.level)])
+			SaveManager.save_auto()
+			_show_sect_building()
+			return
 	if choice_event == "training":
 		if route == "qingyun_spar":
 			choice_event = "spar_focus"
@@ -1984,7 +2010,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.166.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.167.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

@@ -5,6 +5,7 @@ const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rul
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
 const EQUIPMENT_RULES := preload("res://scripts/progression/equipment_rules.gd")
+const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
 
 ## "specimens" (0.85.0) names specific 药谱/矿谱 collectibles a recipe needs,
 ## on top of the plain herbs/ore pool -- reuses the same named items 采药/挖矿
@@ -233,6 +234,7 @@ static func effective_cost(state: Dictionary, recipe_id: String) -> Dictionary:
 	var cost: Dictionary = (RECIPES[recipe_id].cost as Dictionary).duplicate(true)
 	if recipe_id in CRAFTABLE_WEAPONS or recipe_id in CRAFTABLE_ARMORS:
 		cost.ore = maxi(0, int(cost.ore) - TRAINING_RULES.craft_ore_discount(int(state.get("mining", 0))))
+		cost.ore = maxi(0, int(cost.ore) - SECT_BUILDING_RULES.forge_ore_discount(state))
 	return cost
 
 static func can_craft(state: Dictionary, recipe_id: String) -> bool:
