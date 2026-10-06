@@ -1,0 +1,13 @@
+{
+  "executable": "C:\\Users\\gaozi\\OneDrive\\Documents\\game\\build\\windows\\ShanheWendao.exe",
+  "package": "C:\\Users\\gaozi\\OneDrive\\Documents\\game\\build\\windows\\ShanheWendao.pck",
+  "file_version": "0.168.0.0",
+  "product_version": "0.168.0.0",
+  "menu_source_version": "0.168.0",
+  "exe_bytes": 109268480,
+  "pck_bytes": 49152548,
+  "exe_last_write": "2026-10-06T19:41:46.1408094+08:00",
+  "pck_last_write": "2026-10-06T19:41:46.6629963+08:00",
+  "exe_sha256": "E4E70040FAE65F5E80B524CF1AEA218E5733F3B3BD011AACB7CE63D5865DD96C",
+  "pck_sha256": "0615C1116DD1EB9A7008FEA0DA71EDD67FAF4087CD68FA5A233ECA7749B271D6"
+}

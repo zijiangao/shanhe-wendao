@@ -110,7 +110,8 @@ func _initialize() -> void:
 	assert(RULES.effective_cost(master_smith, "twin_edge_saber").ore == 7, "Mining mastery should reduce the pricier saber's ore cost from ten to seven.")
 	assert(not RULES.can_craft(master_smith, "twin_edge_saber"), "Even with the ore discount, the saber should still be blocked without a 流银砂 specimen.")
 	master_smith.mineralogy = {"silver_sand": 1}
-	assert("挖矿大成减免" in str(RULES.options_forge(master_smith).filter(func(o): return str(o[2]) == "twin_edge_saber")[0][0]), "The forge choice should disclose the mastery discount before crafting.")
+	var discounted_saber_title := str(RULES.options_forge(master_smith).filter(func(o): return str(o[2]) == "twin_edge_saber")[0][0])
+	assert("挖矿专精减免3" in discounted_saber_title and not "门派建设减免" in discounted_saber_title, "The forge choice should disclose the actual mining discount without attributing it to an unbuilt sect forge.")
 	assert(RULES.apply(master_smith, "twin_edge_saber") and int(master_smith.materials.ore) == 0 and int(master_smith.mineralogy.silver_sand) == 0, "The discounted ore cost and the named specimen should both be charged exactly once.")
 
 	# 炼药坊/锻造坊等级 (0.118.0) -- a workshop-level hard gate on top of the

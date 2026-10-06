@@ -5,6 +5,18 @@ const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 
 signal option_selected(id: String)
 
+var choice_panel: VBoxContainer
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and is_instance_valid(choice_panel):
+		_center_panel()
+
+func _center_panel() -> void:
+	var visible_width := minf(size.x, get_viewport_rect().size.x)
+	var center_offset := (visible_width - size.x) / 2.0
+	choice_panel.offset_left = center_offset - 415
+	choice_panel.offset_right = center_offset + 415
+
 func setup(background: Texture2D, prompt_text: String, options: Array, title_text: String = "抉 择") -> void:
 	var art := TextureRect.new()
 	art.texture = background
@@ -17,10 +29,18 @@ func setup(background: Texture2D, prompt_text: String, options: Array, title_tex
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(shade)
 	var panel := VBoxContainer.new()
-	panel.position = Vector2(225, 70)
-	panel.size = Vector2(830, 470)
+	choice_panel = panel
+	panel.name = "ChoicePanel"
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.offset_left = -415
+	panel.offset_right = 415
+	panel.offset_top = 40
+	panel.offset_bottom = -40
 	panel.add_theme_constant_override("separation", 14)
 	add_child(panel)
+	_center_panel()
 	var title := Label.new()
 	title.text = title_text
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -35,8 +55,10 @@ func setup(background: Texture2D, prompt_text: String, options: Array, title_tex
 	prompt.add_theme_color_override("font_color", Color("#f6f0e4"))
 	panel.add_child(prompt)
 	var scroll := ScrollContainer.new()
+	scroll.name = "ChoiceScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
 	panel.add_child(scroll)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL

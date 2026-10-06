@@ -1,0 +1,639 @@
+{
+  "date": "2026-10-06",
+  "version": "0.168.0",
+  "baseline_git": "698358737fac17c41b2c136999b6ee18343e6e13",
+  "full_game_only": true,
+  "baseline": {
+    "count": 66,
+    "passed": 66,
+    "failed": 0
+  },
+  "regression": {
+    "count": 68,
+    "passed": 68,
+    "failed": 0,
+    "tests": [
+      {
+        "name": "test_achievements_view",
+        "mode": "rendered_offscreen",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_backpack_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_battle_engine",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_battle_quit_flow",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_battle_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_battle_save_validation",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_battle_scene_spec",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_battle_sidebar_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_battle_turn_flow",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_character_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_choice_layout",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_choice_view_icon",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_collection_progress",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_combat_feedback",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_combat_feedback_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_companion_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_companion_save_validation",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_controls_view",
+        "mode": "rendered_offscreen",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_crafting_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_crafting_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_cue_synth",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_defense_tutorial_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_difficulty_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_encounter_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_equipment_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_full_journey",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_game_state",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_growth_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_herbarium_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_library_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_location_art",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_management_flow",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_manuals_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_map_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_market_view",
+        "mode": "rendered_offscreen",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_mineralogy_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_navigation_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_onboarding_spec",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_pause_view",
+        "mode": "rendered_offscreen",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_prepared_journey",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_progression_return_flow",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_qingyun_spar",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_qingyun_spar_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_qingyun_tavern_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_quest_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_release_credits",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_reward_choice_view",
+        "mode": "rendered_offscreen",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_reward_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_save_manager",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_save_power_flow",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_sect_building_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_sect_journey",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_settings_manager",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_settings_return_flow",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_settings_view",
+        "mode": "rendered_offscreen",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_shop_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_sparring_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_steam_service",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_store_capture_spec",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_training_event_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_training_keyboard_input",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_training_menu_view",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_training_minigame_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_training_minigame_view",
+        "mode": "rendered_offscreen",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_tutorial_layout",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_tutorial_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_weekly_task_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "name": "test_wuxue_rules",
+        "mode": "headless",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      }
+    ],
+    "main_sha256": "99BBBF9B59546FAA2DE490AA500775AA792164ED30643C318B99140DFD8EDD5C"
+  },
+  "final_padding": {
+    "final_main_sha256": "84929632BA8B55441DD69289821F164F6065EE409E224C2934F31FB40291C3CC",
+    "tested_change": "Preserve horizontal frame padding after viewport/scroll fixes",
+    "count": 6,
+    "passed": 6,
+    "results": [
+      {
+        "name": "test_settings_view",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 5.2712479,
+        "script_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_controls_view",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.2503664,
+        "script_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_settings_return_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 3.2023157,
+        "script_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_settings_manager",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.2507372,
+        "script_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_management_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 3.1984446,
+        "script_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_progression_return_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 2.9035825,
+        "script_errors": 0,
+        "passed": true
+      }
+    ],
+    "classification_note": "Initial scanner falsely matched FAILED within the known certificate-store environment diagnostic. Original process logs and exit codes retained; all other failures remain fatal."
+  },
+  "release": {
+    "count": 13,
+    "passed": true,
+    "failures": 0,
+    "runs": [
+      {
+        "id": "export",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "full-build",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "release-credits",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "steam-data",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "onboarding-flow",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "battle-presentation",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "reward-flow",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "combat-feedback",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "training-flow",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "crafting-flow",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "shop-flow",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "pause-flow",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      },
+      {
+        "id": "packaged-menu-reader",
+        "exit_code": 0,
+        "timed_out": false,
+        "passed": true
+      }
+    ]
+  },
+  "final_main_sha256": "84929632BA8B55441DD69289821F164F6065EE409E224C2934F31FB40291C3CC",
+  "scope": "Scripted rule journeys and selected real desktop interactions; not a complete human playthrough or a measurement of real play time."
+}

@@ -919,7 +919,7 @@ func _location_actions(location_id: String) -> Array:
 		var gathering_text := "后山 · 本周%s" % weekly_focus_name if weekly_focus in ["herbalism", "mining"] else "后山 · 采药与挖矿"
 		return [
 			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
-			{"id": "sect_building", "text": "门派建设 · 青云营造图", "x": 90, "y": 75},
+			{"id": "sect_building", "text": "门派建设 · 青云营造图", "x": 420, "y": 130},
 			{"id": "train", "text": train_text, "x": 420, "y": 205},
 			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
 			{"id": "workshop", "text": "炼药坊 · 丹药炼制", "x": 710, "y": 330},
@@ -2020,7 +2020,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.167.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.168.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2904,13 +2904,48 @@ func _equip_wuxue_from_backpack(category: String, id: String) -> void:
 	SaveManager.save_auto()
 	_show_backpack()
 
+func _settings_layout(panel_name: String, width: float) -> VBoxContainer:
+	var layout := UI_THEME.framed_panel_rect(content, -width / 2.0, 20, width / 2.0, -20, UI_THEME.PARCHMENT_TINT)
+	var frame := layout.get_parent().get_parent() as PanelContainer
+	frame.name = panel_name
+	frame.anchor_left = 0.5
+	frame.anchor_right = 0.5
+	var center_panel := func():
+		var visible_width := minf(content.size.x, get_viewport_rect().size.x)
+		frame.position.x = (visible_width - frame.size.x) / 2.0
+	frame.resized.connect(center_panel)
+	center_panel.call()
+	# Keep the side borders clear, but let the helper's vertical margins
+	# reserve the painted border without adding another 124 pixels of height.
+	var style := UI_THEME.panel_box(UI_THEME.PARCHMENT_TINT)
+	style.content_margin_left = style.texture_margin_left
+	style.content_margin_right = style.texture_margin_right
+	style.content_margin_top = 0
+	style.content_margin_bottom = 0
+	frame.add_theme_stylebox_override("panel", style)
+	return layout
+
+func _settings_scroll(layout: VBoxContainer) -> VBoxContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = "SettingsScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	layout.add_child(scroll)
+	var panel := VBoxContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_constant_override("separation", 12)
+	scroll.add_child(panel)
+	return panel
+
 func _show_settings() -> void:
 	_clear_content()
 	var backdrop := ColorRect.new()
 	backdrop.color = Color("#d8cfbd")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(backdrop)
-	var panel := UI_THEME.framed_panel(content, Vector2(300, 28), Vector2(680, 520), UI_THEME.PARCHMENT_TINT)
+	var layout := _settings_layout("SettingsPanel", 680)
+	var panel := _settings_scroll(layout)
 	var title := Label.new()
 	title.text = "设 置"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -3020,6 +3055,14 @@ func _show_settings() -> void:
 	var reset_tutorial := _action_button("重新显示新手引导", Color("#315746"))
 	reset_tutorial.pressed.connect(_reset_tutorial)
 	panel.add_child(reset_tutorial)
+	var back := _action_button("返回", Color("#315746"))
+	back.pressed.connect(func():
+		var action: Dictionary = NAVIGATION_RULES.back_action("settings", previous_screen)
+		if bool(action.allowed):
+			screen = str(action.target)
+			_rebuild()
+	)
+	layout.add_child(back)
 
 func _show_controls() -> void:
 	_clear_content()
@@ -3027,7 +3070,9 @@ func _show_controls() -> void:
 	backdrop.color = Color("#d8cfbd")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(backdrop)
-	var panel := UI_THEME.framed_panel(content, Vector2(250, 12), Vector2(780, 596), UI_THEME.PARCHMENT_TINT, 10)
+	var layout := _settings_layout("ControlsPanel", 780)
+	var panel := _settings_scroll(layout)
+	panel.add_theme_constant_override("separation", 10)
 	var title := Label.new()
 	title.text = "键 位 设 置"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -3067,7 +3112,7 @@ func _show_controls() -> void:
 	panel.add_child(reset_keys)
 	var back := _action_button("返回设置", Color("#315746"))
 	back.pressed.connect(func(): rebinding_action = ""; screen = "settings"; _rebuild())
-	panel.add_child(back)
+	layout.add_child(back)
 
 func _add_volume_setting(parent: VBoxContainer, label_text: String, key: String) -> void:
 	var row := HBoxContainer.new()

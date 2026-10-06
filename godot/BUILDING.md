@@ -1,5 +1,24 @@
 # Building 山河问道
 
+## 0.168.0 — full-game acceptance and construction fixes
+
+Full-game acceptance now preserves individual test logs and explicit exit codes.
+The Qingyun construction entrance no longer covers the location objective.
+Hero weekly training assignments receive the training-ground XP bonus without
+duplicating the base attribute reward, and forging lists the actual mining and
+sect-construction discounts separately, capped to the remaining ore cost.
+
+Settings, key bindings, and choice screens scroll within the available viewport;
+their return controls remain reachable at 100%, 115%, and 130% UI scales.
+The new sect journey integration uses real story, purchases, gathering, weekly
+work, construction, battles, and save/load operations. Construction remains an
+optional long-term goal; no economy or encounter values were changed.
+
+See `../qa/2026-10-06-full-game/REPORT.md` for results and limits. Automated
+journeys and selected desktop interactions do not establish human play time or
+replace player feedback. The menu and Windows Desktop preset are synchronized
+at 0.168.0. Only the full game is exported and verified.
+
 ## 0.166.0 — title presentation and visual hierarchy
 
 The full-game menu now opens on a dedicated wuxia key art scene with a framed

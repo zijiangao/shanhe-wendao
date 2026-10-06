@@ -2,6 +2,7 @@ class_name WeeklyTaskRules
 extends RefCounted
 
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
+const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
 
 ## 分派任务 (0.115.0) -- an additive, parallel system alongside the existing
 ## 演武场/后山 minigames, NOT a replacement: those keep their scoring/combo/
@@ -38,6 +39,9 @@ static func options_hero(state: Dictionary) -> Array:
 	for task_id in TASKS:
 		var item: Dictionary = TASKS[task_id]
 		var note := " 本周行动已用完，请结束本周后再分派。" if unavailable else " 占用本周行动，结束本周时结算。"
+		var sect_bonus := SECT_BUILDING_RULES.training_xp_bonus(state) if task_id == "train" else 0
+		if sect_bonus > 0:
+			note += " 演武场结算时额外修为 +%d。" % sect_bonus
 		options.append(["%s%s" % [str(item.title), "（本周已分派）" if current == task_id else ""], str(item.description) + note, "assign_hero_%s" % task_id, unavailable])
 	options.append(["返回", "不消耗行动点，返回人物信息。", "leave"])
 	return options
@@ -69,8 +73,14 @@ static func resolve_hero(state: Dictionary, roll: int = -1) -> Dictionary:
 		"train":
 			var focus := str(FOCUS_ROTATION[posmod(int(state.get("week", 1)), FOCUS_ROTATION.size())])
 			GROWTH_RULES.apply_training(state, focus)
+			var sect_bonus := SECT_BUILDING_RULES.training_xp_bonus(state)
+			GROWTH_RULES.grant_xp(state, sect_bonus)
 			result.focus = focus
+			result.xp_gained = 12 + sect_bonus
+			result.sect_training_bonus = sect_bonus
 			result.text = {"strength": "沈羽闭门锻体，臂力与修为提升。", "insight": "沈羽闭门参悟，悟性与修为提升。", "constitution": "沈羽闭门筑基，根骨、气血与修为提升。"}[focus]
+			if sect_bonus > 0:
+				result.text += "演武场额外修为 +%d。" % sect_bonus
 		"gather":
 			var herbs := 1 + bonus / 6
 			var ore := 1 + bonus / 6

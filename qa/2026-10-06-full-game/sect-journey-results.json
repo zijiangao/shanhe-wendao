@@ -1,0 +1,3223 @@
+{
+  "audit": [
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "new_game_chapter_lock",
+      "run": "standard_none_0",
+      "stage": "meet_master",
+      "unchanged": true,
+      "week": 1
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "unknown_building",
+      "reason": "unknown_building",
+      "run": "standard_none_0",
+      "stage": "meet_master",
+      "unchanged": true,
+      "week": 1
+    },
+    {
+      "event": "market_goods",
+      "id": "healing_powder",
+      "quantity": 8,
+      "run": "standard_none_0",
+      "silver_spent": 120,
+      "week": 1
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 1
+    },
+    {
+      "discipline": "herbalism",
+      "event": "initial_herb_supply",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 0,
+        "discipline": "herbalism",
+        "grade": "B",
+        "herb_discovery": {
+          "catches_to_next_level": 2,
+          "count": 1,
+          "description": "晨露未散时采下，可止血生肌。",
+          "first_discovery": true,
+          "gather_level": 1,
+          "id": "dewgrass",
+          "leveled_up": false,
+          "name": "凝露草",
+          "rarity": "寻常",
+          "xp": 2
+        },
+        "herbs": 1,
+        "item": "",
+        "ore": 0,
+        "rank_up": false,
+        "record": {
+          "attempts": 1,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": true
+        },
+        "score": 210,
+        "silver": 0,
+        "specialty_gain": 1,
+        "specialty_level": 0,
+        "specialty_rank": "初学",
+        "xp": 6
+      },
+      "run": "standard_none_0",
+      "score": 210,
+      "sect_bonus": 0,
+      "week": 2,
+      "xp_gain": 8
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 2
+    },
+    {
+      "discipline": "mining",
+      "event": "initial_ore_supply",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 0,
+        "discipline": "mining",
+        "grade": "B",
+        "herbs": 0,
+        "item": "",
+        "mineral_discovery": {
+          "catches_to_next_level": 2,
+          "count": 1,
+          "description": "质地坚韧，是淬炼寻常兵刃的根基。",
+          "first_discovery": true,
+          "gather_level": 1,
+          "id": "ironstone",
+          "leveled_up": false,
+          "name": "青铁石",
+          "rarity": "寻常",
+          "silver": 2
+        },
+        "ore": 1,
+        "rank_up": false,
+        "record": {
+          "attempts": 1,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": true
+        },
+        "score": 210,
+        "silver": 5,
+        "specialty_gain": 1,
+        "specialty_level": 0,
+        "specialty_rank": "初学",
+        "xp": 6
+      },
+      "run": "standard_none_0",
+      "score": 210,
+      "sect_bonus": 0,
+      "week": 3,
+      "xp_gain": 6
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 3
+    },
+    {
+      "discipline": "swordsmanship",
+      "event": "training_ground_effect",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 1,
+        "discipline": "swordsmanship",
+        "grade": "B",
+        "herbs": 0,
+        "item": "",
+        "ore": 0,
+        "rank_up": false,
+        "record": {
+          "attempts": 1,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": true
+        },
+        "score": 210,
+        "silver": 0,
+        "specialty_gain": 1,
+        "specialty_level": 0,
+        "specialty_rank": "初学",
+        "xp": 6
+      },
+      "run": "standard_none_0",
+      "score": 210,
+      "sect_bonus": 0,
+      "week": 4,
+      "xp_gain": 6
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 4
+    },
+    {
+      "event": "wuxue_training",
+      "insight_bonus": 3,
+      "random_base": 14,
+      "run": "standard_none_0",
+      "sect_bonus": 0,
+      "tier": 1,
+      "week": 5,
+      "xp_gain": 17
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 5
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 6
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 6,
+      "xp_gain": 12
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 4,
+      "run": "standard_none_0",
+      "silver_spent": 24,
+      "week": 7
+    },
+    {
+      "choice_label": "打造 · 自铸铁刃 · 矿石5",
+      "event": "forge_effect",
+      "ore_spent": 5,
+      "run": "standard_none_0",
+      "sect_ore_saved": 0,
+      "tier": 1,
+      "week": 7
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 7
+    },
+    {
+      "base_cost": 120,
+      "event": "library_effect",
+      "paid": 120,
+      "run": "standard_none_0",
+      "saved": 0,
+      "tier": 1,
+      "week": 8
+    },
+    {
+      "discipline": "swordsmanship",
+      "event": "training_ground_effect",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 0,
+        "discipline": "swordsmanship",
+        "grade": "B",
+        "herbs": 0,
+        "item": "",
+        "ore": 0,
+        "rank_up": false,
+        "record": {
+          "attempts": 2,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": false
+        },
+        "score": 210,
+        "silver": 0,
+        "specialty_gain": 1,
+        "specialty_level": 1,
+        "specialty_rank": "初学",
+        "xp": 6
+      },
+      "run": "standard_none_0",
+      "score": 210,
+      "sect_bonus": 0,
+      "week": 8,
+      "xp_gain": 6
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 8
+    },
+    {
+      "event": "wuxue_training",
+      "insight_bonus": 3,
+      "random_base": 10,
+      "run": "standard_none_0",
+      "sect_bonus": 0,
+      "tier": 2,
+      "week": 9,
+      "xp_gain": 13
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 9
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 10
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 10,
+      "xp_gain": 12
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 5,
+      "run": "standard_none_0",
+      "silver_spent": 30,
+      "week": 11
+    },
+    {
+      "choice_label": "打造 · 自铸铁刃 · 矿石5（已拥有 1 件）",
+      "event": "forge_effect",
+      "ore_spent": 5,
+      "run": "standard_none_0",
+      "sect_ore_saved": 0,
+      "tier": 2,
+      "week": 11
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 11
+    },
+    {
+      "base_cost": 150,
+      "event": "library_effect",
+      "paid": 150,
+      "run": "standard_none_0",
+      "saved": 0,
+      "tier": 2,
+      "week": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 12
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 12,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 13
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 13,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 14
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 14,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 15
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 15,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 16
+    },
+    {
+      "discipline": "swordsmanship",
+      "event": "training_ground_effect",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 1,
+        "discipline": "swordsmanship",
+        "grade": "B",
+        "herbs": 0,
+        "item": "",
+        "ore": 0,
+        "rank_up": false,
+        "record": {
+          "attempts": 3,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": false
+        },
+        "score": 210,
+        "silver": 0,
+        "specialty_gain": 1,
+        "specialty_level": 1,
+        "specialty_rank": "初学",
+        "xp": 6
+      },
+      "run": "standard_none_0",
+      "score": 210,
+      "sect_bonus": 0,
+      "week": 17,
+      "xp_gain": 6
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 17
+    },
+    {
+      "event": "wuxue_training",
+      "insight_bonus": 6,
+      "random_base": 11,
+      "run": "standard_none_0",
+      "sect_bonus": 0,
+      "tier": 3,
+      "week": 18,
+      "xp_gain": 17
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 18
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 19
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 19,
+      "xp_gain": 12
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 5,
+      "run": "standard_none_0",
+      "silver_spent": 30,
+      "week": 20
+    },
+    {
+      "choice_label": "打造 · 自铸铁刃 · 矿石5（已拥有 2 件）",
+      "event": "forge_effect",
+      "ore_spent": 5,
+      "run": "standard_none_0",
+      "sect_ore_saved": 0,
+      "tier": 3,
+      "week": 20
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 20
+    },
+    {
+      "base_cost": 105,
+      "event": "library_effect",
+      "paid": 105,
+      "run": "standard_none_0",
+      "saved": 0,
+      "tier": 3,
+      "week": 21
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 21
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 21,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 22
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 22,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 23
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 23,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 24
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 24,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 25
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 25,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_none_0",
+      "week": 26
+    },
+    {
+      "applied_sect_bonus": 0,
+      "event": "hero_weekly_task",
+      "run": "standard_none_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 0,
+      "week": 26,
+      "xp_gain": 12
+    },
+    {
+      "event": "market_goods",
+      "id": "healing_powder",
+      "quantity": 4,
+      "run": "standard_none_0",
+      "silver_spent": 60,
+      "week": 27
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "new_game_chapter_lock",
+      "run": "standard_all_three_levels_0",
+      "stage": "meet_master",
+      "unchanged": true,
+      "week": 1
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "unknown_building",
+      "reason": "unknown_building",
+      "run": "standard_all_three_levels_0",
+      "stage": "meet_master",
+      "unchanged": true,
+      "week": 1
+    },
+    {
+      "event": "market_goods",
+      "id": "healing_powder",
+      "quantity": 8,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 120,
+      "week": 1
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_all_three_levels_0",
+      "week": 1
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "library",
+      "reason": "unaffordable_materials",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter_complete",
+      "unchanged": true,
+      "week": 2
+    },
+    {
+      "discipline": "herbalism",
+      "event": "initial_herb_supply",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 0,
+        "discipline": "herbalism",
+        "grade": "B",
+        "herb_discovery": {
+          "catches_to_next_level": 2,
+          "count": 1,
+          "description": "晨露未散时采下，可止血生肌。",
+          "first_discovery": true,
+          "gather_level": 1,
+          "id": "dewgrass",
+          "leveled_up": false,
+          "name": "凝露草",
+          "rarity": "寻常",
+          "xp": 2
+        },
+        "herbs": 1,
+        "item": "",
+        "ore": 0,
+        "rank_up": false,
+        "record": {
+          "attempts": 1,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": true
+        },
+        "score": 210,
+        "silver": 0,
+        "specialty_gain": 1,
+        "specialty_level": 0,
+        "specialty_rank": "初学",
+        "xp": 6
+      },
+      "run": "standard_all_three_levels_0",
+      "score": 210,
+      "sect_bonus": 0,
+      "week": 2,
+      "xp_gain": 8
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_all_three_levels_0",
+      "week": 2
+    },
+    {
+      "discipline": "mining",
+      "event": "initial_ore_supply",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 0,
+        "discipline": "mining",
+        "grade": "B",
+        "herbs": 0,
+        "item": "",
+        "mineral_discovery": {
+          "catches_to_next_level": 2,
+          "count": 1,
+          "description": "质地坚韧，是淬炼寻常兵刃的根基。",
+          "first_discovery": true,
+          "gather_level": 1,
+          "id": "ironstone",
+          "leveled_up": false,
+          "name": "青铁石",
+          "rarity": "寻常",
+          "silver": 2
+        },
+        "ore": 1,
+        "rank_up": false,
+        "record": {
+          "attempts": 1,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": true
+        },
+        "score": 210,
+        "silver": 5,
+        "specialty_gain": 1,
+        "specialty_level": 0,
+        "specialty_rank": "初学",
+        "xp": 6
+      },
+      "run": "standard_all_three_levels_0",
+      "score": 210,
+      "sect_bonus": 0,
+      "week": 3,
+      "xp_gain": 6
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_all_three_levels_0",
+      "week": 3
+    },
+    {
+      "event": "market_goods",
+      "id": "herbs",
+      "quantity": 5,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 25,
+      "week": 4
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 5,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 30,
+      "week": 4
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "wrong_location",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter_complete",
+      "unchanged": true,
+      "week": 4
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter_complete",
+      "unchanged": true,
+      "week": 4
+    },
+    {
+      "cost": {
+        "herbs": 1,
+        "ore": 2,
+        "silver": 300,
+        "stage": "chapter_complete"
+      },
+      "event": "upgrade",
+      "id": "training_ground",
+      "level": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 4
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_all_three_levels_0",
+      "week": 4
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "library",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter_complete",
+      "unchanged": true,
+      "week": 5
+    },
+    {
+      "cost": {
+        "herbs": 2,
+        "ore": 1,
+        "silver": 300,
+        "stage": "chapter_complete"
+      },
+      "event": "upgrade",
+      "id": "library",
+      "level": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 5
+    },
+    {
+      "event": "week_end",
+      "garden_level": 0,
+      "herbs_gained": 0,
+      "run": "standard_all_three_levels_0",
+      "week": 5
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "herb_garden",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter_complete",
+      "unchanged": true,
+      "week": 6
+    },
+    {
+      "cost": {
+        "herbs": 2,
+        "ore": 1,
+        "silver": 300,
+        "stage": "chapter_complete"
+      },
+      "event": "upgrade",
+      "id": "herb_garden",
+      "level": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 6
+    },
+    {
+      "event": "week_end",
+      "garden_level": 1,
+      "herbs_gained": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 6
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "forge",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter_complete",
+      "unchanged": true,
+      "week": 7
+    },
+    {
+      "cost": {
+        "herbs": 1,
+        "ore": 2,
+        "silver": 300,
+        "stage": "chapter_complete"
+      },
+      "event": "upgrade",
+      "id": "forge",
+      "level": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 7
+    },
+    {
+      "event": "week_end",
+      "garden_level": 1,
+      "herbs_gained": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 7
+    },
+    {
+      "event": "market_goods",
+      "id": "herbs",
+      "quantity": 1,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 5,
+      "week": 8
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 5,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 30,
+      "week": 8
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "next_chapter_lock",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter_complete",
+      "unchanged": true,
+      "week": 8
+    },
+    {
+      "discipline": "swordsmanship",
+      "event": "training_ground_effect",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 1,
+        "discipline": "swordsmanship",
+        "grade": "B",
+        "herbs": 0,
+        "item": "",
+        "ore": 0,
+        "rank_up": false,
+        "record": {
+          "attempts": 1,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": true
+        },
+        "score": 210,
+        "sect_training_bonus": 2,
+        "silver": 0,
+        "specialty_gain": 1,
+        "specialty_level": 0,
+        "specialty_rank": "初学",
+        "xp": 8
+      },
+      "run": "standard_all_three_levels_0",
+      "score": 210,
+      "sect_bonus": 2,
+      "week": 8,
+      "xp_gain": 8
+    },
+    {
+      "event": "week_end",
+      "garden_level": 1,
+      "herbs_gained": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 8
+    },
+    {
+      "event": "wuxue_training",
+      "insight_bonus": 3,
+      "random_base": 14,
+      "run": "standard_all_three_levels_0",
+      "sect_bonus": 2,
+      "tier": 1,
+      "week": 9,
+      "xp_gain": 19
+    },
+    {
+      "event": "week_end",
+      "garden_level": 1,
+      "herbs_gained": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 9
+    },
+    {
+      "event": "week_end",
+      "garden_level": 1,
+      "herbs_gained": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 10
+    },
+    {
+      "applied_sect_bonus": 2,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 1,
+      "week": 10,
+      "xp_gain": 14
+    },
+    {
+      "choice_label": "打造 · 自铸铁刃 · 矿石4（门派建设减免1）",
+      "event": "forge_effect",
+      "ore_spent": 4,
+      "run": "standard_all_three_levels_0",
+      "sect_ore_saved": 1,
+      "tier": 1,
+      "week": 11
+    },
+    {
+      "event": "week_end",
+      "garden_level": 1,
+      "herbs_gained": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 11
+    },
+    {
+      "base_cost": 120,
+      "event": "library_effect",
+      "paid": 114,
+      "run": "standard_all_three_levels_0",
+      "saved": 6,
+      "tier": 1,
+      "week": 12
+    },
+    {
+      "event": "market_goods",
+      "id": "herbs",
+      "quantity": 7,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 35,
+      "week": 12
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 17,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 102,
+      "week": 12
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "wrong_location",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter2_complete",
+      "unchanged": true,
+      "week": 12
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter2_complete",
+      "unchanged": true,
+      "week": 12
+    },
+    {
+      "cost": {
+        "herbs": 3,
+        "ore": 5,
+        "silver": 700,
+        "stage": "chapter2_complete"
+      },
+      "event": "upgrade",
+      "id": "training_ground",
+      "level": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 1,
+      "herbs_gained": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 12
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "library",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter2_complete",
+      "unchanged": true,
+      "week": 13
+    },
+    {
+      "cost": {
+        "herbs": 4,
+        "ore": 4,
+        "silver": 700,
+        "stage": "chapter2_complete"
+      },
+      "event": "upgrade",
+      "id": "library",
+      "level": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 13
+    },
+    {
+      "event": "week_end",
+      "garden_level": 1,
+      "herbs_gained": 1,
+      "run": "standard_all_three_levels_0",
+      "week": 13
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "herb_garden",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter2_complete",
+      "unchanged": true,
+      "week": 14
+    },
+    {
+      "cost": {
+        "herbs": 5,
+        "ore": 3,
+        "silver": 700,
+        "stage": "chapter2_complete"
+      },
+      "event": "upgrade",
+      "id": "herb_garden",
+      "level": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 14
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 14
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "forge",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter2_complete",
+      "unchanged": true,
+      "week": 15
+    },
+    {
+      "cost": {
+        "herbs": 2,
+        "ore": 6,
+        "silver": 700,
+        "stage": "chapter2_complete"
+      },
+      "event": "upgrade",
+      "id": "forge",
+      "level": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 15
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 15
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 10,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 60,
+      "week": 16
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "next_chapter_lock",
+      "run": "standard_all_three_levels_0",
+      "stage": "chapter2_complete",
+      "unchanged": true,
+      "week": 16
+    },
+    {
+      "discipline": "swordsmanship",
+      "event": "training_ground_effect",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 1,
+        "discipline": "swordsmanship",
+        "grade": "B",
+        "herbs": 0,
+        "item": "",
+        "ore": 0,
+        "rank_up": false,
+        "record": {
+          "attempts": 2,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": false
+        },
+        "score": 210,
+        "sect_training_bonus": 4,
+        "silver": 0,
+        "specialty_gain": 1,
+        "specialty_level": 1,
+        "specialty_rank": "初学",
+        "xp": 10
+      },
+      "run": "standard_all_three_levels_0",
+      "score": 210,
+      "sect_bonus": 4,
+      "week": 16,
+      "xp_gain": 10
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 16
+    },
+    {
+      "event": "wuxue_training",
+      "insight_bonus": 4,
+      "random_base": 10,
+      "run": "standard_all_three_levels_0",
+      "sect_bonus": 4,
+      "tier": 2,
+      "week": 17,
+      "xp_gain": 18
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 17
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 18
+    },
+    {
+      "applied_sect_bonus": 4,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 2,
+      "week": 18,
+      "xp_gain": 16
+    },
+    {
+      "choice_label": "打造 · 自铸铁刃 · 矿石3（门派建设减免2）（已拥有 1 件）",
+      "event": "forge_effect",
+      "ore_spent": 3,
+      "run": "standard_all_three_levels_0",
+      "sect_ore_saved": 2,
+      "tier": 2,
+      "week": 19
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 19
+    },
+    {
+      "base_cost": 150,
+      "event": "library_effect",
+      "paid": 135,
+      "run": "standard_all_three_levels_0",
+      "saved": 15,
+      "tier": 2,
+      "week": 20
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 20
+    },
+    {
+      "applied_sect_bonus": 4,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 2,
+      "week": 20,
+      "xp_gain": 16
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 21
+    },
+    {
+      "applied_sect_bonus": 4,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 2,
+      "week": 21,
+      "xp_gain": 16
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 22
+    },
+    {
+      "applied_sect_bonus": 4,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 2,
+      "week": 22,
+      "xp_gain": 16
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 23
+    },
+    {
+      "applied_sect_bonus": 4,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 2,
+      "week": 23,
+      "xp_gain": 16
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 24
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 25
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 38,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 25,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 26
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 36,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 26,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 27
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 36,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 27,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 28
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 28,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 29
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 36,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 29,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 30
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 30,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 31
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 31,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 32
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 36,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 32,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 33
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 40,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 33,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 34
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 37,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 34,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 35
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 35,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 36
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 36,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 37
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 37,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 38
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 38,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 39
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 39,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 40
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 40,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 41
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 39,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 41,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 42
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 42,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 43
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 37,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 43,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 44
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 44,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 45
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 40,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 45,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 46
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 42,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 46,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 47
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 38,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 47,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 48
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 48,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 49
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 40,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 49,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 50
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 50,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 51
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 43,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 51,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 52
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 52,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 53
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 53,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 54
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 41,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 54,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 55
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 39,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 55,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 56
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 56,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 57
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 57,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 58
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 40,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 58,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 59
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 59,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 60
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 60,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 61
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 37,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 61,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 62
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 36,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 62,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 63
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 63,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 64
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 64,
+      "xp_gain": 0
+    },
+    {
+      "event": "market_goods",
+      "id": "herbs",
+      "quantity": 3,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 15,
+      "week": 65
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 29,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 174,
+      "week": 65
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "wrong_location",
+      "run": "standard_all_three_levels_0",
+      "stage": "final_assault",
+      "unchanged": true,
+      "week": 65
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "training_ground",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "final_assault",
+      "unchanged": true,
+      "week": 65
+    },
+    {
+      "cost": {
+        "herbs": 6,
+        "ore": 10,
+        "silver": 1500,
+        "stage": "chapter3_complete"
+      },
+      "event": "upgrade",
+      "id": "training_ground",
+      "level": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 65
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 65
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "library",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "final_assault",
+      "unchanged": true,
+      "week": 66
+    },
+    {
+      "cost": {
+        "herbs": 8,
+        "ore": 8,
+        "silver": 1500,
+        "stage": "chapter3_complete"
+      },
+      "event": "upgrade",
+      "id": "library",
+      "level": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 66
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "standard_all_three_levels_0",
+      "week": 66
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "herb_garden",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "final_assault",
+      "unchanged": true,
+      "week": 67
+    },
+    {
+      "cost": {
+        "herbs": 9,
+        "ore": 6,
+        "silver": 1500,
+        "stage": "chapter3_complete"
+      },
+      "event": "upgrade",
+      "id": "herb_garden",
+      "level": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 67
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 67
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "forge",
+      "reason": "second_action_same_week",
+      "run": "standard_all_three_levels_0",
+      "stage": "final_assault",
+      "unchanged": true,
+      "week": 68
+    },
+    {
+      "cost": {
+        "herbs": 4,
+        "ore": 12,
+        "silver": 1500,
+        "stage": "chapter3_complete"
+      },
+      "event": "upgrade",
+      "id": "forge",
+      "level": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 68
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 68
+    },
+    {
+      "discipline": "swordsmanship",
+      "event": "training_ground_effect",
+      "focus_bonus": 0,
+      "outcome": {
+        "best_streak": 0,
+        "character_levels_gained": 1,
+        "discipline": "swordsmanship",
+        "grade": "B",
+        "herbs": 0,
+        "item": "",
+        "ore": 0,
+        "rank_up": false,
+        "record": {
+          "attempts": 3,
+          "best_grade": "B",
+          "best_score": 210,
+          "best_streak": 0,
+          "new_best": false
+        },
+        "score": 210,
+        "sect_training_bonus": 6,
+        "silver": 0,
+        "specialty_gain": 1,
+        "specialty_level": 1,
+        "specialty_rank": "初学",
+        "xp": 12
+      },
+      "run": "standard_all_three_levels_0",
+      "score": 210,
+      "sect_bonus": 6,
+      "week": 69,
+      "xp_gain": 12
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 69
+    },
+    {
+      "event": "wuxue_training",
+      "insight_bonus": 7,
+      "random_base": 11,
+      "run": "standard_all_three_levels_0",
+      "sect_bonus": 6,
+      "tier": 3,
+      "week": 70,
+      "xp_gain": 24
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 70
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 71
+    },
+    {
+      "applied_sect_bonus": 6,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 3,
+      "week": 71,
+      "xp_gain": 18
+    },
+    {
+      "event": "market_goods",
+      "id": "ore",
+      "quantity": 2,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 12,
+      "week": 72
+    },
+    {
+      "choice_label": "打造 · 自铸铁刃 · 矿石2（门派建设减免3）（已拥有 2 件）",
+      "event": "forge_effect",
+      "ore_spent": 2,
+      "run": "standard_all_three_levels_0",
+      "sect_ore_saved": 3,
+      "tier": 3,
+      "week": 72
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 72
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 73
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 37,
+      "task": "earn",
+      "training_ground_level": 3,
+      "week": 73,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 74
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 3,
+      "week": 74,
+      "xp_gain": 0
+    },
+    {
+      "base_cost": 105,
+      "event": "library_effect",
+      "paid": 90,
+      "run": "standard_all_three_levels_0",
+      "saved": 15,
+      "tier": 3,
+      "week": 75
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 75
+    },
+    {
+      "applied_sect_bonus": 6,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 3,
+      "week": 75,
+      "xp_gain": 18
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 76
+    },
+    {
+      "applied_sect_bonus": 6,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 3,
+      "week": 76,
+      "xp_gain": 18
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 77
+    },
+    {
+      "applied_sect_bonus": 6,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 3,
+      "week": 77,
+      "xp_gain": 18
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 78
+    },
+    {
+      "applied_sect_bonus": 6,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 3,
+      "week": 78,
+      "xp_gain": 18
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 79
+    },
+    {
+      "applied_sect_bonus": 6,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 3,
+      "week": 79,
+      "xp_gain": 18
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 80
+    },
+    {
+      "applied_sect_bonus": 6,
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 0,
+      "task": "train",
+      "training_ground_level": 3,
+      "week": 80,
+      "xp_gain": 18
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "forge",
+      "reason": "maximum_level",
+      "run": "standard_all_three_levels_0",
+      "stage": "final_assault",
+      "unchanged": true,
+      "week": 81
+    },
+    {
+      "event": "week_end",
+      "garden_level": 3,
+      "herbs_gained": 3,
+      "run": "standard_all_three_levels_0",
+      "week": 81
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "standard_all_three_levels_0",
+      "silver_gain": 53,
+      "task": "earn",
+      "training_ground_level": 3,
+      "week": 81,
+      "xp_gain": 0
+    },
+    {
+      "event": "market_goods",
+      "id": "healing_powder",
+      "quantity": 4,
+      "run": "standard_all_three_levels_0",
+      "silver_spent": 60,
+      "week": 82
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 65
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 37,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 65,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 66
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 66,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 67
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 67,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 68
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 43,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 68,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 69
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 42,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 69,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 70
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 38,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 70,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 71
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 41,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 71,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 72
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 40,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 72,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 73
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 43,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 73,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 74
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 39,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 74,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 75
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 36,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 75,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 76
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 76,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 77
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 43,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 77,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 78
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 78,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 79
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 41,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 79,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 80
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 80,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 81
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 81,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 82
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 39,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 82,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 83
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 41,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 83,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 84
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 84,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 85
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 85,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 86
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 43,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 86,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 87
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 87,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 88
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 38,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 88,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 89
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 38,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 89,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 90
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 90,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 91
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 41,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 91,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 92
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 40,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 92,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 93
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 43,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 93,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 94
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 41,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 94,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 95
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 95,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 96
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 39,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 96,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 97
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 36,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 97,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 98
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 35,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 98,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 99
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 40,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 99,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 100
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 34,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 100,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 101
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 44,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 101,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 102
+    },
+    {
+      "event": "hero_weekly_task",
+      "run": "natural_construction_deadline",
+      "silver_gain": 41,
+      "task": "earn",
+      "training_ground_level": 2,
+      "week": 102,
+      "xp_gain": 0
+    },
+    {
+      "event": "week_end",
+      "garden_level": 2,
+      "herbs_gained": 2,
+      "run": "natural_construction_deadline",
+      "week": 103
+    },
+    {
+      "event": "rejected_upgrade",
+      "id": "library",
+      "reason": "week_104_deadline_with_ready_materials",
+      "run": "natural_construction_deadline",
+      "stage": "final_assault",
+      "unchanged": true,
+      "week": 104
+    },
+    {
+      "buildings": {
+        "forge": 2,
+        "herb_garden": 2,
+        "library": 2,
+        "training_ground": 3
+      },
+      "event": "deadline",
+      "materials": {
+        "herbs": 179,
+        "ore": 26
+      },
+      "run": "natural_construction_deadline",
+      "silver": 5992,
+      "week": 104
+    }
+  ],
+  "battle_records": [
+    {
+      "actions": 26,
+      "battle": "blackreed",
+      "difficulty": "standard",
+      "end_hp": 40,
+      "medicines_used": 1,
+      "run": "standard_none_0",
+      "start_hp": 45,
+      "turns": 6,
+      "victory": true,
+      "week": 1
+    },
+    {
+      "actions": 19,
+      "battle": "huashan_trial",
+      "difficulty": "standard",
+      "end_hp": 56,
+      "medicines_used": 0,
+      "run": "standard_none_0",
+      "start_hp": 63,
+      "turns": 4,
+      "victory": true,
+      "week": 16
+    },
+    {
+      "actions": 35,
+      "battle": "wuku_finale",
+      "difficulty": "standard",
+      "end_hp": 77,
+      "medicines_used": 2,
+      "run": "standard_none_0",
+      "start_hp": 84,
+      "turns": 7,
+      "victory": true,
+      "week": 27
+    },
+    {
+      "actions": 26,
+      "battle": "blackreed",
+      "difficulty": "standard",
+      "end_hp": 40,
+      "medicines_used": 1,
+      "run": "standard_all_three_levels_0",
+      "start_hp": 45,
+      "turns": 6,
+      "victory": true,
+      "week": 1
+    },
+    {
+      "actions": 23,
+      "battle": "huashan_trial",
+      "difficulty": "standard",
+      "end_hp": 59,
+      "medicines_used": 1,
+      "run": "standard_all_three_levels_0",
+      "start_hp": 69,
+      "turns": 5,
+      "victory": true,
+      "week": 24
+    },
+    {
+      "actions": 26,
+      "battle": "wuku_finale",
+      "difficulty": "standard",
+      "end_hp": 89,
+      "medicines_used": 1,
+      "run": "standard_all_three_levels_0",
+      "start_hp": 99,
+      "turns": 6,
+      "victory": true,
+      "week": 82
+    }
+  ],
+  "checks": 1170,
+  "failures": [],
+  "method": "Scripted production-handler journey; no inserted stats/materials/stages; isolated APPDATA",
+  "summaries": [
+    {
+      "buildings": {
+        "forge": 0,
+        "herb_garden": 0,
+        "library": 0,
+        "training_ground": 0
+      },
+      "completed": true,
+      "earning_weeks": 0,
+      "ending": "preserve",
+      "garden_harvest": 0,
+      "manual_savings": 0,
+      "materials": {
+        "herbs": 1,
+        "ore": 0
+      },
+      "ore_savings": 0,
+      "purchase_spend": 1309,
+      "run": "standard_none_0",
+      "silver": 8753,
+      "upgrade_spend": {
+        "herbs": 0,
+        "ore": 0,
+        "silver": 0
+      },
+      "week": 27,
+      "xp": 340
+    },
+    {
+      "buildings": {
+        "forge": 3,
+        "herb_garden": 3,
+        "library": 3,
+        "training_ground": 3
+      },
+      "completed": true,
+      "earning_weeks": 43,
+      "ending": "preserve",
+      "garden_harvest": 159,
+      "manual_savings": 36,
+      "materials": {
+        "herbs": 129,
+        "ore": 0
+      },
+      "ore_savings": 6,
+      "purchase_spend": 1677,
+      "run": "standard_all_three_levels_0",
+      "silver": 30,
+      "upgrade_spend": {
+        "herbs": 47,
+        "ore": 60,
+        "silver": 10000
+      },
+      "week": 82,
+      "xp": 416
+    }
+  ]
+}

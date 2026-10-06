@@ -171,7 +171,14 @@ static func _gear_row(state: Dictionary, id: String, owned_key: String) -> Array
 	var owned_count := EQUIPMENT_RULES.owned_count(state, owned_key, id)
 	var owned_note := "（已拥有 %d 件）" % owned_count if owned_count > 0 else ""
 	var cost: Dictionary = effective_cost(state, id)
-	var discount_note := "（挖矿大成减免）" if int(cost.ore) < int(RECIPES[id].cost.ore) else ""
+	var mining_discount := mini(int(RECIPES[id].cost.ore), TRAINING_RULES.craft_ore_discount(int(state.get("mining", 0))))
+	var sect_discount := mini(maxi(0, int(RECIPES[id].cost.ore) - mining_discount), SECT_BUILDING_RULES.forge_ore_discount(state))
+	var discounts: Array[String] = []
+	if mining_discount > 0:
+		discounts.append("挖矿专精减免%d" % mining_discount)
+	if sect_discount > 0:
+		discounts.append("门派建设减免%d" % sect_discount)
+	var discount_note := "（%s）" % "、".join(discounts) if not discounts.is_empty() else ""
 	return ["%s · 矿石%d%s%s" % [str(item.title), int(cost.ore), discount_note, owned_note], "%s%s%s%s" % [str(item.description), _specimens_note(state, cost.specimens), _level_note(state, id), _resource_note(state, id)], id, not can_craft(state, id)]
 
 static func _resource_note(state: Dictionary, id: String) -> String:
