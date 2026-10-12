@@ -2,6 +2,19 @@ extends SceneTree
 
 const SECT := preload("res://scripts/progression/sect_building_rules.gd")
 const PORTRAITS := preload("res://scripts/ui/character_portraits.gd")
+# Ground positions authored against qingyun-estate.png, independent of the view's
+# layout metadata so a return to evenly spaced screen cards cannot pass.
+const ESTATE_GROUND_ANCHORS := {
+	"library": Vector2(450, 435),
+	"workshop": Vector2(1240, 435),
+	"train": Vector2(255, 645),
+	"forge": Vector2(1215, 645),
+	"gathering": Vector2(495, 645),
+	"herb_garden": Vector2(1450, 645),
+	"master": Vector2(860, 330),
+	"qingyun_tavern": Vector2(865, 695),
+}
+const ESTATE_WINDOW_SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1264, 706), Vector2i(1280, 800), Vector2i(1280, 960), Vector2i(1280, 1024)]
 var main: Control
 var game: Node
 var failures: Array[String] = []
@@ -16,6 +29,9 @@ func _run() -> void:
 		quit(2)
 		return
 	capture = "--capture-sect" in OS.get_cmdline_user_args()
+	# Stress different available content areas directly. The shipping window
+	# normally keeps a 1280x720 reference viewport when its outer size changes.
+	root.content_scale_size = Vector2i.ZERO
 	root.size = Vector2i(1280, 720)
 	game = root.get_node("GameState")
 	var settings := root.get_node("SettingsManager")
@@ -25,16 +41,31 @@ func _run() -> void:
 	main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	await _settle()
-	for scale in [1.0, 1.15, 1.3]:
-		settings.data.ui_scale = scale
-		settings.apply_settings()
-		for level in [0, 1, 2, 3]:
-			for id in SECT.BUILDING_IDS:
-				game.data.sect.buildings[id] = level
-			await _location()
-			_check_estate(level, scale)
-			if capture and (level == 0 or level == 3):
-				await _snapshot("sect-%d-%d.png" % [int(scale * 100), level])
+	for window_size in ESTATE_WINDOW_SIZES:
+		root.size = window_size
+		await _settle()
+		if window_size != ESTATE_WINDOW_SIZES[0]:
+			# The previous courtyard remains open: resize must move it without
+			# requiring the player to leave and enter the sect again.
+			_check_estate(3, 1.3)
+		for scale in [1.0, 1.15, 1.3]:
+			settings.data.ui_scale = scale
+			settings.apply_settings()
+			# Applying windowed settings may restore the desktop window size.
+			# Set the requested dimensions afterwards so each case is exercised.
+			root.size = window_size
+			await _settle()
+			for level in [0, 1, 2, 3]:
+				for id in SECT.BUILDING_IDS:
+					game.data.sect.buildings[id] = level
+				await _location()
+				_check(root.size == window_size, "Requested window %s remains active at scale %s level %d (actual %s)" % [window_size, scale, level, root.size])
+				_check_estate(level, scale)
+				if capture and window_size == ESTATE_WINDOW_SIZES[0] and (level == 0 or level == 3):
+					await _snapshot("sect-%d-%d.png" % [int(scale * 100), level])
+				elif capture and window_size == Vector2i(1280, 1024) and scale == 1.0 and level == 3:
+					await _snapshot("sect-tall-100-3.png")
+	root.size = ESTATE_WINDOW_SIZES[0]
 	settings.data.ui_scale = 1.0
 	settings.apply_settings()
 	game.new_game()
@@ -113,14 +144,17 @@ func _check_estate(level: int, scale: float) -> void:
 	var view := main.content.get_child(main.content.get_child_count() - 1) as Control
 	var area: Rect2 = main.content.get_global_rect().intersection(root.get_visible_rect()).grow(1)
 	var buttons := view.find_children("*", "Button", true, false)
-	_check(buttons.size() == 11, "Eleven sect entrances at scale %s level %d" % [scale, level])
+	var context := "window %s scale %s level %d" % [root.size, scale, level]
+	_check(buttons.size() == 11, "Eleven sect entrances at %s" % context)
 	for button in buttons:
-		_check(area.encloses(button.get_global_rect()), "Visible entrance %s at scale %s" % [button.name, scale])
+		_check(area.encloses(button.get_global_rect()), "Visible entrance %s at %s" % [button.name, context])
 		_check(button.focus_mode == Control.FOCUS_ALL, "Keyboard focus on %s" % button.name)
-	for left_right in [["library", "workshop"], ["train", "forge"], ["gathering", "herb_garden"]]:
-		var left := _building(str(left_right[0])).get_global_rect()
-		var right := _building(str(left_right[1])).get_global_rect()
-		_check(is_equal_approx(left.position.y, right.position.y) and is_equal_approx(left.get_center().x + right.get_center().x, area.get_center().x * 2), "Symmetric building pair %s at scale %s" % [left_right, scale])
+	for left_index in range(buttons.size()):
+		for right_index in range(left_index + 1, buttons.size()):
+			var left := buttons[left_index] as Button
+			var right := buttons[right_index] as Button
+			_check(not left.get_global_rect().grow(-0.5).intersects(right.get_global_rect().grow(-0.5)), "Separate entrances %s and %s at %s" % [left.name, right.name, context])
+	_check_ground_alignment(view, context)
 	for id in ["library", "train", "forge", "herb_garden"]:
 		var button := _building(id)
 		var image := button.get_node("BuildingImage") as TextureRect
@@ -128,6 +162,41 @@ func _check_estate(level: int, scale: float) -> void:
 		_check(image.visible == (id != "herb_garden" or level > 0), "Garden image only after construction")
 	var master_image := view.find_child("MasterPortrait", true, false) as TextureRect
 	_check(master_image != null and master_image.texture == PORTRAITS.for_speaker("顾长风"), "Correct master portrait on estate")
+
+func _check_ground_alignment(view: Control, context: String) -> void:
+	var background := view.get_node("EstateBackground") as TextureRect
+	_check(background != null and background.texture != null, "Estate background texture at %s" % context)
+	if background == null or background.texture == null:
+		return
+	var source_size := background.texture.get_size()
+	_check(source_size == Vector2(1672, 941), "Ground anchors match source art dimensions at %s" % context)
+	# Independently derive the displayed image from TextureRect's actual mode.
+	# Tall windows fit all platforms; wider windows cover the courtyard area.
+	var width_scale := background.size.x / source_size.x
+	var height_scale := background.size.y / source_size.y
+	var stretch_mode := background.stretch_mode
+	_check(stretch_mode in [TextureRect.STRETCH_KEEP_ASPECT_CENTERED, TextureRect.STRETCH_KEEP_ASPECT_COVERED], "Estate background uses a proportional centered mode at %s" % context)
+	if stretch_mode not in [TextureRect.STRETCH_KEEP_ASPECT_CENTERED, TextureRect.STRETCH_KEEP_ASPECT_COVERED]:
+		return
+	var expected_stretch_mode: int = TextureRect.STRETCH_KEEP_ASPECT_CENTERED if width_scale < height_scale else TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_check(stretch_mode == expected_stretch_mode, "Estate background fits tall windows and covers wider windows at %s" % context)
+	var draw_scale := minf(width_scale, height_scale) if stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED else maxf(width_scale, height_scale)
+	var draw_offset := (background.size - source_size * draw_scale) * 0.5
+	for id in ESTATE_GROUND_ANCHORS:
+		var button := _building(str(id))
+		var expected: Vector2 = background.get_global_transform() * (draw_offset + ESTATE_GROUND_ANCHORS[id] * draw_scale)
+		var image := button.get_node("BuildingImage") as TextureRect
+		var image_rect := image.get_global_rect()
+		var image_ground := Vector2(image_rect.get_center().x, image_rect.end.y)
+		_check(image_ground.distance_to(expected) <= 1.0, "Building %s rests on its source platform at %s (actual %s expected %s)" % [id, context, image_ground, expected])
+		if image.texture != null:
+			var texture_size := image.texture.get_size()
+			_check(absf(image.size.x / texture_size.x - image.size.y / texture_size.y) <= 0.001, "Building %s preserves image proportions at %s" % [id, context])
+		if button.has_node("ReservedHerbPlot"):
+			var plot := button.get_node("ReservedHerbPlot") as Control
+			var plot_rect := plot.get_global_rect()
+			var plot_ground := Vector2(plot_rect.get_center().x, plot_rect.end.y)
+			_check(plot_ground.distance_to(expected) <= 1.0, "Unbuilt herb plot stays on the garden platform at %s" % context)
 
 func _building(id: String) -> Button:
 	return main.content.find_child("Building_%s" % id, true, false) as Button
@@ -155,7 +224,9 @@ func _settle() -> void:
 
 func _snapshot(filename: String) -> void:
 	await RenderingServer.frame_post_draw
-	var error := root.get_texture().get_image().save_png("user://" + filename)
+	var screenshot := root.get_texture().get_image()
+	_check(screenshot.get_size() == root.size, "Screenshot %s dimensions match active window %s (actual %s)" % [filename, root.size, screenshot.get_size()])
+	var error := screenshot.save_png("user://" + filename)
 	_check(error == OK, "Save screenshot %s" % filename)
 
 func _check(condition: bool, message: String) -> void:

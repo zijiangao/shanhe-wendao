@@ -1,7 +1,7 @@
 class_name SectView
 extends Control
 
-## The sect is a courtyard, with paired wings around a central hall. Every
+## Ground anchors are authored in the estate background's source pixels. Every
 ## hotspot keeps the original action text for keyboard/tooling access; its
 ## visible plaque is deliberately shorter than the action's explanation.
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
@@ -16,14 +16,14 @@ const BUILDING_REGIONS := [
 const GOLD := Color("#dfbf74")
 const INK := Color("#13231dcc")
 const BUILDING_SLOTS := [
-	{"id": "library", "name": "藏经阁", "tile": 1, "building": "library", "column": 0, "row": 0},
-	{"id": "workshop", "name": "炼药坊", "tile": 2, "column": 2, "row": 0},
-	{"id": "train", "name": "演武场", "tile": 3, "building": "training_ground", "column": 0, "row": 1},
-	{"id": "forge", "name": "锻造坊", "tile": 4, "building": "forge", "column": 2, "row": 1},
-	{"id": "gathering", "name": "后山", "tile": 6, "column": 0, "row": 2},
-	{"id": "herb_garden", "name": "药圃", "tile": 6, "building": "herb_garden", "column": 2, "row": 2},
-	{"id": "master", "name": "正殿", "tile": 0, "column": 1, "row": 0},
-	{"id": "qingyun_tavern", "name": "客栈", "tile": 5, "column": 1, "row": 2},
+	{"id": "master", "name": "正殿", "tile": 0, "ground": Vector2(860, 330), "width": 225.0},
+	{"id": "library", "name": "藏经阁", "tile": 1, "building": "library", "ground": Vector2(450, 435), "width": 175.0},
+	{"id": "workshop", "name": "炼药坊", "tile": 2, "ground": Vector2(1240, 435), "width": 210.0},
+	{"id": "train", "name": "演武场", "tile": 3, "building": "training_ground", "ground": Vector2(255, 645), "width": 190.0},
+	{"id": "gathering", "name": "后山", "tile": 6, "ground": Vector2(495, 645), "width": 175.0},
+	{"id": "forge", "name": "锻造坊", "tile": 4, "building": "forge", "ground": Vector2(1215, 645), "width": 190.0},
+	{"id": "herb_garden", "name": "药圃", "tile": 6, "building": "herb_garden", "ground": Vector2(1450, 645), "width": 175.0},
+	{"id": "qingyun_tavern", "name": "客栈", "tile": 5, "ground": Vector2(865, 695), "width": 168.0},
 ]
 
 signal action_requested(id: String)
@@ -98,8 +98,8 @@ func _add_building(slot: Dictionary) -> void:
 	var id := str(slot.id)
 	var action: Dictionary = _actions.get(id, {"id": id, "text": "药圃 · 查看门派建设"})
 	var button := _hotspot("Building_%s" % id, action)
-	button.set_meta("column", int(slot.column))
-	button.set_meta("row", int(slot.row))
+	button.set_meta("ground", slot.ground)
+	button.set_meta("image_width", float(slot.width))
 	button.set_meta("kind", "building")
 	var building_id := str(slot.get("building", ""))
 	var level := SECT_RULES.level(_state, building_id) if not building_id.is_empty() else -1
@@ -109,7 +109,7 @@ func _add_building(slot: Dictionary) -> void:
 	image.name = "BuildingImage"
 	image.texture = _tile(int(slot.tile))
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.stretch_mode = TextureRect.STRETCH_SCALE
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	image.visible = not is_empty_plot
 	if level == 0:
@@ -177,8 +177,7 @@ func _add_master() -> void:
 	if not _actions.has("master"):
 		return
 	var button := _hotspot("SectMaster", _actions.master)
-	button.set_meta("column", 1)
-	button.set_meta("row", 1)
+	button.set_meta("ground", Vector2(860, 475))
 	button.set_meta("kind", "master")
 	var portrait := TextureRect.new()
 	portrait.name = "MasterPortrait"
@@ -260,8 +259,13 @@ func _layout_estate() -> void:
 	var footer_height := 50.0
 	_footer.position = Vector2(0, layout_height - footer_height)
 	_footer.size = Vector2(layout_width, footer_height)
-	var row_height := maxf(72, (layout_height - header_height - footer_height) / 3.0)
-	var card_size := Vector2(clampf(layout_width * 0.205, 156, 222), row_height - 3)
+	# Match the texture's centered crop exactly. Taller views fit the estate
+	# across its width, preserving both side terraces instead of cropping them.
+	var background: TextureRect = get_node("EstateBackground")
+	var source_size := background.texture.get_size() if background.texture != null else Vector2(1672, 941)
+	var art_scale := layout_width / source_size.x
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED if art_scale < layout_height / source_size.y else TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	var art_origin := (Vector2(layout_width, layout_height) - source_size * art_scale) * 0.5
 	for button in _hotspots:
 		var column := int(button.get_meta("column", 1))
 		var kind := str(button.get_meta("kind", "building"))
@@ -273,43 +277,58 @@ func _layout_estate() -> void:
 			button.get_node("UtilityName").position = Vector2(62, 0)
 			button.get_node("UtilityName").size = Vector2(button.size.x - 62, 46)
 			continue
-		var row := int(button.get_meta("row", 0))
-		var center_x: float = layout_width * [0.24, 0.50, 0.76][column]
-		button.size = card_size
-		button.position = Vector2(center_x - card_size.x * 0.5, header_height + row_height * row + (row_height - card_size.y) * 0.5)
+		var source_ground := Vector2(button.get_meta("ground"))
+		var ground: Vector2 = art_origin + source_ground * art_scale
 		if kind == "master":
+			var card_size := Vector2(208, 74)
+			button.size = card_size
+			button.position = ground - card_size * 0.5
 			button.get_node("MasterBacking").position = Vector2(0, 4)
 			button.get_node("MasterBacking").size = Vector2(card_size.x, card_size.y - 8)
 			button.get_node("MasterPortrait").position = Vector2(5, 4)
-			button.get_node("MasterPortrait").size = Vector2(card_size.x * 0.42, card_size.y - 8)
-			button.get_node("MasterName").position = Vector2(card_size.x * 0.45, card_size.y * 0.26)
-			button.get_node("MasterName").size = Vector2(card_size.x * 0.52, 28)
-			button.get_node("MasterRole").position = Vector2(card_size.x * 0.45, card_size.y * 0.26 + 34)
-			button.get_node("MasterRole").size = Vector2(card_size.x * 0.52, 22)
+			button.get_node("MasterPortrait").size = Vector2(62, card_size.y - 8)
+			button.get_node("MasterName").position = Vector2(75, 9)
+			button.get_node("MasterName").size = Vector2(128, 28)
+			button.get_node("MasterRole").position = Vector2(75, 42)
+			button.get_node("MasterRole").size = Vector2(128, 22)
 			continue
-		var image_height := maxf(32, card_size.y - 47)
 		var building_image: TextureRect = button.get_node("BuildingImage")
 		var level := int(button.get_meta("building_level", -1))
-		building_image.position = Vector2(9 if level < 2 else 3, 1)
-		building_image.size = Vector2(card_size.x - (18 if level < 2 else 6), image_height)
+		var image_size := building_image.texture.get_size() if building_image.texture != null else Vector2.ONE
+		image_size *= float(button.get_meta("image_width")) * art_scale / image_size.x
+		# Keep the rear hall's roof below the objective strip on shorter views.
+		var available_height := maxf(24, ground.y - header_height - 4)
+		# Plaques retain readable text sizes as the scenery scales. Reserve their
+		# height above the front buildings so the upper entrances stay clickable.
+		if source_ground.y == 645.0:
+			available_height = minf(available_height, 210.0 * art_scale - 53.0)
+		elif source_ground.y == 695.0:
+			available_height = minf(available_height, 220.0 * art_scale - 43.0)
+		if image_size.y > available_height:
+			image_size *= available_height / image_size.y
+		var plaque_width := maxf(clampf(layout_width * 0.115, 116, 146), image_size.x)
+		button.size = Vector2(plaque_width, image_size.y + 47)
+		button.position = ground - Vector2(plaque_width * 0.5, image_size.y)
+		building_image.position = Vector2((plaque_width - image_size.x) * 0.5, 0)
+		building_image.size = image_size
 		if level > 0:
-			button.get_node("RestoredFoundation").position = Vector2(23, image_height - 8)
-			button.get_node("RestoredFoundation").size = Vector2(card_size.x - 46, 7)
+			button.get_node("RestoredFoundation").position = Vector2(23, image_size.y - 8)
+			button.get_node("RestoredFoundation").size = Vector2(plaque_width - 46, 7)
 			for index in range(level):
 				var flag: Panel = button.get_node("UpgradeFlag%d" % (index + 1))
-				flag.position = Vector2(card_size.x - 35 - index * 11, image_height - 30)
+				flag.position = Vector2(plaque_width - 14 - index * 11, image_size.y - 30)
 				flag.size = Vector2(8, 12)
 		var plaque: Panel = button.get_node("BuildingPlaque")
-		plaque.position = Vector2(12, card_size.y - 46)
-		plaque.size = Vector2(card_size.x - 24, 44)
+		plaque.position = Vector2(0, image_size.y + 3)
+		plaque.size = Vector2(plaque_width, 44)
 		plaque.get_node("BuildingName").position = Vector2(3, 1)
 		plaque.get_node("BuildingName").size = Vector2(plaque.size.x - 6, 23)
 		plaque.get_node("BuildingStatus").position = Vector2(3, 24)
 		plaque.get_node("BuildingStatus").size = Vector2(plaque.size.x - 6, 18)
 		if button.has_node("ReservedHerbPlot"):
 			var plot: Panel = button.get_node("ReservedHerbPlot")
-			plot.position = Vector2(22, 8)
-			plot.size = Vector2(card_size.x - 44, image_height - 13)
+			plot.size = Vector2(image_size.x * 0.82, image_size.y * 0.42)
+			plot.position = Vector2((plaque_width - plot.size.x) * 0.5, image_size.y - plot.size.y)
 			for index in range(4):
 				var furrow: ColorRect = plot.get_node("Furrow%d" % index)
 				furrow.position = Vector2(8, (index + 1) * plot.size.y / 5.0)

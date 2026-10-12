@@ -1,0 +1,223 @@
+{
+  "version": "0.170.0",
+  "date": "2026-10-12",
+  "baseline_commit": "80f1af3",
+  "source_files": [
+    {
+      "path": "godot/scripts/world/sect_view.gd",
+      "sha256": "C070F4E2024D620CE5CF3A8ED419312BFFD4220AEDE9274A7E5439C6D9D93003"
+    },
+    {
+      "path": "godot/tests/test_sect_visual_flow.gd",
+      "sha256": "E731B4B0320F8766E3AA7EA388C368D960A3B84F3D8376B202ABB02C3905FEB3"
+    },
+    {
+      "path": "godot/main.gd",
+      "sha256": "DAFADC1B648B92316FD6F9A35762E78C793AE45CD217CC848D591F0479E8C24E"
+    },
+    {
+      "path": "godot/export_presets.cfg",
+      "sha256": "D032B4C9756D1F4625220E335FF1954BCA1984A66C623DCAAA1D87850DD8FE64"
+    }
+  ],
+  "phases": [
+    {
+      "version": "0.170.0",
+      "phase": "Tests",
+      "count": 5,
+      "passed": 5,
+      "source_main_sha256": "DAFADC1B648B92316FD6F9A35762E78C793AE45CD217CC848D591F0479E8C24E",
+      "results": [
+        {
+          "name": "test_sect_visual_flow",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 11.25,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "test_sect_building_rules",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 1.26,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "test_location_art",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 1.22,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "test_progression_return_flow",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 4.22,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "test_sect_journey",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 15.62,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "version": "0.170.0",
+      "phase": "Render",
+      "count": 1,
+      "passed": 1,
+      "source_main_sha256": "DAFADC1B648B92316FD6F9A35762E78C793AE45CD217CC848D591F0479E8C24E",
+      "results": [
+        {
+          "name": "sect-and-dialogue",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 21.69,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "version": "0.170.0",
+      "phase": "Export",
+      "count": 2,
+      "passed": 2,
+      "source_main_sha256": "DAFADC1B648B92316FD6F9A35762E78C793AE45CD217CC848D591F0479E8C24E",
+      "results": [
+        {
+          "name": "import",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 23.51,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "full-export",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 6.24,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "version": "0.170.0",
+      "phase": "Release",
+      "count": 7,
+      "passed": 7,
+      "source_main_sha256": "DAFADC1B648B92316FD6F9A35762E78C793AE45CD217CC848D591F0479E8C24E",
+      "results": [
+        {
+          "name": "full-build",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 8.13,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "release-credits",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 1.93,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "steam-data",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 1.93,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "onboarding-flow",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 2.02,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "crafting-flow",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 2.0,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "training-flow",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 2.2,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "pause-flow",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 1.82,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "version": "0.170.0",
+      "phase": "Package",
+      "count": 2,
+      "passed": 2,
+      "source_main_sha256": "DAFADC1B648B92316FD6F9A35762E78C793AE45CD217CC848D591F0479E8C24E",
+      "results": [
+        {
+          "name": "visuals",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 9.34,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        },
+        {
+          "name": "render",
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_seconds": 6.87,
+          "expected_save_diagnostics": 0,
+          "diagnostic_errors": 0,
+          "passed": true
+        }
+      ]
+    }
+  ]
+}

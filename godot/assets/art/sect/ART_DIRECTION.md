@@ -18,6 +18,29 @@ The background also used the newly generated atlas as a perspective/material ref
 
 ## Atlas usage
 
+### Runtime terrace alignment (0.170.0)
+
+Building sprites use proportional explicit sizes and bottom-center ground
+anchors in the unchanged 1672 × 941 estate image. The background's
+`STRETCH_KEEP_ASPECT_COVERED` scale and centered crop are also applied to the
+anchors. When a viewport is taller than the art, `STRETCH_KEEP_ASPECT_CENTERED`
+fits the full estate across its width to preserve both side terraces. Screen-grid
+positions must not replace this shared transform.
+
+| Entrance | Ground anchor (source x, y) |
+| --- | --- |
+| 正殿 | 860, 330 |
+| 藏经阁 / 炼药坊 | 450, 435 / 1240, 435 |
+| 演武场 / 后山采集区 | 255, 645 / 495, 645 |
+| 锻造坊 / 药圃 | 1215, 645 / 1450, 645 |
+| 客栈 | 865, 695 |
+
+The front side terraces each share two smaller facilities. The master portrait
+is a separate clickable card on the central approach, centered at 860, 475.
+Plaques stay readable in UI units, while sprite sizes reserve clearance for
+the previous entrance. Building levels do not move the ground anchors. The
+empty herb plot uses the same garden anchor. No bitmap assets were modified.
+
 The requested layout was an equal 3 × 3 atlas; the generated result has nine isolated images in that ordering, but the first main hall is wider than a mathematical third of the canvas. **Do not use uniform 418 × 418 regions**, which would clip the main hall and pick up neighboring pixels. Use explicit nonuniform `AtlasTexture.region` rectangles on the unmodified atlas.
 
 These visually inspected safe region bounds are a starting point (origin at the top left, x/y/width/height in pixels):

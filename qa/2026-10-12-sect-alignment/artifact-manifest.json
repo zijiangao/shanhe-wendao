@@ -1,0 +1,16 @@
+{
+  "version": "0.170.0",
+  "file_version": "0.170.0.0",
+  "artifacts": [
+    {
+      "path": "build/windows/ShanheWendao.exe",
+      "bytes": 109268480,
+      "sha256": "69B89DE748495507EBEDDC064616F965FF00051A7353B532AB33B28765A4B4CA"
+    },
+    {
+      "path": "build/windows/ShanheWendao.pck",
+      "bytes": 59336392,
+      "sha256": "F2211CD171085898720CB619B8A3C4F4B241ED1109A1065F0B1E5F0F4EA1C9CC"
+    }
+  ]
+}

@@ -1,5 +1,20 @@
 # Building 山河问道
 
+## 0.170.0 — sect buildings aligned to the painted terraces
+
+Qingyun buildings now use ground positions authored in the background image,
+with the same scaling and centered crop as the scenery. Tall windows fit the
+whole estate across their width to keep both side terraces visible. The front
+terraces share smaller facilities and plots, and the inn occupies the central
+court. Sprite proportions and ground positions remain stable across building
+levels. Readable plaques reserve room above the next row's clickable entrances.
+
+The sect flow regression covers six window sizes, three UI scales, all four
+construction levels, live resizing, source-art alignment, separate hotspots,
+construction, save/load, and the existing building routes. The menu and Windows
+Desktop export preset are synchronized at 0.170.0. See
+`../qa/2026-10-12-sect-alignment/REPORT.md` for the validation evidence.
+
 ## 0.169.0 — sect buildings and dialogue portraits
 
 The full-game Qingyun view uses a symmetric estate layout with individual
