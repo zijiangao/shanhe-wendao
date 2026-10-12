@@ -14,6 +14,8 @@ const DIALOGUE_VIEW := preload("res://scenes/ui/dialogue_view.tscn")
 const CHOICE_VIEW := preload("res://scenes/ui/choice_view.tscn")
 const WORLD_MAP_VIEW := preload("res://scenes/world/world_map_view.tscn")
 const LOCATION_VIEW := preload("res://scenes/world/location_view.tscn")
+const SECT_VIEW := preload("res://scenes/world/sect_view.tscn")
+const SECT_TEXTURE := preload("res://assets/art/sect/qingyun-estate.png")
 const TACTICAL_BATTLE_VIEW := preload("res://scenes/battle/tactical_battle_view.tscn")
 const BATTLE_RULES := preload("res://scripts/battle/battle_rules.gd")
 const BATTLE_ENGINE := preload("res://scripts/battle/battle_engine.gd")
@@ -45,6 +47,7 @@ const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_ru
 const LIBRARY_CATEGORIES := [["fist", "拳掌"], ["sword", "剑法"], ["blade", "刀法"], ["staff", "枪棍"], ["internal", "内功"], ["lightness", "轻功"]]
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
+const CHARACTER_PORTRAITS := preload("res://scripts/ui/character_portraits.gd")
 const CREDITS_PATH := "res://data/credits.json"
 
 var screen: String = "menu"
@@ -55,6 +58,7 @@ var toast_label: Label
 var end_week_button: Button
 var battle_mode: String = "move"
 var library_category: String = "fist"
+var sect_building_selection: String = ""
 ## 人物界面左右分栏浏览器 (0.111.0) -- "hero" 是沈羽本人，其余是
 ## COMPANION_RULES.is_valid_companion() 认得的同伴id。
 var character_roster_selection: String = "hero"
@@ -905,6 +909,12 @@ func _map_destination_requested(destination: String) -> void:
 func _show_location() -> void:
 	_clear_content()
 	var location_id: String = str(GameState.data.location)
+	if location_id == "qingyun" and not DEMO_POLICY.is_demo_build():
+		var sect_view: Control = SECT_VIEW.instantiate()
+		content.add_child(sect_view)
+		sect_view.setup(SECT_TEXTURE, GameState.data, _quest_objective(), _location_actions(location_id))
+		sect_view.action_requested.connect(_location_action_requested)
+		return
 	var headings := {"qingyun": "青云门 · 山门内", "blackreed": "黑苇渡 · 芦荡深处", "luoyang": "洛阳城 · 神都烟火", "huashan": "华山 · 云台剑会", "emei": "峨眉山 · 云深清音"}
 	var view: LocationView = LOCATION_VIEW.instantiate()
 	content.add_child(view)
@@ -991,10 +1001,14 @@ func _show_gathering_menu() -> void:
 	screen = "choice"
 	_rebuild()
 
-func _show_sect_building() -> void:
+func _show_sect_building(building_id: String = "") -> void:
+	sect_building_selection = building_id if SECT_BUILDING_RULES.BUILDINGS.has(building_id) else ""
 	choice_event = "sect_building"
 	choice_prompt = "青云门 · 门派建设 · 银两 %d · 药材 %d · 矿石 %d" % [int(GameState.data.silver), int(GameState.data.materials.get("herbs", 0)), int(GameState.data.materials.get("ore", 0))]
 	choice_options = SECT_BUILDING_RULES.options(GameState.data)
+	if not sect_building_selection.is_empty():
+		choice_prompt = "%s · %s\n%s" % [str(SECT_BUILDING_RULES.BUILDINGS[sect_building_selection].title), SECT_BUILDING_RULES.effect_text(GameState.data, sect_building_selection), choice_prompt]
+		choice_options = choice_options.filter(func(option: Array): return str(option[2]) in ["upgrade_%s" % sect_building_selection, "leave"])
 	screen = "choice"
 	_rebuild()
 
@@ -1004,7 +1018,15 @@ func _show_sect_building() -> void:
 func _show_qingyun_tavern() -> void:
 	choice_event = "qingyun_tavern"
 	choice_prompt = "客栈 · 银两 %d" % int(GameState.data.silver)
-	choice_options = COMPANION_RULES.options_inn(GameState.data)
+	choice_options = []
+	for option in COMPANION_RULES.options_inn(GameState.data):
+		var row: Array = option.duplicate()
+		var disciple_id := str(option[2]).trim_prefix("recruit_").trim_prefix("follow_")
+		var disciple: Dictionary = COMPANION_RULES.DISCIPLES.get(disciple_id, {})
+		while row.size() < 4:
+			row.append(false)
+		row.append(CHARACTER_PORTRAITS.for_speaker(str(disciple.get("title", ""))))
+		choice_options.append(row)
 	screen = "choice"
 	_rebuild()
 
@@ -1083,6 +1105,7 @@ func _location_action_requested(action_id: String) -> void:
 		"map": screen = "map"; _rebuild()
 		"master": _qingyun_master_event()
 		"sect_building": _show_sect_building()
+		"herb_garden": _show_sect_building("herb_garden")
 		"train":
 			if GameState.deadline_reached() or bool(GameState.data.get("acted_this_week", false)):
 				_toast(_time_action_failure_message())
@@ -1282,8 +1305,14 @@ func _show_choice() -> void:
 		choice_title = "炼 药 坊"
 	elif choice_event == "forge":
 		choice_title = "锻 造 坊"
+	elif choice_event == "training":
+		choice_title = "演 武 场"
+	elif choice_event == "gathering":
+		choice_title = "青云后山"
+	elif choice_event == "qingyun_tavern":
+		choice_title = "青云客栈 · 门下弟子"
 	elif choice_event == "sect_building":
-		choice_title = "青云门 · 营 造 图"
+		choice_title = "青云门 · 营 造 图" if sect_building_selection.is_empty() else str(SECT_BUILDING_RULES.BUILDINGS[sect_building_selection].title)
 	if choice_event.begins_with("market"):
 		choice_title = "西 市 坊 市"
 	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_title)
@@ -1302,7 +1331,7 @@ func _resolve_choice(route: String) -> void:
 				return
 			_toast("%s已提升至%d级。" % [str(SECT_BUILDING_RULES.BUILDINGS[result.id].title), int(result.level)])
 			SaveManager.save_auto()
-			_show_sect_building()
+			_show_sect_building(sect_building_selection)
 			return
 	if choice_event == "training":
 		if route == "qingyun_spar":
@@ -2020,7 +2049,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.168.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.169.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2257,7 +2286,8 @@ func _show_character() -> void:
 	portrait_stack.clip_contents = true
 	portrait_frame.add_child(portrait_stack)
 	var portrait := TextureRect.new()
-	portrait.texture = HERO_TEXTURE if is_hero else LIN_TEXTURE
+	portrait.name = "CharacterPortrait"
+	portrait.texture = CHARACTER_PORTRAITS.for_speaker("沈羽" if is_hero else str(selected_entry.get("title", "")))
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

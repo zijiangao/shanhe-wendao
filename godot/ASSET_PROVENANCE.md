@@ -21,12 +21,21 @@ All files below were created specifically for this project under human art direc
 | `assets/art/ui-source/achievement-badge-states-black.png` | Achievement frame atlas source | Matching locked and unlocked ornamental medallion frames on flat black |
 | `assets/art/ui-source/item-icons-sheet-black.png` | Shop/backpack item icon atlas source | Ten original monochrome ink-brush icons (three weapons, three armors, four tradeable goods matching the shop's item catalog) on flat black |
 | `assets/art/locations/qingyun-courtyard.png` | Qingyun location | Cool dawn mountain sect courtyard with lower-center interaction space |
+| `assets/art/sect/qingyun-estate.png` | Full-game Qingyun estate ground | Symmetric mountain-sect stone terraces and paths, no fixed buildings; illustrated buildings are overlaid from saved construction state |
+| `assets/art/sect/buildings-atlas.png` | Clickable sect-building atlas | Nine original ancient Chinese building illustrations in a transparent atlas with explicit regions: main hall, library, alchemy, training, forge, inn, herb garden, gate and construction pavilion |
+| `assets/art/portrait-gu-changfeng.png` | Qingyun master and dialogue portrait | Original calm older sect master in blue-grey robes on parchment mountain mist; consistent with existing character portraits |
+| `assets/art/portrait-zhou-mubai.png`, `assets/art/portrait-liu-ruyan.png` | Qingyun disciple recruitment, character and dialogue portraits | Two distinct original adult sect disciples: steady swordsman in deep teal robes and agile swordswoman in light jade robes; parchment-and-mountain painting style |
 | `assets/art/locations/luoyang-market.png` | Luoyang location | Warm late-afternoon ancient city market and governor residence |
 | `assets/art/locations/huashan-terrace.png` | Huashan location | Cool daylight cliff-top sword trial terrace and sea of clouds |
 | `assets/art/locations/emei-summit.png` | Emei location | Golden sunrise summit temple and subtly sealed mountain passage |
 | `assets/icon/app_icon.png`, `assets/icon/app_icon.ico` | Provisional application icon | Original project icon; replace only after final brand review |
 
 Shared constraints for generated visual assets: no text, logo, watermark, modern objects, third-party characters, or copied brand elements unless the asset's production role explicitly requires project-owned typography.
+
+The 0.169.0 estate and master portrait prompts are retained in
+`assets/art/sect/ART_DIRECTION.md`. These assets use the built-in image-generation
+tool. The transparent building atlas is used directly through `AtlasTexture`
+regions rather than background removal or a second image transformation.
 
 ### Processed UI derivatives
 

@@ -1,5 +1,24 @@
 # Building 山河问道
 
+## 0.169.0 — sect buildings and dialogue portraits
+
+The full-game Qingyun view uses a symmetric estate layout with individual
+clickable building illustrations. Existing facilities remain usable before
+renovation; construction levels change their appearance and level plaques.
+The herb-garden plot is empty before construction and displays the planted
+garden after its first upgrade, including after loading a save.
+
+Gu Changfeng has an original portrait beside the main hall. Zhou Mubai and
+Liu Ruyan have their own recruitment and character-sheet portraits rather than
+sharing Lin Qingshuang's image. Dialogue now switches its large portrait with
+the actual speaker, including these two disciples. Speakers without a matching
+portrait retain a readable text layout. Visible-area sizing keeps the building
+entrances and dialogue continue control reachable at all supported UI scales.
+
+The menu and Windows Desktop export preset are synchronized at 0.169.0.
+Only the full game is exported and verified; the demo preset/build is untouched.
+See `../qa/2026-10-12-sect-visuals/REPORT.md` for validation and screenshots.
+
 ## 0.168.0 — full-game acceptance and construction fixes
 
 Full-game acceptance now preserves individual test logs and explicit exit codes.

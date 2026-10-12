@@ -1,0 +1,13 @@
+{
+  "version": "0.169.0",
+  "file_version": "0.169.0.0",
+  "product_version": "0.169.0.0",
+  "exe_bytes": 109268480,
+  "pck_bytes": 59335736,
+  "exe_sha256": "E378EE115E4F13D1C57C6A089B89BEF05CB01387E970D50881BA261EA2541B10",
+  "pck_sha256": "E8EE3981B8E86269C2B020F0102218B5E33E21ECEFEBB539AF8F872849664FD9",
+  "exe_last_write": "2026-10-12T15:49:07.3143477+08:00",
+  "pck_last_write": "2026-10-12T15:49:08.0863711+08:00",
+  "packaged_menu_version_verified": true,
+  "packaged_sect_and_portraits_verified": true
+}
