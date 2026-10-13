@@ -17,12 +17,13 @@ const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
 const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
+const QUEST_RULES := preload("res://scripts/progression/quest_rules.gd")
 
 signal state_changed
 signal battle_started
 signal battle_finished(victory: bool)
 
-const SAVE_VERSION := 12
+const SAVE_VERSION := 13
 const FINAL_WEEK := 104
 
 var data: Dictionary = {}
@@ -83,7 +84,8 @@ func new_game() -> void:
 		"lightness_levels": {},
 		"wuxue_xp": {},
 		"flags": [],
-		"quest_stage": "meet_master",
+		"quest_stage": "explore",
+		"quest_states": QUEST_RULES.DEFAULT_STAGES.duplicate(true),
 		"investigations": [],
 		"master_relation": 0,
 		"alignment": {"heroism": 0, "strategy": 0, "authority": 0},
@@ -106,10 +108,19 @@ func new_game() -> void:
 		"tutorial": {"map": false, "location": false, "sparring": false, "battle": false, "battle_tactics": false, "battle_arts": false, "battle_defense": false},
 		"battle_retry": {},
 		"pending_reward": {},
-		"log": ["你拜入青云门。距离厉千秋出关还有两年。"],
+		"log": ["你拜入青云门。可自行建设门派、游历各地，选择想追查的江湖事件。距离厉千秋出关还有两年。"],
 		"battle": {}
 	}
 	state_changed.emit()
+
+func quest_progress(id: String) -> String:
+	return QUEST_RULES.stage(data, id)
+
+func set_quest_progress(id: String, next_stage: String) -> bool:
+	if not QUEST_RULES.set_stage(data, id, next_stage):
+		return false
+	state_changed.emit()
+	return true
 
 func power() -> int:
 	return power_for_state(data)
@@ -450,6 +461,12 @@ func start_final_battle() -> bool:
 	data.qi = 20
 	data.hp = data.max_hp
 	var trusted_su: bool = "su_trust" in data.flags
+	var has_lin: bool = "lin_qingshuang" in data.companions
+	var battle_description := "厉无咎率玄甲亲卫守住武库天门。"
+	if has_lin:
+		battle_description += "林清霜与你并肩迎敌。"
+	if trusted_su:
+		battle_description += "苏晚晴在阵外截断援兵。"
 	data.battle = {
 		"battle_id": "wuku_finale",
 		"name": "武库天门决战",
@@ -464,17 +481,19 @@ func start_final_battle() -> bool:
 		"hero_gauge": 0,
 		"turn": 0,
 		"objective": {"type": "eliminate"},
-		"result": "厉无咎率玄甲亲卫守住武库天门。林清霜并肩出剑，苏晚晴则在阵外截断援兵。" if trusted_su else "厉无咎率玄甲亲卫守住武库天门。林清霜与你并肩迎敌。",
+		"result": battle_description,
 		"blocked": [[3, 1], [3, 4], [5, 2]],
-		"ally": {"name": "林清霜", "hp": 34, "max_hp": 34, "qi": 15, "max_qi": 15, "attack": 6, "guard": 0, "x": 1, "y": 4},
 		"enemies": [
 			{"name": "厉无咎", "role": "brute", "boss": true, "hp": 46, "max_hp": 46, "attack": 8, "range": 1, "x": 6, "y": 2, "speed": 4, "gauge": 0},
 			{"name": "玄甲亲卫", "role": "melee", "hp": 22, "max_hp": 22, "attack": 6, "range": 1, "x": 6, "y": 4, "speed": 5, "gauge": 0},
 			{"name": "武库弩手", "role": "archer", "hp": 12 if trusted_su else 17, "max_hp": 12 if trusted_su else 17, "attack": 5, "range": 4, "x": 5, "y": 0, "speed": 6, "gauge": 0}
 		]
 	}
-	# 同伴换装备/换武学 (0.113.0) -- 同上，覆盖终战里的林清霜。
-	data.battle.ally = COMPANION_RULES.apply_gear_and_move(data, "lin_qingshuang", data.battle.ally)
+	# A player may discover the finale before visiting Huashan. Only a
+	# recruited companion joins the battle; saved battles keep their roster.
+	if has_lin:
+		var lin_ally := {"name": "林清霜", "hp": 34, "max_hp": 34, "qi": 15, "max_qi": 15, "attack": 6, "guard": 0, "x": 1, "y": 4}
+		data.battle.ally = COMPANION_RULES.apply_gear_and_move(data, "lin_qingshuang", lin_ally)
 	_apply_current_difficulty()
 	BATTLE_ENGINE.advance_turn(data.battle)
 	capture_battle_checkpoint()
@@ -524,7 +543,7 @@ func finish_battle(victory: bool) -> void:
 		if battle_id == "wuku_finale":
 			if "武库钥印" not in data.items:
 				data.items.append("武库钥印")
-			add_log("你与同伴击败厉无咎，武库的命运将由你决定。")
+			add_log("你与同伴击败厉无咎，武库的命运将由你决定。" if "lin_qingshuang" in data.companions else "你击败厉无咎，武库的命运将由你决定。")
 		elif battle_id == "huashan_trial":
 			if "思过崖通行令" not in data.items:
 				data.items.append("思过崖通行令")
@@ -576,12 +595,16 @@ func complete_game(legacy: String) -> void:
 	var rank: String = "传说" if support >= 10 and weeks_left() >= 20 else ("圆满" if support >= 6 else "余波未平")
 	var base_story: String = str({
 		"destroy": "你击碎武库机关，将兵谱公之于众。各派不再争夺一把钥匙，而是共同守住百姓身后的山河。",
-		"seal": "你以玄铁令重立盟约，将武库交由各派共守。江湖从此多了一条规矩：力量必须接受众人的监督。",
+		"seal": "你以%s重立盟约，将武库交由各派共守。江湖从此多了一条规矩：力量必须接受众人的监督。" % ("玄铁令" if "玄铁令" in data.items else "武库钥印"),
 		"preserve": "你封存杀伐之术，只带走医理与机关篇。武库没有成为王座，却化作救人济世的一盏暗灯。"
 	}.get(legacy, "武库尘埃落定，新的江湖由此开始。"))
-	var companion_story: String = "林清霜与你并肩走出天门，苏晚晴也兑现承诺，三派从此互通音讯。" if "su_trust" in data.flags else "林清霜与你并肩走出天门，但峨眉对武库的余波仍保持警惕。"
+	var companion_story := "你独自走出天门，带着自己的抉择重返江湖。各派如何回应，还需往后的行走与交往。"
+	if "lin_qingshuang" in data.companions:
+		companion_story = "林清霜与你并肩走出天门，苏晚晴也兑现承诺，三派从此互通音讯。" if "su_trust" in data.flags else "林清霜与你并肩走出天门，但峨眉对武库的余波仍保持警惕。"
+	elif "su_trust" in data.flags:
+		companion_story = "苏晚晴兑现承诺，护送你走出天门。峨眉与你互通音讯，新的江湖联系由此展开。"
 	data.ending = {"id": legacy, "title": titles.get(legacy, "山河问道"), "rank": rank, "story": base_story + "\n\n" + companion_story, "week": int(data.week), "support": support}
-	data.quest_stage = "game_complete"
+	set_quest_progress("finale", "game_complete")
 	if "game_complete" not in data.flags:
 		data.flags.append("game_complete")
 	add_log("终章完成：%s（%s）。" % [data.ending.title, rank])
@@ -647,6 +670,12 @@ func import_data(value: Dictionary) -> bool:
 			data[key] = value[key]
 	if not value.has("character_level"):
 		data.character_level = GROWTH_RULES.character_level(int(data.get("xp", 0)))
+	# Detect the old format from the imported dictionary, before new_game's
+	# defaults can hide the missing regional progress field.
+	data.quest_states = QUEST_RULES.normalized_states(value.get("quest_states", null), str(data.get("quest_stage", "explore")), data)
+	var focused_region := QUEST_RULES.region_for_stage(str(data.get("quest_stage", "explore")))
+	if focused_region.is_empty() or str(data.quest_states[focused_region]) != str(data.quest_stage):
+		data.quest_stage = "explore"
 	_migrate_and_validate()
 	data.save_version = SAVE_VERSION
 	state_changed.emit()

@@ -9,6 +9,7 @@ const RELEASE_ACHIEVEMENT_COUNT := 20
 const TRAINING_RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
+const QUEST_RULES := preload("res://scripts/progression/quest_rules.gd")
 
 var backend
 var definitions: Array = []
@@ -106,15 +107,16 @@ func release_data_errors() -> PackedStringArray:
 func evaluate_state(state: Dictionary) -> void:
 	if state.is_empty() or backend == null:
 		return
-	var stage := str(state.get("quest_stage", "meet_master"))
-	var later_stages := ["chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial", "final_assault", "final_choice", "game_complete"]
-	if stage != "meet_master": unlock("ACH_FIRST_STEPS")
+	for region_id in QUEST_RULES.REGION_IDS:
+		if QUEST_RULES.stage(state, str(region_id)) not in ["", "available", "meet_master"]:
+			unlock("ACH_FIRST_STEPS")
+			break
 	if "villain_revealed" in state.get("flags", []): unlock("ACH_BLACKREED_VICTORY")
-	if stage in later_stages: unlock("ACH_PALACE_TRUTH")
+	if QUEST_RULES.stage(state, "luoyang") == "chapter2_complete" or "palace_truth" in state.get("flags", []): unlock("ACH_PALACE_TRUTH")
 	if "lin_qingshuang" in state.get("companions", []): unlock("ACH_SWORD_COMPANIONS")
 	if "思过崖通行令" in state.get("items", []): unlock("ACH_HUASHAN_TRIAL")
-	if stage in ["emei_trial", "final_assault", "final_choice", "game_complete"]: unlock("ACH_EMEI_GUEST")
-	if stage in ["final_choice", "game_complete"]: unlock("ACH_WUKU_VICTORY")
+	if QUEST_RULES.stage(state, "emei") in ["emei_trial", "emei_complete"] or "su_trust" in state.get("flags", []): unlock("ACH_EMEI_GUEST")
+	if QUEST_RULES.stage(state, "finale") in ["final_choice", "game_complete"]: unlock("ACH_WUKU_VICTORY")
 	var ending: Dictionary = state.get("ending", {})
 	match str(ending.get("id", "")):
 		"destroy": unlock("ACH_ENDING_DESTROY")

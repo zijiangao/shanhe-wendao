@@ -40,6 +40,7 @@ const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
 const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
+const QUEST_RULES := preload("res://scripts/progression/quest_rules.gd")
 ## 藏经阁 (0.103.0): left-column category buttons, in display order. The
 ## first four match WuxueRules.MOVES' "category" field; 内功/轻功 aren't
 ## move categories at all, so they're handled separately in
@@ -271,7 +272,7 @@ func _capture_store_screenshots() -> void:
 	DirAccess.make_dir_recursive_absolute(output_path)
 
 	GameState.new_game()
-	GameState.data.quest_stage = "emei_trial"
+	GameState.set_quest_progress("emei", "emei_trial")
 	GameState.data.location = "qingyun"
 	GameState.data.companions = ["lin_qingshuang"]
 	GameState.data.faction_relations.huashan = 3
@@ -281,7 +282,7 @@ func _capture_store_screenshots() -> void:
 	await _save_store_capture("world_map")
 
 	GameState.new_game()
-	GameState.data.quest_stage = "investigate"
+	GameState.set_quest_progress("blackreed", "investigate")
 	GameState.data.location = "blackreed"
 	GameState.data.investigations = ["secret_route", "archer"]
 	screen = "location"
@@ -316,7 +317,7 @@ func _capture_store_screenshots() -> void:
 	GameState.new_game()
 	GameState.data.acted_this_week = false
 	GameState.data.location = "huashan"
-	GameState.data.quest_stage = "huashan_trial"
+	GameState.set_quest_progress("huashan", "huashan_trial")
 	GameState.data.companions = ["lin_qingshuang"]
 	GameState.start_huashan_trial_battle()
 	battle_mode = "move"
@@ -326,7 +327,7 @@ func _capture_store_screenshots() -> void:
 
 	GameState.new_game()
 	GameState.data.location = "luoyang"
-	GameState.data.quest_stage = "chapter_complete"
+	GameState.set_quest_progress("blackreed", "chapter_complete")
 	choice_event = "baima_route"
 	choice_prompt = "太守府夜宴，你准备如何取得武库名录？"
 	choice_options = [
@@ -340,7 +341,7 @@ func _capture_store_screenshots() -> void:
 
 	GameState.new_game()
 	GameState.data.location = "emei"
-	GameState.data.quest_stage = "final_assault"
+	GameState.set_quest_progress("finale", "final_assault")
 	GameState.data.companions = ["lin_qingshuang"]
 	GameState.start_final_battle()
 	battle_mode = "move"
@@ -380,7 +381,7 @@ func _capture_store_screenshots() -> void:
 func _capture_tactical_tutorial() -> void:
 	get_window().size = Vector2i(1280, 720)
 	GameState.new_game()
-	GameState.data.quest_stage = "investigate"
+	GameState.set_quest_progress("blackreed", "investigate")
 	GameState.data.location = "blackreed"
 	GameState.data.acted_this_week = false
 	GameState.data.tutorial = {"map": true, "location": true, "battle": true, "battle_tactics": false}
@@ -419,7 +420,7 @@ func _capture_reward_choice() -> void:
 
 func _verify_battle_presentation() -> void:
 	GameState.new_game()
-	GameState.data.quest_stage = "investigate"
+	GameState.set_quest_progress("blackreed", "investigate")
 	GameState.data.location = "blackreed"
 	GameState.start_blackreed_battle()
 	screen = "battle"
@@ -479,9 +480,19 @@ func _verify_onboarding_flow() -> void:
 	GameState.new_game()
 	screen = ONBOARDING_SPEC.NEW_GAME_SCREEN
 	_rebuild()
-	var initial_valid := screen == "location" and str(GameState.data.location) == "qingyun"
+	var initial_valid := screen == "location" and str(GameState.data.location) == "qingyun" and str(GameState.data.quest_stage) == "explore"
 	var qingyun_actions := _location_actions("qingyun")
-	var main_action_valid := qingyun_actions.any(func(action: Dictionary): return str(action.get("id", "")) == "master" and "主线" in str(action.get("text", "")))
+	var main_action_valid := qingyun_actions.any(func(action: Dictionary): return str(action.get("id", "")) == "master" and "正殿" in str(action.get("text", "")))
+	var construction_valid := qingyun_actions.any(func(action: Dictionary): return str(action.get("id", "")) == "sect_building" and not bool(action.get("disabled", false)))
+	# Construction has normal material costs; source them through the shop
+	# before checking that no chapter or commission is required.
+	construction_valid = SHOP_RULES.buy_good(GameState.data, "herbs") and construction_valid
+	construction_valid = SHOP_RULES.buy_good(GameState.data, "ore", 2) and construction_valid
+	construction_valid = SECT_BUILDING_RULES.can_upgrade(GameState.data, "training_ground") and construction_valid
+	_location_action_requested("master")
+	var hall_valid := screen == "choice" and choice_event == "sect_hall" and GameState.quest_progress("blackreed") == "available"
+	_resolve_choice("talk_master")
+	hall_valid = hall_valid and screen == "dialogue" and dialogue_event == "accept_mission"
 	_finish_dialogue_event("accept_mission")
 	screen = ONBOARDING_SPEC.OPENING_RETURN_SCREEN
 	var mission_valid := screen == "map" and str(GameState.data.quest_stage) == "investigate" and "黑苇渡" in _quest_objective()
@@ -489,8 +500,8 @@ func _verify_onboarding_flow() -> void:
 	GameState.add_investigation("secret_route", "verification")
 	GameState.add_investigation("archer", "verification")
 	var blackreed_actions := _location_actions("blackreed")
-	var fight_unlocked := blackreed_actions.any(func(action: Dictionary): return str(action.get("id", "")) == "fight" and not bool(action.get("disabled", true)) and "主线" in str(action.get("text", "")))
-	var valid := initial_valid and main_action_valid and mission_valid and fight_unlocked
+	var fight_unlocked := blackreed_actions.any(func(action: Dictionary): return str(action.get("id", "")) == "fight" and not bool(action.get("disabled", true)))
+	var valid := initial_valid and main_action_valid and construction_valid and hall_valid and mission_valid and fight_unlocked
 	print("Onboarding flow verification passed." if valid else "Onboarding flow verification failed.")
 	get_tree().quit(0 if valid else 5)
 
@@ -690,7 +701,7 @@ func _show_menu() -> void:
 	panel.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "青云 · 洛阳 · 华山 · 峨眉  |  一段可回望的江湖路"
+	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.171.0 · 开局建设，自由探索江湖"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	var credits_button := _action_button("制作名单与版权", Color("#485e54"))
@@ -825,7 +836,7 @@ func _start_new_game() -> void:
 
 func _rebuild() -> void:
 	SteamService.evaluate_state(GameState.data)
-	if not DEMO_POLICY.is_demo_build() and GameState.deadline_reached() and screen in ["map", "location", "palace", "library"] and str(GameState.data.quest_stage) != "game_complete":
+	if not DEMO_POLICY.is_demo_build() and GameState.deadline_reached() and screen in ["map", "location", "palace", "library"] and GameState.quest_progress("finale") != "game_complete":
 		screen = "deadline"
 	if DEMO_POLICY.should_redirect_screen(screen, GameState.data):
 		screen = "demo_complete"
@@ -860,7 +871,11 @@ func _rebuild() -> void:
 	call_deferred("_focus_first_content_control")
 
 func _focus_first_content_control() -> void:
-	if content == null:
+	var focus_screen := screen
+	# Scroll lists need their final layout before focus can reveal an option.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if content == null or screen != focus_screen:
 		return
 	var controls := content.find_children("*", "Control", true, false)
 	for node in controls:
@@ -874,15 +889,7 @@ func _focus_first_content_control() -> void:
 
 func _show_map() -> void:
 	_clear_content()
-	# Every location is reachable on the map from turn one -- the economy
-	# (shop/backpack) and now the 武学 manual pavilion are meant to be usable
-	# throughout a playthrough, not gated behind story progress. Deliberately
-	# does NOT use _luoyang_unlocked()/_huashan_unlocked()/_emei_unlocked(),
-	# which still gate the quest-journal chapter-text ladder in
-	# _show_quests() and must keep meaning "the main story has reached this
-	# location," a separate concern from map reachability. Each location's
-	# own story-specific hotspots keep their existing per-action quest_stage
-	# gates, so visiting early can't sequence-break the main story.
+	# Every place and its local quest can be visited from the beginning.
 	var places: Array[String] = ["qingyun", "blackreed", "luoyang", "huashan", "emei"]
 	var view: WorldMapView = WORLD_MAP_VIEW.instantiate()
 	content.add_child(view)
@@ -928,7 +935,7 @@ func _location_actions(location_id: String) -> Array:
 		var train_text := "演武场 · 本周%s" % weekly_focus_name if weekly_focus in ["swordsmanship", "bladesmanship", "fistsmanship", "staffsmanship"] else "演武场 · 拳掌·剑法·刀法·枪棍"
 		var gathering_text := "后山 · 本周%s" % weekly_focus_name if weekly_focus in ["herbalism", "mining"] else "后山 · 采药与挖矿"
 		return [
-			{"id": "master", "text": "正殿 · 主线：拜见师父" if str(GameState.data.quest_stage) == "meet_master" else "正殿 · 拜见师父", "x": 90, "y": 155},
+			{"id": "master", "text": "正殿 · 拜见师父与委托", "x": 90, "y": 155},
 			{"id": "sect_building", "text": "门派建设 · 青云营造图", "x": 420, "y": 130},
 			{"id": "train", "text": train_text, "x": 420, "y": 205},
 			{"id": "library", "text": "藏经阁 · 查阅典籍", "x": 725, "y": 145},
@@ -939,38 +946,42 @@ func _location_actions(location_id: String) -> Array:
 			{"id": "map", "text": "山门 · 返回舆图", "x": 910, "y": 420}
 		]
 	if location_id == "blackreed":
+		var progress := GameState.quest_progress("blackreed")
 		var ready: bool = GameState.data.investigations.size() >= 2
+		var investigating := progress in ["available", "meet_master", "investigate"]
 		return [
-			{"id": "fisher", "text": "战术 · 已掌握暗道" if "secret_route" in GameState.data.investigations else "线索 1/2 · 暗道绕开巡逻", "x": 70, "y": 170, "disabled": "secret_route" in GameState.data.investigations},
-			{"id": "tracks", "text": "战术 · 已标记弓手" if "archer" in GameState.data.investigations else "线索 2/2 · 标记弓手破绽", "x": 365, "y": 245, "disabled": "archer" in GameState.data.investigations},
-			{"id": "herbs", "text": "补给 · 已备好金疮药" if "herbs" in GameState.data.investigations else "补给 · 恢复全部气血", "x": 685, "y": 330, "disabled": "herbs" in GameState.data.investigations},
-			{"id": "fight", "text": "寨门 · 主线：攻入山寨" if ready else "寨门 · 尚需两条线索", "x": 930, "y": 150, "disabled": not ready},
+			{"id": "fisher", "text": "战术 · 已掌握暗道" if "secret_route" in GameState.data.investigations else "渔民 · 调查商旅失踪", "x": 70, "y": 170, "disabled": not investigating or "secret_route" in GameState.data.investigations},
+			{"id": "tracks", "text": "战术 · 已标记弓手" if "archer" in GameState.data.investigations else "线索 · 标记弓手破绽", "x": 365, "y": 245, "disabled": not investigating or "archer" in GameState.data.investigations},
+			{"id": "herbs", "text": "补给 · 已备好金疮药" if "herbs" in GameState.data.investigations else "补给 · 恢复全部气血", "x": 685, "y": 330, "disabled": not investigating or "herbs" in GameState.data.investigations},
+			{"id": "fight", "text": "寨门 · 攻入山寨" if ready and investigating else ("寨门 · 此案已破" if not investigating else "寨门 · 尚需两条线索"), "x": 930, "y": 150, "disabled": not ready or not investigating},
 			{"id": "map", "text": "渡口 · 返回舆图", "x": 930, "y": 430}
 		]
 	if location_id == "huashan":
-		var trial_ready: bool = "lin_qingshuang" in GameState.data.companions
+		var progress := GameState.quest_progress("huashan")
+		var trial_ready: bool = progress == "huashan_trial" and "lin_qingshuang" in GameState.data.companions
 		return [
-			{"id": "huashan_gate", "text": "山门 · 递上名帖", "x": 80, "y": 175, "disabled": str(GameState.data.quest_stage) != "chapter2_complete"},
-			{"id": "meet_lin", "text": "迎客峰 · 林清霜", "x": 370, "y": 260, "disabled": str(GameState.data.quest_stage) == "chapter2_complete" or trial_ready},
-			{"id": "huashan_trial", "text": "论剑台 · 双人试炼" if trial_ready else "论剑台 · 需要同伴", "x": 690, "y": 335, "disabled": not trial_ready or str(GameState.data.quest_stage) == "huashan_trial_complete"},
-			{"id": "huashan_cliff", "text": "思过崖 · 残图剑痕", "x": 930, "y": 160, "disabled": str(GameState.data.quest_stage) != "huashan_trial_complete"},
+			{"id": "huashan_gate", "text": "山门 · 拜访华山剑会", "x": 80, "y": 175, "disabled": progress != "available"},
+			{"id": "meet_lin", "text": "迎客峰 · 林清霜", "x": 370, "y": 260, "disabled": progress != "huashan_meet_companion"},
+			{"id": "huashan_trial", "text": "论剑台 · 双人试炼" if trial_ready else "论剑台 · 寻找搭档", "x": 690, "y": 335, "disabled": not trial_ready},
+			{"id": "huashan_cliff", "text": "思过崖 · 残图剑痕", "x": 930, "y": 160, "disabled": progress != "huashan_trial_complete"},
 			{"id": "map", "text": "山道 · 返回舆图", "x": 930, "y": 440}
 		]
 	if location_id == "emei":
-		var entered: bool = str(GameState.data.emei_entry) != ""
+		var progress := GameState.quest_progress("emei")
+		var finale := GameState.quest_progress("finale")
 		return [
-			{"id": "emei_gate", "text": "清音桥 · 选择入山方式" if not entered else "清音桥 · 已获准入山", "x": 75, "y": 175, "disabled": entered},
-			{"id": "meet_su", "text": "清音阁 · 苏晚晴", "x": 370, "y": 255, "disabled": not entered or str(GameState.data.quest_stage) != "emei_meet_su"},
-			{"id": "elephant_pool", "text": "洗象池 · 门派试问", "x": 680, "y": 345, "disabled": str(GameState.data.quest_stage) != "emei_investigate"},
-			{"id": "emei_peak", "text": "金顶 · 追入后山密道" if str(GameState.data.quest_stage) == "emei_trial" else ("金顶 · 武库天门决战" if str(GameState.data.quest_stage) == "final_assault" else "金顶 · 尘埃落定"), "x": 930, "y": 155, "disabled": str(GameState.data.quest_stage) not in ["emei_trial", "final_assault"]},
+			{"id": "emei_gate", "text": "清音桥 · 打听后山异动" if progress == "available" else "清音桥 · 已接取调查", "x": 75, "y": 175, "disabled": progress != "available"},
+			{"id": "meet_su", "text": "清音阁 · 苏晚晴", "x": 370, "y": 255, "disabled": progress != "emei_meet_su"},
+			{"id": "elephant_pool", "text": "洗象池 · 门派试问", "x": 680, "y": 345, "disabled": progress != "emei_investigate"},
+			{"id": "emei_peak", "text": "金顶 · 武库天门决战" if finale == "final_assault" else ("金顶 · 追入后山密道" if progress == "emei_trial" else "金顶 · 后山密道"), "x": 930, "y": 155, "disabled": not (progress == "emei_trial" and finale == "available") and finale != "final_assault"},
 			{"id": "map", "text": "山道 · 返回舆图", "x": 930, "y": 440}
 		]
 	return [
 		{"id": "gate", "text": "城门 · 打听消息", "x": 75, "y": 175},
 		{"id": "inn", "text": "悦来客栈 · 江湖传闻", "x": 360, "y": 285},
 		{"id": "market", "text": "西市 · 商旅云集", "x": 675, "y": 350},
-		{"id": "temple", "text": "白马寺 · 玄铁令之约" if str(GameState.data.quest_stage) == "chapter_complete" else "白马寺 · 夜探古刹", "x": 925, "y": 155},
-		{"id": "palace", "text": "太守府 · 夜宴", "x": 925, "y": 300, "disabled": str(GameState.data.quest_stage) != "luoyang_investigate"},
+		{"id": "temple", "text": "白马寺 · 洛阳旧案", "x": 925, "y": 155},
+		{"id": "palace", "text": "太守府 · 夜宴", "x": 925, "y": 300, "disabled": GameState.quest_progress("luoyang") != "luoyang_investigate"},
 		{"id": "map", "text": "城门 · 返回舆图", "x": 930, "y": 445}
 	]
 
@@ -1101,9 +1112,16 @@ func _show_market_goods() -> void:
 	_rebuild()
 
 func _location_action_requested(action_id: String) -> void:
+	for action in _location_actions(str(GameState.data.location)):
+		if str(action.id) == action_id and bool(action.get("disabled", false)):
+			_toast("此处事件尚需当地线索，或已经完成。")
+			return
+	if action_id in ["fisher", "tracks", "herbs"] and GameState.quest_progress("blackreed") in ["available", "meet_master"]:
+		GameState.set_quest_progress("blackreed", "investigate")
+		GameState.add_log("你主动打听黑苇渡商旅失踪一案。")
 	match action_id:
 		"map": screen = "map"; _rebuild()
-		"master": _qingyun_master_event()
+		"master": _show_sect_hall()
 		"sect_building": _show_sect_building()
 		"herb_garden": _show_sect_building("herb_garden")
 		"train":
@@ -1141,22 +1159,23 @@ func _location_action_requested(action_id: String) -> void:
 		"tracks": _start_dialogue("clue_tracks", ONBOARDING_SPEC.dialogue_for("clue_tracks"))
 		"herbs": _start_dialogue("clue_herbs", [["沈羽", "船舱里还有未受潮的金疮药，可以先处理伤势。"]])
 		"fight": _begin_blackreed_battle()
-		"gate": _start_dialogue("luoyang_gate", [["守城军士", "近日太守府戒备森严，夜里还有禁军出入。"], ["沈羽", "玄铁令的消息恐怕已经传进官府。"]])
-		"inn": _start_dialogue("luoyang_inn", [["说书人", "厉千秋尚未出关，他的义子却已在洛阳搜寻前朝武库。"], ["沈羽", "看来必须赶在他们之前找到下一枚钥匙。"]])
+		"gate": _start_dialogue("luoyang_gate", [["守城军士", "近日太守府戒备森严，夜里还有禁军出入。"], ["沈羽", "若想追查城中异动，可以先去白马寺打听。"]])
+		"inn": _start_dialogue("luoyang_inn", [["说书人", "厉千秋尚未出关，他的义子却已在洛阳搜寻前朝武库。"], ["沈羽", "这桩传闻或许与城中异动有关，值得留意。"]])
 		"qingyun_tavern": _show_qingyun_tavern()
 		"market": _show_market()
 		"temple": _baima_event()
 		"palace": _enter_palace()
-		"huashan_gate": _start_dialogue("huashan_arrival", [["华山执事", "青云门沈羽，持武库名录而来？剑会只认剑，也认胆识。"], ["沈羽", "晚辈愿依华山规矩，查清残图下落。"]])
-		"meet_lin": _start_dialogue("meet_lin", [["林清霜", "论剑台今年改为双人试炼。你若不嫌我剑路太快，我可以与你同上。"], ["林清霜", "不必硬拼每个对手，撑过五轮也算过关。先备好护甲与回春散，交替接敌；若根基不稳，回青云门修炼几周再来。"], ["沈羽", "求之不得。厉无咎既盯上残图，我们更该彼此照应。"]])
+		"huashan_gate": _start_dialogue("huashan_arrival", [["华山执事", "这位青云弟子，想参加剑会、查看思过崖的奇异剑痕么？剑会只认剑，也认胆识。"], ["沈羽", "晚辈愿依华山规矩，查清残图下落。"]])
+		"meet_lin": _start_dialogue("meet_lin", [["林清霜", "论剑台今年改为双人试炼。你若不嫌我剑路太快，我可以与你同上。"], ["林清霜", "不必硬拼每个对手，撑过五轮也算过关。先备好护甲与回春散，交替接敌；若根基不稳，回青云门修炼几周再来。"], ["沈羽", "求之不得。剑会与残图都值得一探，我们也好彼此照应。"]])
 		"huashan_trial": _begin_huashan_trial()
 		"huashan_cliff": _start_dialogue("huashan_cliff", [["林清霜", "石壁剑痕并非华山剑法，倒像有人故意留下的引路符号。"], ["沈羽", "符号指向峨眉。厉无咎已经先行一步。"]])
 		"emei_gate": _start_story_dialogue("emei_gate")
 		"meet_su": _start_story_dialogue("meet_su")
 		"elephant_pool": _start_dialogue("elephant_pool", [["苏晚晴", "洗象池旁有两条路：一边是受伤同门，一边是厉无咎留下的脚印。你先救谁？"], ["沈羽", "线索可以再追，人命不能重来。先救人。"], ["苏晚晴", "这个回答，至少不像厉无咎。"]])
 		"emei_peak":
-			if str(GameState.data.quest_stage) == "emei_trial":
-				_start_dialogue("emei_peak", [["苏晚晴", "金顶佛光下有一道逆行剑痕，正通往封闭百年的后山密道。"], ["林清霜", "厉无咎在等我们。先处理远处弩手，再合力对付重甲；见他蓄力，别留在横扫范围里。"], ["林清霜", "我们可以先回去整备：青云门修炼增长根基，洛阳学招、购甲，也可采矿锻造。准备妥当随时回来，不必等到两年之期。"], ["沈羽", "那便让这场追逐在这里结束。武库属于谁，等打赢之后再问。"]])
+			if GameState.quest_progress("finale") == "available":
+				var companion_speaker := "林清霜" if "lin_qingshuang" in GameState.data.companions else "苏晚晴"
+				_start_dialogue("emei_peak", [["苏晚晴", "金顶佛光下有一道逆行剑痕，正通往封闭百年的后山密道。"], [companion_speaker, "厉无咎在密道尽头。先处理远处弩手，再对付重甲；见他蓄力，别留在横扫范围里。"], [companion_speaker, "可以先回去整备：青云门修炼增长根基，洛阳学招、购甲，也可采矿锻造。准备妥当随时回来，不必等到两年之期。"], ["沈羽", "武库属于谁，等打赢之后再问。我也可以先继续探索江湖，再来挑战。"]])
 			else:
 				_begin_final_battle()
 
@@ -1168,10 +1187,21 @@ func _add_scene_action(text_value: String, at: Vector2, callback: Callable) -> B
 	content.add_child(button)
 	return button
 
+func _show_sect_hall() -> void:
+	choice_event = "sect_hall"
+	choice_prompt = "顾长风在正殿中静候。可以拜见师父、接取委托，也可以继续建设门派或探索江湖。"
+	var master_action := "接取黑苇委托" if GameState.quest_progress("blackreed") in ["available", "meet_master"] else "拜见顾长风"
+	choice_options = [
+		[master_action, _quest_objective("blackreed"), "talk_master", false, CHARACTER_PORTRAITS.for_speaker("顾长风")],
+		["离开正殿", "返回门派庭院，不消耗本周行动。", "leave"]
+	]
+	screen = "choice"
+	_rebuild()
+
 func _qingyun_master_event() -> void:
-	match str(GameState.data.quest_stage):
-		"meet_master": _start_dialogue("accept_mission", ONBOARDING_SPEC.OPENING_DIALOGUE, ONBOARDING_SPEC.OPENING_RETURN_SCREEN)
-		"return_master": _start_dialogue("finish_chapter", [["沈羽", "弟子在寨主身上取得玄铁令，背后似与厉千秋有关。"], ["顾长风", "此令牵涉洛阳旧案。你先养伤，随后持令前往洛阳白马寺。"], ["沈羽", "弟子明白。"]])
+	match GameState.quest_progress("blackreed"):
+		"available", "meet_master": _start_dialogue("accept_mission", ONBOARDING_SPEC.OPENING_DIALOGUE, ONBOARDING_SPEC.OPENING_RETURN_SCREEN)
+		"return_master": _start_dialogue("finish_chapter", [["沈羽", "弟子在寨主身上取得玄铁令，背后似与厉千秋有关。"], ["顾长风", "此令牵涉洛阳旧案。若你想继续追查，可去白马寺打听；其余江湖之事也可自行探访。"], ["沈羽", "弟子明白。"]])
 		_: _start_dialogue("master_chat", [["顾长风", "江湖路远，莫忘入门时的本心。"]])
 
 func _start_dialogue(event_id: String, entries: Array, return_to: String = "location") -> void:
@@ -1190,8 +1220,10 @@ func _start_story_dialogue(event_id: String, return_to: String = "location") -> 
 	_start_dialogue(event_id, entries, return_to)
 
 func _baima_event() -> void:
-	if str(GameState.data.quest_stage) == "chapter_complete":
+	if GameState.quest_progress("luoyang") == "available":
 		_start_story_dialogue("baima_intro")
+	elif GameState.quest_progress("luoyang") == "chapter2_complete":
+		_start_dialogue("baima_complete", [["无尘僧", "洛阳旧案已有定论，多谢你查清兵器转运的真相。往后无论游历何处，白马寺都会为你留一盏灯。"]])
 	else:
 		_start_dialogue("baima_repeat", [["无尘僧", "你选择的道路已经落子。太守府夜宴，切记随机应变。"]])
 
@@ -1217,24 +1249,24 @@ func _advance_dialogue() -> void:
 func _finish_dialogue_event(event_id: String) -> void:
 	match event_id:
 		"accept_mission":
-			GameState.data.quest_stage = "investigate"
-			GameState.add_log("师父命你调查黑苇渡商旅失踪一案。")
+			GameState.set_quest_progress("blackreed", "investigate")
+			GameState.add_log("你接下师父的委托，准备调查黑苇渡商旅失踪一案。")
 		"clue_fisher": GameState.add_investigation("secret_route", "渔民指出了寨众夜间行船的暗道。")
 		"clue_tracks": GameState.add_investigation("archer", "你从脚印与箭痕判断寨中藏有弓手。")
 		"clue_herbs":
 			if GameState.add_investigation("herbs", "你在破船中找到药材，恢复了气血。"):
 				GameState.data.hp = GameState.data.max_hp
 		"finish_chapter":
-			GameState.data.quest_stage = "chapter_complete"
+			GameState.set_quest_progress("blackreed", "chapter_complete")
 			GameState.data.master_relation += 1
-			GameState.add_log("顾长风命你携玄铁令前往洛阳白马寺。")
+			GameState.add_log("黑苇疑云已结案。顾长风告诉你洛阳白马寺可能有更多消息。")
 		"baima_intro":
 			choice_event = "baima_route"
 			choice_prompt = "太守府夜宴，你准备如何取得武库名录？"
 			choice_options = [
 				["侠义 · 公开赴宴", "以青云门弟子身份登门，保护席间无辜之人。", "heroism"],
 				["谋略 · 易容潜入", "伪装成账房，避开正面冲突寻找密库。", "strategy"],
-				["威势 · 持令问罪", "以玄铁令震慑守卫，迫使太守当面对质。", "authority"]
+				["威势 · 登门问罪", "以青云门弟子的身份震慑守卫，迫使太守当面对质。", "authority"]
 			]
 			screen = "choice"
 		"luoyang_market":
@@ -1253,39 +1285,41 @@ func _finish_dialogue_event(event_id: String) -> void:
 			]
 			screen = "choice"
 		"huashan_arrival":
-			GameState.data.quest_stage = "huashan_meet_companion"
+			GameState.set_quest_progress("huashan", "huashan_meet_companion")
 			GameState.data.faction_relations.huashan += 1
-			GameState.add_log("你持名帖进入华山剑会，华山关系提升。")
+			GameState.add_log("你主动拜访华山剑会，获邀寻找论剑搭档。")
 		"meet_lin":
 			if "lin_qingshuang" not in GameState.data.companions:
 				GameState.data.companions.append("lin_qingshuang")
-			GameState.data.quest_stage = "huashan_trial"
+			GameState.set_quest_progress("huashan", "huashan_trial")
 			GameState.add_log("华山弟子林清霜暂时加入队伍。")
 		"huashan_cliff":
-			GameState.data.quest_stage = "chapter3_complete"
+			GameState.set_quest_progress("huashan", "chapter3_complete")
 			GameState.data.faction_relations.huashan += 2
 			GameState.add_log("你在思过崖发现指向峨眉的残图剑痕。")
 		"emei_gate":
 			choice_event = "emei_entry"
-			choice_prompt = "峨眉已经封山，你准备用什么方式取得入山许可？"
+			choice_prompt = "峨眉可自由游览。若要追查后山密道，准备如何取得弟子的信任？"
 			choice_options = []
 			if int(GameState.data.faction_relations.huashan) >= 2:
 				choice_options.append(["华山引荐", "出示华山剑会名帖，获得较高的峨眉初始信任。", "recommend"])
 			if int(GameState.data.renown) >= 8:
 				choice_options.append(["凭声望拜山", "报上江湖名号，以过往事迹证明来意。", "renown"])
-			choice_options.append(["帮助山民", "先协助山下受灾村民，耗费一周换取入山机会。", "aid"])
+			choice_options.append(["主动协查", "协助调查后山异动，直接结识苏晚晴，不消耗本周行动。", "inquire"])
+			choice_options.append(["帮助山民", "先协助山下受灾村民，耗费一周获得更多信任。", "aid"])
 			screen = "choice"
 		"meet_su":
-			GameState.data.quest_stage = "emei_investigate"
+			GameState.set_quest_progress("emei", "emei_investigate")
 			GameState.add_log("峨眉弟子苏晚晴带你前往洗象池接受试问。")
 		"elephant_pool":
-			GameState.data.quest_stage = "emei_trial"
+			GameState.set_quest_progress("emei", "emei_trial")
 			GameState.data.faction_relations.emei += 1
 			if "su_trust" not in GameState.data.flags:
 				GameState.data.flags.append("su_trust")
 			GameState.add_log("你选择先救峨眉弟子，获得苏晚晴的初步信任。")
 		"emei_peak":
-			GameState.data.quest_stage = "final_assault"
+			GameState.set_quest_progress("emei", "emei_complete")
+			GameState.set_quest_progress("finale", "final_assault")
 			GameState.add_log("你在峨眉金顶找到武库天门，厉无咎正在密道尽头等候。")
 
 func _add_palace_evidence(kind: String, favored_route: String) -> void:
@@ -1313,12 +1347,21 @@ func _show_choice() -> void:
 		choice_title = "青云客栈 · 门下弟子"
 	elif choice_event == "sect_building":
 		choice_title = "青云门 · 营 造 图" if sect_building_selection.is_empty() else str(SECT_BUILDING_RULES.BUILDINGS[sect_building_selection].title)
+	elif choice_event == "sect_hall":
+		choice_title = "青云门 · 正 殿"
 	if choice_event.begins_with("market"):
 		choice_title = "西 市 坊 市"
 	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_title)
 	view.option_selected.connect(_resolve_choice)
 
 func _resolve_choice(route: String) -> void:
+	if choice_event == "sect_hall":
+		if route == "talk_master":
+			_qingyun_master_event()
+		else:
+			screen = "location"
+			_rebuild()
+		return
 	if choice_event == "sect_building":
 		if route == "leave":
 			screen = "location"
@@ -1327,7 +1370,7 @@ func _resolve_choice(route: String) -> void:
 		if route.begins_with("upgrade_"):
 			var result := GameState.upgrade_sect_building(route.trim_prefix("upgrade_"))
 			if not bool(result.get("ok", false)):
-				_toast("需要推进剧情、准备足够材料，且本周尚未行动。")
+				_toast("需要足够银两与材料，且本周尚未行动。")
 				return
 			_toast("%s已提升至%d级。" % [str(SECT_BUILDING_RULES.BUILDINGS[result.id].title), int(result.level)])
 			SaveManager.save_auto()
@@ -1595,7 +1638,7 @@ func _resolve_choice(route: String) -> void:
 	elif choice_event == "baima_route":
 		GameState.data.alignment[route] = int(GameState.data.alignment.get(route, 0)) + 1
 		GameState.data.luoyang_route = route
-		GameState.data.quest_stage = "luoyang_investigate"
+		GameState.set_quest_progress("luoyang", "luoyang_investigate")
 		match route:
 			"heroism":
 				GameState.data.renown += 2
@@ -1605,7 +1648,7 @@ func _resolve_choice(route: String) -> void:
 				GameState.add_log("你决定易容潜入太守府，悟性提升。")
 			"authority":
 				GameState.data.strength += 1
-				GameState.add_log("你决定持玄铁令登门问罪，臂力提升。")
+				GameState.add_log("你决定以青云弟子的身份登门问罪，臂力提升。")
 	elif choice_event == "chapter2_end":
 		match route:
 			"public":
@@ -1619,14 +1662,16 @@ func _resolve_choice(route: String) -> void:
 				if "武库名录残页" not in GameState.data.items:
 					GameState.data.items.append("武库名录残页")
 				GameState.add_log("你暗中留下名录残页，准备独自追查厉无咎。")
-		GameState.data.quest_stage = "chapter2_complete"
+		GameState.set_quest_progress("luoyang", "chapter2_complete")
 	elif choice_event == "emei_entry":
 		if route == "aid" and not GameState.spend_action():
 			_toast(_time_action_failure_message())
 			return
 		GameState.data.emei_entry = route
-		GameState.data.quest_stage = "emei_meet_su"
+		GameState.set_quest_progress("emei", "emei_meet_su")
 		match route:
+			"inquire":
+				GameState.add_log("你主动接下峨眉后山调查，前往清音阁结识苏晚晴。")
 			"recommend":
 				GameState.data.faction_relations.emei += 2
 				GameState.add_log("你凭华山引荐进入峨眉，获得峨眉弟子的信任。")
@@ -1639,8 +1684,8 @@ func _resolve_choice(route: String) -> void:
 				GameState.add_log("你耗费一周帮助山民，峨眉为你打开山门。")
 	elif choice_event == "final_legacy":
 		GameState.complete_game(route)
+	screen = "ending" if choice_event == "final_legacy" else ("map" if choice_event == "chapter2_end" else "location")
 	choice_event = ""
-	screen = "ending" if str(GameState.data.quest_stage) == "game_complete" else ("map" if str(GameState.data.quest_stage) == "chapter2_complete" else "location")
 	SaveManager.save_auto()
 	_rebuild()
 
@@ -1749,7 +1794,7 @@ func _finish_training_screen() -> void:
 	_rebuild()
 
 func _enter_palace() -> void:
-	if str(GameState.data.quest_stage) != "luoyang_investigate":
+	if GameState.quest_progress("luoyang") != "luoyang_investigate":
 		_toast("先前往白马寺，决定进入夜宴的方法。")
 		return
 	screen = "palace"
@@ -1853,32 +1898,52 @@ func _begin_huashan_trial() -> void:
 func _show_quests() -> void:
 	_clear_content()
 	var panel := PanelContainer.new()
-	panel.position = Vector2(105, 45)
-	panel.size = Vector2(1070, 500)
+	panel.name = "QuestPanel"
+	var fit_panel := func():
+		var viewport_area := Rect2(Vector2.ZERO, get_viewport_rect().size) * content.get_global_transform_with_canvas()
+		var visible_area := Rect2(Vector2.ZERO, content.size).intersection(viewport_area)
+		panel.position = visible_area.position + Vector2(35, 20)
+		panel.size = visible_area.size - Vector2(70, 40)
+	content.resized.connect(fit_panel)
+	panel.tree_exiting.connect(func(): content.resized.disconnect(fit_panel))
+	fit_panel.call()
 	panel.add_theme_stylebox_override("panel", _box(Color("#172820")))
 	content.add_child(panel)
+	var scroll := ScrollContainer.new()
+	scroll.name = "QuestScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	panel.add_child(scroll)
 	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 14)
-	panel.add_child(box)
+	scroll.add_child(box)
 	var title := Label.new()
 	title.text = "行走江湖 · 任务日志"
 	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	box.add_child(title)
-	var main_task := Label.new()
-	if _emei_unlocked():
-		main_task.text = "主线 · 峨眉迷踪\n%s\n\n峨眉关系：%d\n入山方式：%s" % [_quest_objective(), GameState.data.faction_relations.emei, _emei_entry_name(str(GameState.data.emei_entry))]
-	elif _huashan_unlocked():
-		main_task.text = "主线 · 华山剑会\n%s\n\n华山关系：%d" % [_quest_objective(), GameState.data.faction_relations.huashan]
-	elif _luoyang_unlocked():
-		main_task.text = "主线 · 洛阳风云\n%s\n\n行事倾向\n侠义 %d    谋略 %d    威势 %d" % [_quest_objective(), GameState.data.alignment.heroism, GameState.data.alignment.strategy, GameState.data.alignment.authority]
-	else:
-		main_task.text = "主线 · 黑苇疑云\n%s\n\n调查线索  %d/3\n%s" % [_quest_objective(), GameState.data.investigations.size(), _clue_list()]
-	main_task.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	main_task.add_theme_font_size_override("font_size", 19)
-	main_task.add_theme_color_override("font_color", Color("#f4eee2"))
-	main_task.add_theme_stylebox_override("normal", _box(Color("#294438")))
-	box.add_child(main_task)
+	var hint := Label.new()
+	hint.text = "全部地点已开放。各地委托由你自行触发，可同时调查，也可先建设门派、自由游历。"
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 16)
+	hint.add_theme_color_override("font_color", Color("#cfc8b8"))
+	box.add_child(hint)
+	var titles := {"blackreed": "黑苇疑云", "luoyang": "洛阳风云", "huashan": "华山剑会", "emei": "峨眉迷踪", "finale": "武库天门"}
+	for id in QUEST_RULES.REGION_IDS:
+		var progress := GameState.quest_progress(str(id))
+		var completed: bool = progress == QUEST_RULES.REGION_STAGES[id].back()
+		var status := "已完成" if completed else ("待触发" if progress in ["available", "meet_master"] else "进行中")
+		var task := Label.new()
+		task.name = "Quest_%s" % id
+		task.text = "%s · %s\n%s" % [titles[id], status, _quest_objective(str(id))]
+		if id == "blackreed" and progress == "investigate":
+			task.text += "\n调查线索 %d/3 · %s" % [GameState.data.investigations.size(), _clue_list().replace("\n", " · ")]
+		task.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		task.add_theme_font_size_override("font_size", 18)
+		task.add_theme_color_override("font_color", Color("#f4eee2"))
+		task.add_theme_stylebox_override("normal", _box(Color("#294438")))
+		box.add_child(task)
 
 	# 同行侠客面板 (0.110.0) -- same panel as 人物界面, so a recruited 客栈
 	# disciple shows up here too, not just 林清霜's quest-specific mention.
@@ -1888,12 +1953,6 @@ func _show_quests() -> void:
 	party_panel.add_theme_color_override("font_color", Color("#f4eee2"))
 	party_panel.add_theme_stylebox_override("normal", _box(Color("#223a30")))
 	box.add_child(party_panel)
-
-	var hint := Label.new()
-	hint.text = "提示：在天下舆图点击当前地点即可进入场景。场景中的人物与地点会推进任务。"
-	hint.add_theme_font_size_override("font_size", 16)
-	hint.add_theme_color_override("font_color", Color("#cfc8b8"))
-	box.add_child(hint)
 
 	# 江湖纪事 (0.100.0): moved here from the world map's now-removed side
 	# panel -- collapsed by default, click to expand/collapse in place.
@@ -2049,7 +2108,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.170.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.171.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2084,37 +2143,46 @@ func _credit_sections() -> Array:
 	var parsed = JSON.parse_string(file.get_as_text())
 	return parsed.get("sections", []) if typeof(parsed) == TYPE_DICTIONARY else []
 
-func _quest_objective() -> String:
+func _quest_objective(region_id: String = "") -> String:
+	var id := region_id
+	if id.is_empty():
+		id = str(GameState.data.location)
+		if id == "qingyun":
+			id = "blackreed"
+		if id == "emei" and GameState.quest_progress("finale") != "available":
+			id = "finale"
+		if GameState.quest_progress(id) in ["", "available", "meet_master"]:
+			return "可以建设门派，或自由探索全部地点；各地委托由你自行接取。"
+	var progress := GameState.quest_progress(id)
+	if progress in ["available", "meet_master"]:
+		return {
+			"blackreed": "可到青云门正殿接取师父的委托，也可直接在黑苇渡打听商旅失踪。",
+			"luoyang": "可前往洛阳白马寺，向无尘僧打听当地旧案。",
+			"huashan": "可在华山山门拜访剑会，寻找搭档并调查思过崖剑痕。",
+			"emei": "可到峨眉清音桥打听后山异动，自行决定是否接下调查。",
+			"finale": "可在峨眉调查后山密道，发现武库天门后自行决定何时挑战。"
+		}.get(id, "自由探索江湖。")
 	return {
-		"meet_master": "前往青云门正殿，拜见师父顾长风。",
 		"investigate": "前往黑苇渡调查，取得两条线索后攻入山寨。",
 		"return_master": "携玄铁令返回青云门，向顾长风复命。",
-		"chapter_complete": "前往洛阳白马寺，将玄铁令交给无尘僧。",
+		"chapter_complete": "商旅失踪一案已破，师父已收到你的调查结果。",
 		"luoyang_investigate": "潜入太守府夜宴，取得至少两件证据并与厉无咎对质。",
-		"chapter2_complete": "第二章完成：厉无咎逃离洛阳，武库名录指向华山。",
+		"chapter2_complete": "洛阳旧案已查明，武库名录已经到手。",
 		"huashan_meet_companion": "前往迎客峰寻找搭档，准备双人论剑试炼。",
 		"huashan_trial": "双人试炼：撑过五轮或击败所有对手。可先回青云修炼、赴洛阳备甲备药。",
 		"huashan_trial_complete": "前往思过崖查看武库残图留下的剑痕。",
-		"chapter3_complete": "第三章完成：残图线索指向峨眉。",
+		"chapter3_complete": "剑会调查已完成，你发现了指向峨眉的残图剑痕。",
 		"emei_meet_su": "在清音阁拜访苏晚晴，查明后山闯阵者。",
 		"emei_investigate": "前往洗象池接受峨眉试问，争取继续追查厉无咎。",
-		"emei_trial": "峨眉试问已通过：下一步前往金顶追查后山密道。"
-		,"final_assault": "金顶决战：先清弩手、留意横扫蓄力。可自由返程修炼整备，准备好即可挑战。"
-		,"final_choice": "厉无咎已败：决定武库与江湖的未来。"
-		,"game_complete": "山河已定。可在结局页回顾这段江湖旅程。"
-	}.get(str(GameState.data.get("quest_stage", "meet_master")), "继续调查江湖异动。")
-
-func _luoyang_unlocked() -> bool:
-	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter_complete", "luoyang_investigate", "chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial", "final_assault", "final_choice", "game_complete"]
-
-func _huashan_unlocked() -> bool:
-	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter2_complete", "huashan_meet_companion", "huashan_trial", "huashan_trial_complete", "chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial", "final_assault", "final_choice", "game_complete"]
-
-func _emei_unlocked() -> bool:
-	return str(GameState.data.get("quest_stage", "meet_master")) in ["chapter3_complete", "emei_meet_su", "emei_investigate", "emei_trial", "final_assault", "final_choice", "game_complete"]
+		"emei_trial": "峨眉试问已通过：可前往金顶追查后山密道。",
+		"emei_complete": "峨眉调查已完成，武库天门的位置已经查明。",
+		"final_assault": "金顶决战：先清弩手、留意横扫蓄力。可自由返程修炼整备，准备好即可挑战。",
+		"final_choice": "厉无咎已败：决定武库与江湖的未来。",
+		"game_complete": "山河已定。可在结局页回顾这段江湖旅程。"
+	}.get(progress, "自由探索江湖。")
 
 func _emei_entry_name(route: String) -> String:
-	return {"recommend": "华山引荐", "renown": "江湖声望", "aid": "帮助山民"}.get(route, "尚未入山")
+	return {"recommend": "华山引荐", "renown": "江湖声望", "aid": "帮助山民", "inquire": "主动协查"}.get(route, "自由游览")
 
 func _location_texture(location_id: String) -> Texture2D:
 	return {
@@ -2187,46 +2255,46 @@ func _dev_jump(target: String) -> void:
 			GameState.data.location = "qingyun"
 			screen = "map"
 		"blackreed":
-			GameState.data.quest_stage = "investigate"
+			GameState.set_quest_progress("blackreed", "investigate")
 			GameState.data.location = "blackreed"
 			GameState.data.investigations = ["secret_route"]
 			screen = "location"
 		"battle":
-			GameState.data.quest_stage = "investigate"
+			GameState.set_quest_progress("blackreed", "investigate")
 			GameState.data.location = "blackreed"
 			GameState.data.investigations = ["secret_route", "archer"]
 			GameState.data.acted_this_week = false
 			GameState.start_blackreed_battle()
 			return
 		"luoyang":
-			GameState.data.quest_stage = "chapter_complete"
+			GameState.set_quest_progress("blackreed", "chapter_complete")
 			GameState.data.location = "luoyang"
 			GameState.data.items.append("玄铁令")
 			screen = "location"
 		"palace":
-			GameState.data.quest_stage = "luoyang_investigate"
+			GameState.set_quest_progress("luoyang", "luoyang_investigate")
 			GameState.data.location = "luoyang"
 			GameState.data.luoyang_route = "strategy"
 			GameState.data.alignment.strategy = 1
 			screen = "palace"
 		"chapter2":
-			GameState.data.quest_stage = "chapter2_complete"
+			GameState.set_quest_progress("luoyang", "chapter2_complete")
 			GameState.data.location = "luoyang"
 			screen = "map"
 		"huashan":
-			GameState.data.quest_stage = "huashan_trial"
+			GameState.set_quest_progress("huashan", "huashan_trial")
 			GameState.data.location = "huashan"
 			GameState.data.companions.append("lin_qingshuang")
 			GameState.data.faction_relations.huashan = 2
 			screen = "location"
 		"emei":
-			GameState.data.quest_stage = "chapter3_complete"
+			GameState.set_quest_progress("huashan", "chapter3_complete")
 			GameState.data.location = "emei"
 			GameState.data.companions.append("lin_qingshuang")
 			GameState.data.faction_relations.huashan = 3
 			screen = "location"
 		"finale":
-			GameState.data.quest_stage = "final_assault"
+			GameState.set_quest_progress("finale", "final_assault")
 			GameState.data.location = "emei"
 			GameState.data.companions.append("lin_qingshuang")
 			GameState.data.flags.append("su_trust")
@@ -3247,9 +3315,9 @@ func _screen_after_load() -> String:
 		return "victory"
 	if DEMO_POLICY.is_demo_complete(GameState.data):
 		return "demo_complete"
-	if str(GameState.data.get("quest_stage", "")) == "game_complete" and not GameState.data.ending.is_empty():
+	if GameState.quest_progress("finale") == "game_complete" and not GameState.data.ending.is_empty():
 		return "ending"
-	if str(GameState.data.get("quest_stage", "")) == "final_choice":
+	if GameState.quest_progress("finale") == "final_choice":
 		return "final_choice"
 	if not DEMO_POLICY.is_demo_build() and GameState.deadline_reached():
 		return "deadline"
@@ -3684,11 +3752,11 @@ func _check_tactical_victory(battle: Dictionary) -> bool:
 	last_rewards.turns = int(battle.turn)
 	GameState.finish_battle(true)
 	if battle_id == "wuku_finale":
-		GameState.data.quest_stage = "final_choice"
+		GameState.set_quest_progress("finale", "final_choice")
 	elif battle_id == "huashan_trial":
-		GameState.data.quest_stage = "huashan_trial_complete"
+		GameState.set_quest_progress("huashan", "huashan_trial_complete")
 	elif battle_id != "qingyun_spar":
-		GameState.data.quest_stage = "return_master"
+		GameState.set_quest_progress("blackreed", "return_master")
 	screen = "victory"
 	return true
 
@@ -3847,9 +3915,10 @@ func _begin_final_battle() -> void:
 func _show_final_choice() -> void:
 	choice_event = "final_legacy"
 	choice_prompt = "厉无咎已败。面对足以改写天下的武库，你准备留下怎样的江湖？"
+	var token := "玄铁令" if "玄铁令" in GameState.data.items else "武库钥印"
 	choice_options = [
 		["侠义 · 毁去兵库", "击碎杀伐机关，公开证据，让各派共同见证。", "destroy"],
-		["威势 · 共守盟约", "以玄铁令重立秩序，由三派共同监管武库。", "seal"],
+		["威势 · 共守盟约", "以%s重立秩序，由三派共同监管武库。" % token, "seal"],
 		["谋略 · 藏锋济世", "封存兵法，只保留医理与机关术造福百姓。", "preserve"]
 	]
 	_show_choice()
@@ -4060,6 +4129,7 @@ func _reset_tutorial() -> void:
 
 func _clear_content() -> void:
 	for child in content.get_children():
+		content.remove_child(child)
 		child.queue_free()
 
 func _battle_texture(battle_id: String) -> Texture2D:

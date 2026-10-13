@@ -70,8 +70,8 @@ func _run() -> void:
 	settings.apply_settings()
 	game.new_game()
 	game.data.tutorial = {"location": true, "map": true}
-	game.data.quest_stage = "chapter_complete"
 	game.data.materials = {"herbs": 100, "ore": 100}
+	_check(str(game.data.quest_stage) == "explore", "Fresh games enter free exploration without starting a story quest")
 	await _location()
 	var silver_before := int(game.data.silver)
 	await _click("Building_herb_garden")
@@ -80,6 +80,7 @@ func _run() -> void:
 	main._resolve_choice("upgrade_herb_garden")
 	await _settle()
 	_check(SECT.level(game.data, "herb_garden") == 1 and int(game.data.silver) == silver_before - 300 and bool(game.data.acted_this_week), "Actual construction charges one weekly action and resources")
+	_check(str(game.data.quest_stage) == "explore", "Opening construction keeps story quests optional")
 	main._resolve_choice("leave")
 	await _settle()
 	_check(main.screen == "location", "Return from construction enters the sect")
@@ -98,13 +99,41 @@ func _run() -> void:
 	await _location()
 	await _click("Estate_sect_building")
 	_check(main.choice_event == "sect_building" and main.sect_building_selection.is_empty() and main.choice_options.size() == 5, "Construction pavilion opens all four buildings")
+	if capture:
+		await _snapshot("sect-construction.png")
 	await _location()
 	await _click("Estate_map")
 	_check(main.screen == "map", "Sect gate returns to world map")
-	game.data.quest_stage = "meet_master"
+	game.new_game()
+	game.data.tutorial = {"location": true, "map": true}
 	await _location()
-	await _click("SectMaster")
-	_check(main.screen == "dialogue", "Master portrait starts the story dialogue")
+	await _click("Building_master")
+	_check(main.screen == "choice" and main.choice_event == "sect_hall", "The hall opens the master's interior meeting screen")
+	_check(str(game.data.quest_stage) == "explore", "Entering the hall does not automatically start a quest")
+	_check(not bool(game.data.acted_this_week), "Entering the hall leaves this week's action available")
+	main._resolve_choice("leave")
+	await _settle()
+	_check(main.screen == "location" and _building("master") != null, "Leaving the hall returns to the courtyard and preserves its entrance")
+	_check(str(game.data.quest_stage) == "explore" and not bool(game.data.acted_this_week), "Leaving the hall keeps quests optional and does not spend an action")
+	await _click("Building_master")
+	var has_master_portrait := false
+	for option in main.choice_options:
+		if str(option[2]) == "talk_master":
+			has_master_portrait = option.size() == 5 and option[4] == PORTRAITS.for_speaker("顾长风")
+	_check(has_master_portrait, "The hall shows Gu Changfeng's portrait on the voluntary conversation option")
+	var hall_master_button: Button
+	for button in main.content.find_children("*", "Button", true, false):
+		if button.icon == PORTRAITS.for_speaker("顾长风"):
+			hall_master_button = button
+	_check(hall_master_button != null and not hall_master_button.disabled, "The master is visibly available as a conversation inside the hall")
+	if capture:
+		await _snapshot("hall-gu-changfeng.png")
+	if hall_master_button != null:
+		hall_master_button.pressed.emit()
+	else:
+		main._resolve_choice("talk_master")
+	await _settle()
+	_check(main.screen == "dialogue", "Choosing to talk to the master starts the story dialogue")
 	_check(_speaker_texture() == PORTRAITS.for_speaker("顾长风"), "Master dialogue displays Gu Changfeng")
 	if capture:
 		await _snapshot("dialogue-gu-changfeng.png")
@@ -115,7 +144,7 @@ func _run() -> void:
 		await _snapshot("dialogue-shen-yu.png")
 	main._advance_dialogue()
 	await _settle()
-	_check(main.screen == "map" and str(game.data.quest_stage) == "investigate", "Portrait dialogue preserves mission progression")
+	_check(main.screen == "map" and str(game.data.quest_stage) == "investigate", "Voluntarily accepting the master's commission starts the investigation")
 	main._show_qingyun_tavern()
 	await _settle()
 	for option in main.choice_options:
@@ -145,7 +174,7 @@ func _check_estate(level: int, scale: float) -> void:
 	var area: Rect2 = main.content.get_global_rect().intersection(root.get_visible_rect()).grow(1)
 	var buttons := view.find_children("*", "Button", true, false)
 	var context := "window %s scale %s level %d" % [root.size, scale, level]
-	_check(buttons.size() == 11, "Eleven sect entrances at %s" % context)
+	_check(buttons.size() == 10, "Ten sect entrances at %s" % context)
 	for button in buttons:
 		_check(area.encloses(button.get_global_rect()), "Visible entrance %s at %s" % [button.name, context])
 		_check(button.focus_mode == Control.FOCUS_ALL, "Keyboard focus on %s" % button.name)
@@ -160,8 +189,8 @@ func _check_estate(level: int, scale: float) -> void:
 		var image := button.get_node("BuildingImage") as TextureRect
 		_check(int(button.get_meta("building_level")) == level and image.texture != null, "Saved construction level reflected on %s" % id)
 		_check(image.visible == (id != "herb_garden" or level > 0), "Garden image only after construction")
-	var master_image := view.find_child("MasterPortrait", true, false) as TextureRect
-	_check(master_image != null and master_image.texture == PORTRAITS.for_speaker("顾长风"), "Correct master portrait on estate")
+	_check(view.find_child("SectMaster", true, false) == null and view.find_child("MasterPortrait", true, false) == null, "The master appears inside the hall without a separate courtyard card")
+	_check(str(_building("master").get_node("BuildingPlaque/BuildingStatus").text) == "拜见师父 · 委托", "The hall explains its meeting and commission function")
 
 func _check_ground_alignment(view: Control, context: String) -> void:
 	var background := view.get_node("EstateBackground") as TextureRect

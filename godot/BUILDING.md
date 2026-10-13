@@ -1,5 +1,24 @@
 # Building 山河问道
 
+## 0.171.0 — free exploration and optional regional commissions
+
+The full game starts with no assigned story quest. Every world-map destination
+is available, and Blackreed, Luoyang, Huashan, and Emei investigations can be
+started and resumed independently through their local interactions. Visiting
+a location, entering the main hall, or constructing a sect building does not
+automatically accept a commission. The journal lists each region separately.
+
+Sect construction and all three upgrade levels now depend on materials,
+silver, and the normal weekly action, without chapter requirements. Gu
+Changfeng is inside Qingyun's main hall; the courtyard has no separate master
+card. Save version 13 preserves independent regional progress and migrates
+older linear story saves, including pending battle rewards. Achievements use
+the corresponding region's actual progress.
+
+The menu and Windows Desktop preset are synchronized at 0.171.0. Only the
+full game is exported and verified; the demo preset and build remain untouched.
+See `../qa/2026-10-13-free-exploration/REPORT.md` for final validation evidence.
+
 ## 0.170.0 — sect buildings aligned to the painted terraces
 
 Qingyun buildings now use ground positions authored in the background image,

@@ -3,55 +3,38 @@ extends RefCounted
 
 ## 青云门门派建设 (0.167.0): four fixed buildings give small, visible
 ## preparation bonuses without turning the story into a waiting simulator.
-## Each upgrade is a normal weekly action and reuses the existing silver,
-## herbs, and ore inventory.
+## Construction is available from the start; each upgrade is a normal weekly
+## action and reuses the existing silver, herbs, and ore inventory.
 const MAX_LEVEL := 3
 const BUILDING_IDS := ["training_ground", "library", "herb_garden", "forge"]
-const STAGE_RANK := {
-	"meet_master": 0,
-	"investigate": 0,
-	"return_master": 0,
-	"chapter_complete": 1,
-	"luoyang_investigate": 1,
-	"chapter2_complete": 2,
-	"huashan_meet_companion": 2,
-	"huashan_trial": 2,
-	"huashan_trial_complete": 2,
-	"chapter3_complete": 3,
-	"emei_meet_su": 3,
-	"emei_investigate": 3,
-	"emei_trial": 3,
-	"final_assault": 3,
-	"game_complete": 3,
-}
 const BUILDINGS := {
 	"training_ground": {
 		"title": "演武场",
 		"tag": "修炼",
 		"description": "整饬木桩与剑坪，让每周修炼更有收获。",
 		"effects": ["尚未整修", "修炼额外获得2点修为", "修炼额外获得4点修为", "修炼额外获得6点修为"],
-		"costs": [{}, {"silver": 300, "herbs": 1, "ore": 2, "stage": "chapter_complete"}, {"silver": 700, "herbs": 3, "ore": 5, "stage": "chapter2_complete"}, {"silver": 1500, "herbs": 6, "ore": 10, "stage": "chapter3_complete"}],
+		"costs": [{}, {"silver": 300, "herbs": 1, "ore": 2}, {"silver": 700, "herbs": 3, "ore": 5}, {"silver": 1500, "herbs": 6, "ore": 10}],
 	},
 	"library": {
 		"title": "藏经阁",
 		"tag": "武学",
 		"description": "修补藏书与抄录秘籍，降低秘籍阁的银两门槛。",
 		"effects": ["尚未整修", "秘籍阁费用减免5%", "秘籍阁费用减免10%", "秘籍阁费用减免15%"],
-		"costs": [{}, {"silver": 300, "herbs": 2, "ore": 1, "stage": "chapter_complete"}, {"silver": 700, "herbs": 4, "ore": 4, "stage": "chapter2_complete"}, {"silver": 1500, "herbs": 8, "ore": 8, "stage": "chapter3_complete"}],
+		"costs": [{}, {"silver": 300, "herbs": 2, "ore": 1}, {"silver": 700, "herbs": 4, "ore": 4}, {"silver": 1500, "herbs": 8, "ore": 8}],
 	},
 	"herb_garden": {
 		"title": "药圃",
 		"tag": "采集",
 		"description": "开垦药圃，结束每周时稳定收回门派药材。",
 		"effects": ["尚未整修", "每周结束获得1份药材", "每周结束获得2份药材", "每周结束获得3份药材"],
-		"costs": [{}, {"silver": 300, "herbs": 2, "ore": 1, "stage": "chapter_complete"}, {"silver": 700, "herbs": 5, "ore": 3, "stage": "chapter2_complete"}, {"silver": 1500, "herbs": 9, "ore": 6, "stage": "chapter3_complete"}],
+		"costs": [{}, {"silver": 300, "herbs": 2, "ore": 1}, {"silver": 700, "herbs": 5, "ore": 3}, {"silver": 1500, "herbs": 9, "ore": 6}],
 	},
 	"forge": {
 		"title": "铸造坊",
 		"tag": "锻造",
 		"description": "添置炉具与模具，减少锻造装备的矿石消耗。",
 		"effects": ["尚未整修", "锻造装备少消耗1矿石", "锻造装备少消耗2矿石", "锻造装备少消耗3矿石"],
-		"costs": [{}, {"silver": 300, "herbs": 1, "ore": 2, "stage": "chapter_complete"}, {"silver": 700, "herbs": 2, "ore": 6, "stage": "chapter2_complete"}, {"silver": 1500, "herbs": 4, "ore": 12, "stage": "chapter3_complete"}],
+		"costs": [{}, {"silver": 300, "herbs": 1, "ore": 2}, {"silver": 700, "herbs": 2, "ore": 6}, {"silver": 1500, "herbs": 4, "ore": 12}],
 	},
 }
 
@@ -70,9 +53,6 @@ static func level(state: Dictionary, id: String) -> int:
 	var buildings: Dictionary = sect.get("buildings", {}) if typeof(sect.get("buildings", {})) == TYPE_DICTIONARY else {}
 	return clampi(int(buildings.get(id, 0)), 0, MAX_LEVEL)
 
-static func _stage_rank(stage: String) -> int:
-	return int(STAGE_RANK.get(stage, 0))
-
 static func cost_for_next(state: Dictionary, id: String) -> Dictionary:
 	if not BUILDINGS.has(id):
 		return {}
@@ -89,8 +69,6 @@ static func can_upgrade(state: Dictionary, id: String, check_action: bool = true
 	if check_action and bool(state.get("acted_this_week", false)):
 		return false
 	var cost := cost_for_next(state, id)
-	if _stage_rank(str(state.get("quest_stage", "meet_master"))) < _stage_rank(str(cost.get("stage", "chapter_complete"))):
-		return false
 	if int(state.get("silver", 0)) < int(cost.get("silver", 0)):
 		return false
 	var materials: Dictionary = state.get("materials", {})
@@ -151,11 +129,7 @@ static func options(state: Dictionary) -> Array:
 		var locked := current >= MAX_LEVEL or not can_upgrade(state, id)
 		var status := "当前 Lv.%d · %s" % [current, effect_text(state, id)]
 		if current < MAX_LEVEL:
-			var required_stage := str(cost.get("stage", "chapter_complete"))
-			if _stage_rank(str(state.get("quest_stage", "meet_master"))) < _stage_rank(required_stage):
-				status += "\n剧情推进至%s后开放升级" % {"chapter_complete": "第一章", "chapter2_complete": "第二章", "chapter3_complete": "第三章"}.get(required_stage, required_stage)
-			else:
-				status += "\n下级：%s · 需要%s" % [next_effect_text(state, id), cost_text(cost)]
+			status += "\n下级：%s · 需要%s" % [next_effect_text(state, id), cost_text(cost)]
 		result.append(["%s · Lv.%d" % [str(entry.title), current], "%s\n%s" % [str(entry.description), status], "upgrade_%s" % id, locked])
 	result.append(["离开营造图", "不消耗行动点，返回青云门。", "leave"])
 	return result

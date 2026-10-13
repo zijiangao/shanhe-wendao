@@ -3,12 +3,9 @@ extends SceneTree
 # Every location -- including Huashan and Emei, previously gated behind
 # main-story progress via _huashan_unlocked()/_emei_unlocked() -- is meant to
 # be reachable from the very start of a playthrough. This test guards
-# specifically against those gates ever creeping back onto the map
-# (_show_map() must NOT call _huashan_unlocked()/_emei_unlocked() to decide
-# whether to list "huashan"/"emei" in its available places), while confirming
-# _huashan_unlocked()/_emei_unlocked() (and _luoyang_unlocked()) still gate the
-# quest-journal chapter-text ladder as before (that meaning must not collapse
-# into "always true" along with the map fix).
+# specifically against those gates ever creeping back onto the map, while
+# confirming that travel leaves every regional quest available for the player
+# to trigger independently.
 
 func _initialize() -> void:
 	call_deferred("_capture")
@@ -68,16 +65,17 @@ func _capture() -> void:
 			await process_frame
 		travel_ok = str(game_state.data.location) == "luoyang"
 
-	# The quest journal's chapter-text ladder must still read this fresh save
-	# as being in the Blackreed investigation, not skip ahead to "Luoyang
-	# storyline" just because the map itself is now open early.
+	# The journal lists optional stories; traveling to Luoyang must not start
+	# either its story or an automatic Blackreed commission.
 	main_scene.screen = "quests"
 	main_scene._rebuild()
 	for frame in range(2):
 		await process_frame
 	var quest_labels: Array = main_scene.find_children("*", "Label", true, false)
-	var quest_text_correct := quest_labels.any(func(l): return "黑苇疑云" in str((l as Label).text))
-	var quest_text_wrong := quest_labels.any(func(l): return "洛阳风云" in str((l as Label).text))
+	var optional_stories_shown := quest_labels.any(func(l): return "黑苇疑云" in str((l as Label).text)) and quest_labels.any(func(l): return "洛阳风云" in str((l as Label).text))
+	var quests_unstarted := str(game_state.data.quest_stage) == "explore"
+	for id in ["blackreed", "luoyang", "huashan", "emei", "finale"]:
+		quests_unstarted = game_state.quest_progress(id) == "available" and quests_unstarted
 
 	# 江湖纪事 (0.100.0) moved from the map's side panel into the quest
 	# journal screen, still collapsed by default.
@@ -97,8 +95,8 @@ func _capture() -> void:
 			await process_frame
 		chronicle_expands = chronicle_toggle.text.begins_with("▾") and chronicle_label.visible
 
-	var valid := luoyang_shown and huashan_shown and emei_shown and huashan_button_ok and emei_button_ok and luoyang_button.size() == 1 and travel_ok and quest_text_correct and not quest_text_wrong
+	var valid := luoyang_shown and huashan_shown and emei_shown and huashan_button_ok and emei_button_ok and luoyang_button.size() == 1 and travel_ok and optional_stories_shown and quests_unstarted
 	valid = valid and no_current_location_title and no_objective_text and no_side_buttons and enter_via_marker_ok and chronicle_starts_collapsed and chronicle_expands
 	if not valid:
-		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s quest_text_correct=%s quest_text_wrong(should be false)=%s no_current_location_title=%s no_objective_text=%s no_side_buttons=%s enter_via_marker_ok=%s chronicle_starts_collapsed=%s chronicle_expands=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, quest_text_correct, quest_text_wrong, no_current_location_title, no_objective_text, no_side_buttons, enter_via_marker_ok, chronicle_starts_collapsed, chronicle_expands])
+		push_error("Map unlock regression: luoyang_shown=%s huashan_shown=%s emei_shown=%s huashan_button_ok=%s emei_button_ok=%s travel_ok=%s optional_stories_shown=%s quests_unstarted=%s no_current_location_title=%s no_objective_text=%s no_side_buttons=%s enter_via_marker_ok=%s chronicle_starts_collapsed=%s chronicle_expands=%s" % [luoyang_shown, huashan_shown, emei_shown, huashan_button_ok, emei_button_ok, travel_ok, optional_stories_shown, quests_unstarted, no_current_location_title, no_objective_text, no_side_buttons, enter_via_marker_ok, chronicle_starts_collapsed, chronicle_expands])
 	quit(0 if valid else 22)

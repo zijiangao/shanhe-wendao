@@ -7,7 +7,6 @@ extends Control
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 const SECT_RULES := preload("res://scripts/progression/sect_building_rules.gd")
 const ATLAS_PATH := "res://assets/art/sect/buildings-atlas.png"
-const PORTRAIT_PATH := "res://assets/art/portrait-gu-changfeng.png"
 const BUILDING_REGIONS := [
 	Rect2(0, 0, 507, 447), Rect2(501, 0, 344, 443), Rect2(846, 0, 408, 443),
 	Rect2(0, 450, 442, 390), Rect2(438, 450, 414, 400), Rect2(852, 450, 402, 400),
@@ -76,7 +75,6 @@ func setup(background: Texture2D, state: Dictionary, objective: String, actions:
 		if not _actions.has(str(slot.id)) and str(slot.id) != "herb_garden":
 			continue
 		_add_building(slot)
-	_add_master()
 	_footer = ColorRect.new()
 	_footer.name = "EstateFooter"
 	_footer.color = Color("#0b1b16db")
@@ -163,7 +161,7 @@ func _add_building(slot: Dictionary) -> void:
 	title.name = "BuildingName"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	plaque.add_child(title)
-	var detail := _building_detail(id, level, action)
+	var detail := _building_detail(id, level)
 	var status := _label(detail, 13, GOLD if level > 0 else Color("#c3c9b6"))
 	status.name = "BuildingStatus"
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -172,32 +170,6 @@ func _add_building(slot: Dictionary) -> void:
 		button.tooltip_text += "\n" + ("空地待开垦，前往营造亭修建药圃。" if is_empty_plot else SECT_RULES.effect_text(_state, building_id))
 		if level == 0 and not is_empty_plot:
 			button.tooltip_text += "；原有功能可照常使用。"
-
-func _add_master() -> void:
-	if not _actions.has("master"):
-		return
-	var button := _hotspot("SectMaster", _actions.master)
-	button.set_meta("ground", Vector2(860, 475))
-	button.set_meta("kind", "master")
-	var portrait := TextureRect.new()
-	portrait.name = "MasterPortrait"
-	portrait.texture = load(PORTRAIT_PATH) if ResourceLoader.exists(PORTRAIT_PATH) else null
-	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(portrait)
-	var name_label := _label("顾长风", 20, Color("#fff0cf"))
-	name_label.name = "MasterName"
-	button.add_child(name_label)
-	var role := _label("掌门 · 拜见师父", 13, GOLD)
-	role.name = "MasterRole"
-	button.add_child(role)
-	var backing := Panel.new()
-	backing.name = "MasterBacking"
-	backing.add_theme_stylebox_override("panel", _flat_style(Color("#13231dbc"), Color("#dfbf7466"), 1))
-	backing.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(backing)
-	button.move_child(backing, 0)
 
 func _add_utility(id: String, caption: String, tile_index: int, column: int) -> void:
 	if not _actions.has(id):
@@ -279,19 +251,6 @@ func _layout_estate() -> void:
 			continue
 		var source_ground := Vector2(button.get_meta("ground"))
 		var ground: Vector2 = art_origin + source_ground * art_scale
-		if kind == "master":
-			var card_size := Vector2(208, 74)
-			button.size = card_size
-			button.position = ground - card_size * 0.5
-			button.get_node("MasterBacking").position = Vector2(0, 4)
-			button.get_node("MasterBacking").size = Vector2(card_size.x, card_size.y - 8)
-			button.get_node("MasterPortrait").position = Vector2(5, 4)
-			button.get_node("MasterPortrait").size = Vector2(62, card_size.y - 8)
-			button.get_node("MasterName").position = Vector2(75, 9)
-			button.get_node("MasterName").size = Vector2(128, 28)
-			button.get_node("MasterRole").position = Vector2(75, 42)
-			button.get_node("MasterRole").size = Vector2(128, 22)
-			continue
 		var building_image: TextureRect = button.get_node("BuildingImage")
 		var level := int(button.get_meta("building_level", -1))
 		var image_size := building_image.texture.get_size() if building_image.texture != null else Vector2.ONE
@@ -337,7 +296,7 @@ func _layout_estate() -> void:
 	_footer_note.size = Vector2(layout_width * 0.42, 28)
 	_footer_note.visible = layout_width >= 1000.0
 
-func _building_detail(id: String, level: int, action: Dictionary) -> String:
+func _building_detail(id: String, level: int) -> String:
 	if id == "herb_garden" and level == 0:
 		return "空地 · 待开垦"
 	if level == 0:
@@ -345,7 +304,7 @@ func _building_detail(id: String, level: int, action: Dictionary) -> String:
 	if level > 0:
 		return "%d级 · %s" % [level, ["", "初成", "兴盛", "完备"][level]]
 	match id:
-		"master": return "主线 · 拜见师父" if "主线" in str(action.text) else "拜见师父"
+		"master": return "拜见师父 · 委托"
 		"workshop": return "丹药炼制"
 		"gathering": return "采药 · 挖矿"
 		"qingyun_tavern": return "招募弟子"

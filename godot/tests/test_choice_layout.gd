@@ -18,8 +18,10 @@ func _run() -> void:
 	for scale in [1.0, 1.15, 1.3]:
 		settings.data.ui_scale = scale
 		settings.apply_settings()
-		for stage in ["meet_master", "chapter_complete"]:
-			game.data.quest_stage = stage
+		for stage in ["available", "chapter_complete"]:
+			game.new_game()
+			game.data.tutorial.location = true
+			assert(game.set_quest_progress("blackreed", stage))
 			game.data.silver = 10000
 			game.data.materials = {"herbs": 100, "ore": 100}
 			main._show_sect_building()
@@ -29,7 +31,7 @@ func _run() -> void:
 			var buttons: Array = view.find_children("*", "Button", true, false)
 			if buttons.size() == 5:
 				for index in range(4):
-					case_valid = buttons[index].disabled == (stage == "meet_master") and case_valid
+					case_valid = not buttons[index].disabled and case_valid
 				buttons[-1].pressed.emit()
 				case_valid = main.screen == "location" and case_valid
 			await _settle()

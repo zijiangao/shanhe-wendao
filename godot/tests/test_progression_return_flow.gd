@@ -10,7 +10,7 @@ func _run() -> void:
 	var state := root.get_node("GameState")
 	state.new_game()
 	assert(main._screen_after_load() == "map")
-	state.data.quest_stage = "final_choice"
+	assert(state.set_quest_progress("finale", "final_choice"))
 	assert(main._screen_after_load() == "final_choice", "Loading must restore the unresolved finale choice.")
 	state.data.pending_reward = {"battle_id": "wuku_finale"}
 	assert(main._screen_after_load() == "victory", "Unclaimed victory rewards precede the finale choice.")

@@ -1,0 +1,694 @@
+{
+  "version": "0.171.0",
+  "date": "2026-10-13",
+  "starting_commit": "6c0d0aa",
+  "source_main_sha256": "F40A4FDDA73EBB6D8AC85B0533118F4D1A21C26D08B29463476111C0481584F0",
+  "regression_count": 25,
+  "regression_passed": 25,
+  "regression_results": [
+    {
+      "name": "test_quest_rules",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.22,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_game_state",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.18,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_sect_building_rules",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.08,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_steam_service",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.09,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_onboarding_spec",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.1,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_tutorial_rules",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.08,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_free_exploration",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 9.06,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_quest_view",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 4.62,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_map_view",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 4.22,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_sect_visual_flow",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 10.1,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_choice_layout",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 7.46,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_progression_return_flow",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 4.56,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_full_journey",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 19.38,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_prepared_journey",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 44.15,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_sect_journey",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 14.64,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_save_manager",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.21,
+      "expected_save_diagnostics": 3,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_companion_save_validation",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.09,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_battle_save_validation",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.2,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_management_flow",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 4.84,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_dialogue_portraits",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 3.59,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_qingyun_tavern_view",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 4.61,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_character_view",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 4.41,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_companion_rules",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 1.08,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_battle_quit_flow",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 4.62,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    },
+    {
+      "name": "test_training_keyboard_input",
+      "exit_code": 0,
+      "timeout": false,
+      "elapsed_seconds": 9.13,
+      "expected_save_diagnostics": 0,
+      "diagnostic_errors": 0,
+      "passed": true
+    }
+  ],
+  "initial_regressions": {
+    "version": "0.171.0",
+    "phase": "Tests",
+    "count": 23,
+    "passed": 22,
+    "source_main_sha256": "1D517A9636B76C32513A389EDC2B9A4375A057CE2C8FC86E2E3C45D1BFC51297",
+    "results": [
+      {
+        "name": "test_quest_rules",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.22,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_game_state",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.18,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_sect_building_rules",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.08,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_steam_service",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.09,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_onboarding_spec",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.1,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_tutorial_rules",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.08,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_free_exploration",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 9.33,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_quest_view",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.62,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_map_view",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.22,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_sect_visual_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 9.76,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_choice_layout",
+        "exit_code": 25,
+        "timeout": false,
+        "elapsed_seconds": 7.43,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 9,
+        "passed": false
+      },
+      {
+        "name": "test_progression_return_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.56,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_full_journey",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 19.38,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_prepared_journey",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 44.15,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_sect_journey",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 14.64,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_save_manager",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.21,
+        "expected_save_diagnostics": 3,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_companion_save_validation",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.09,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_battle_save_validation",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.2,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_management_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.52,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_dialogue_portraits",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 3.59,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_qingyun_tavern_view",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.61,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_character_view",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.41,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_companion_rules",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 1.08,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      }
+    ]
+  },
+  "final_ui_retests": {
+    "count": 4,
+    "passed": 4,
+    "source_main_sha256": "E1D2AD376900A3BF8317CBB33861CDE1D043749470911A572A35A615AE338835",
+    "results": [
+      {
+        "name": "test_choice_layout",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 7.46,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_management_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.84,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_free_exploration",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 9.06,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_sect_visual_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 10.1,
+        "diagnostic_errors": 0,
+        "passed": true
+      }
+    ]
+  },
+  "additional_regressions": {
+    "version": "0.171.0",
+    "phase": "Retest",
+    "count": 2,
+    "passed": 2,
+    "source_main_sha256": "E1D2AD376900A3BF8317CBB33861CDE1D043749470911A572A35A615AE338835",
+    "results": [
+      {
+        "name": "test_battle_quit_flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.62,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "test_training_keyboard_input",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 9.13,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      }
+    ]
+  },
+  "sect_render": {
+    "version": "0.171.0",
+    "count": 2,
+    "passed": 2,
+    "source_main_sha256": "E1D2AD376900A3BF8317CBB33861CDE1D043749470911A572A35A615AE338835",
+    "source_sect_sha256": "30066FDDE87DD986BC352AC4334E5CADE5531B3FA2D01F7049D7F7075B1E5E3A",
+    "results": [
+      {
+        "name": "headless",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 10.92,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "render",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 22.58,
+        "diagnostic_errors": 0,
+        "passed": true
+      }
+    ]
+  },
+  "export": {
+    "version": "0.171.0",
+    "phase": "ExportFinal",
+    "count": 2,
+    "passed": 2,
+    "source_main_sha256": "F40A4FDDA73EBB6D8AC85B0533118F4D1A21C26D08B29463476111C0481584F0",
+    "results": [
+      {
+        "name": "import",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 22.97,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "full-export",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 6.41,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      }
+    ]
+  },
+  "release": {
+    "version": "0.171.0",
+    "phase": "ReleaseFinal",
+    "count": 7,
+    "passed": 7,
+    "source_main_sha256": "F40A4FDDA73EBB6D8AC85B0533118F4D1A21C26D08B29463476111C0481584F0",
+    "results": [
+      {
+        "name": "full-build",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 13.21,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "release-credits",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 3.47,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "steam-data",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.1,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "onboarding-flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.19,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "crafting-flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.14,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "training-flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.09,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "pause-flow",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 4.99,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      }
+    ]
+  },
+  "package": {
+    "version": "0.171.0",
+    "phase": "PackageFinal",
+    "count": 2,
+    "passed": 2,
+    "source_main_sha256": "F40A4FDDA73EBB6D8AC85B0533118F4D1A21C26D08B29463476111C0481584F0",
+    "results": [
+      {
+        "name": "visuals",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 7.25,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      },
+      {
+        "name": "render",
+        "exit_code": 0,
+        "timeout": false,
+        "elapsed_seconds": 20.49,
+        "expected_save_diagnostics": 0,
+        "diagnostic_errors": 0,
+        "passed": true
+      }
+    ]
+  },
+  "demo_files_unchanged": true,
+  "demo_preset_unchanged": true,
+  "source_hashes": {
+    "godot/autoload/game_state.gd": "0CF52EE60EA2DB0A6135D30B04C83EC30F9574C7CF4E854B28713D4546B48889",
+    "godot/autoload/steam_service.gd": "2E495CB5F8A68B48DC61DC288D9A94C68E5C70542F6CDEEB0405D522C736B6C0",
+    "godot/BUILDING.md": "58964088CF7C5F131F5134FB60F50A112517EDF440D4ED5B822269E24405FD8C",
+    "godot/data/steam_achievements.json": "D1FCCF57A8B15FC25490DFC97852EE2E891865ABC02E703B6F3DC71FF7D8D46B",
+    "godot/data/story_content.json": "7397A3590CFD56EFBA39CB141279AF4B39272685D21307C0337A88BBCC4CE5B0",
+    "godot/export_presets.cfg": "BCE3F12B3FC67E314DFE099BC0D0F084365C090C64907A387D97351CBD5DFBE7",
+    "godot/main.gd": "F40A4FDDA73EBB6D8AC85B0533118F4D1A21C26D08B29463476111C0481584F0",
+    "godot/scripts/progression/quest_rules.gd": "2D3067B52C161914815CB35C866C2C71A2C4FEE0189BC8BAEEC2B5353D4631D3",
+    "godot/scripts/progression/quest_rules.gd.uid": "21BB782DAB87089DAD731E996F13A456F98E3EC84AD3453364B4F076197F8A38",
+    "godot/scripts/progression/sect_building_rules.gd": "7CB47053EB7F28EAE66725241F5F800810905F6C0FE5365254D09CECCC2B946A",
+    "godot/scripts/release/onboarding_spec.gd": "6FE9191BE6C6D262F9792F3EA0B2356AB8092EB0D6CBFAF0EC0A1207CDC2E465",
+    "godot/scripts/ui/tutorial_rules.gd": "147DB92A6A868EB2C2E03C821382B680B06AA3DA640C67AEF5D591C2EA4E9A69",
+    "godot/scripts/world/sect_view.gd": "30066FDDE87DD986BC352AC4334E5CADE5531B3FA2D01F7049D7F7075B1E5E3A",
+    "godot/tests/test_choice_layout.gd": "1B641A2AA15B73968F1B3A4570A16BFE127A91C08EF3651002D6CE0390152F21",
+    "godot/tests/test_free_exploration.gd": "997CDF0557DC69812AEB879D3DDEBA8FB37A86F5A4465B96FC7F1EBB07B1B4F3",
+    "godot/tests/test_free_exploration.gd.uid": "7F6C167217D1636A0AAD69D2C8521F00B1C99605AF17774ECD8D032AE25D5077",
+    "godot/tests/test_full_journey.gd": "65CB838AFEE6286CB73FBDE20C4B1E14AF6B4D4C562DB074C2C26D81D77175DB",
+    "godot/tests/test_map_view.gd": "FF0358CB1D61AA0CC60E72BA9064F09CBB6B0199F46727E2844C95BF3C806CF8",
+    "godot/tests/test_onboarding_spec.gd": "2501298DB900370E4148304FAF74D089CCC7DF278531B50D3C3BB4B162E23CDF",
+    "godot/tests/test_progression_return_flow.gd": "5A62224D0587FFB6AC10CB8D72FD797751A0087CF73AB0E81B37A946F6393018",
+    "godot/tests/test_quest_rules.gd": "75738CEE1819C92E0E2C38AE0DEC51DDC0827156CE5F3D25A8456F721D517898",
+    "godot/tests/test_quest_rules.gd.uid": "2A29E75820FED5DC68F807EC23BBF63F2455FD28953B00C3581040D19176E4F4",
+    "godot/tests/test_sect_building_rules.gd": "E5DC6825BC4D48753DD9ABF7871108C44F9F1508ACFF5C48BDE1F1737D550CEB",
+    "godot/tests/test_sect_journey.gd": "42716690915EBF8D84A05F01D7B37D7768B6EF239FDA16D63EB003F9D3EE4378",
+    "godot/tests/test_sect_visual_flow.gd": "81619B86A01C43B6C774E5D75999D65B3DDBEA82938C618F8EEDFE56C8166C71",
+    "godot/tests/test_steam_service.gd": "A916D7E9FCAB6C17C6CCD85CEC1CA43F719B11AE63821C2F23E6CEB85ED1C03D"
+  }
+}

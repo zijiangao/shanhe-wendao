@@ -64,6 +64,9 @@ func action(id: String) -> void:
 			available = true
 	assert(available, "Journey attempted unavailable location action: " + id)
 	main._location_action_requested(id)
+	if id == "master":
+		assert(main.screen == "choice" and main.choice_event == "sect_hall", "The master must be visited inside the hall.")
+		main._resolve_choice("talk_master")
 	dialogue()
 
 func travel(place: String) -> void:

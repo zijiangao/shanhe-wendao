@@ -44,7 +44,7 @@ func _run() -> void:
 		purchase_spend = 0
 		manual_savings = 0
 		ore_savings = 0
-		_rejected_upgrade("training_ground", "new_game_chapter_lock")
+		_rejected_upgrade("training_ground", "new_game_missing_materials")
 		_rejected_upgrade("unknown_building", "unknown_building")
 		var completed := await _sect_journey()
 		summaries.append({"run": current_run, "completed": completed, "week": state.data.week, "silver": state.data.silver, "xp": state.data.xp, "materials": state.data.materials.duplicate(true), "buildings": state.data.sect.buildings.duplicate(true), "upgrade_spend": upgrade_spend.duplicate(true), "purchase_spend": purchase_spend, "manual_savings": manual_savings, "ore_savings": ore_savings, "garden_harvest": garden_harvest, "earning_weeks": earning_weeks, "ending": state.data.ending.id if completed else ""})
@@ -68,7 +68,7 @@ func _sect_journey() -> bool:
 	main._claim_battle_reward("temper")
 	travel("qingyun")
 	action("master")
-	_check(str(state.data.quest_stage) == "chapter_complete", "First tier must be unlocked by the actual chapter completion.")
+	_check(state.quest_progress("blackreed") == "chapter_complete", "The voluntarily followed Blackreed quest must complete through the actual master's report.")
 	_finish_week()
 	if plan != "none":
 		_rejected_upgrade("library", "unaffordable_materials")
@@ -88,7 +88,7 @@ func _sect_journey() -> bool:
 	main._confront_li_wujiu()
 	dialogue()
 	main._resolve_choice("public")
-	_check(str(state.data.quest_stage) == "chapter2_complete", "Second-tier unlock must follow the actual palace resolution.")
+	_check(state.quest_progress("luoyang") == "chapter2_complete", "The voluntarily followed Luoyang quest must complete through the actual palace resolution.")
 	travel("qingyun")
 	await _tier(2)
 	await _effect_weeks(2)
@@ -184,7 +184,7 @@ func _tier(tier: int) -> void:
 	await _ensure_supply(needed)
 	if tier == 3:
 		deadline_checkpoint = state.data.duplicate(true)
-	# Wrong location and chapter locks are tested with enough real resources.
+	# Wrong location is tested with enough real resources.
 	travel("luoyang")
 	_rejected_upgrade("training_ground", "wrong_location")
 	travel("qingyun")
@@ -213,7 +213,7 @@ func _tier(tier: int) -> void:
 	if tier < 3:
 		var next: Dictionary = SECT.BUILDINGS.training_ground.costs[tier + 1]
 		await _ensure_supply(next)
-		_rejected_upgrade("training_ground", "next_chapter_lock")
+		_check(SECT.can_upgrade(state.data, "training_ground"), "The next construction tier must remain available without a chapter prerequisite.")
 	_write_results()
 
 func _ensure_supply(needed: Dictionary) -> void:

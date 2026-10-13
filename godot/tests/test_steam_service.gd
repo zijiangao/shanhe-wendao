@@ -2,6 +2,7 @@ extends SceneTree
 
 const LOCAL_BACKEND := preload("res://scripts/steam/local_steam_backend.gd")
 const LIVE_BACKEND := preload("res://scripts/steam/godot_steam_backend.gd")
+const QUEST_RULES := preload("res://scripts/progression/quest_rules.gd")
 const TEST_PATH := "user://codex_steam_service_test.cfg"
 
 class FakeSteamApi extends RefCounted:
@@ -78,6 +79,37 @@ func _initialize() -> void:
 	assert(service.progress_text("ACH_HERBARIUM_COMPLETE", partial_state) == "药谱 2/4", "Herbarium progress should count unique discoveries.")
 	assert(service.progress_text("ACH_MINERALOGY_COMPLETE", partial_state) == "矿谱 3/4", "Mineralogy progress should count unique discoveries.")
 	assert(service.progress_text("ACH_FIRST_STEPS", partial_state).is_empty(), "Binary achievements should not show misleading numeric progress.")
+
+	var exploring := {"quest_stage": "explore", "quest_states": QUEST_RULES.DEFAULT_STAGES.duplicate(true)}
+	service.evaluate_state(exploring)
+	assert(service.unlocked_count() == 0, "Opening free exploration must not grant quest achievements.")
+	exploring.quest_stage = "meet_master"
+	service.evaluate_state(exploring)
+	assert(not service.is_unlocked("ACH_FIRST_STEPS"), "Meeting the master without accepting a commission must not grant First Steps.")
+	for region_id in ["huashan", "emei"]:
+		var regional_state := {"quest_stage": "explore", "quest_states": QUEST_RULES.DEFAULT_STAGES.duplicate(true)}
+		var accepted_stage := "huashan_meet_companion" if region_id == "huashan" else "emei_meet_su"
+		assert(QUEST_RULES.set_stage(regional_state, str(region_id), accepted_stage))
+		service.evaluate_state(regional_state)
+		assert(service.is_unlocked("ACH_FIRST_STEPS"), "Accepting either Huashan or Emei first must grant First Steps.")
+		assert(not service.is_unlocked("ACH_PALACE_TRUTH"), "An independent regional quest must not imply the Luoyang mystery was solved.")
+		assert(not service.is_unlocked("ACH_EMEI_GUEST") and not service.is_unlocked("ACH_WUKU_VICTORY"), "Accepting a quest must not grant its later completion achievements.")
+		backend.reset_for_tests()
+	for emei_stage in ["emei_trial", "emei_complete"]:
+		var emei_state := {"quest_stage": "explore", "quest_states": QUEST_RULES.DEFAULT_STAGES.duplicate(true)}
+		assert(QUEST_RULES.set_stage(emei_state, "emei", str(emei_stage)))
+		service.evaluate_state(emei_state)
+		assert(service.is_unlocked("ACH_EMEI_GUEST") and not service.is_unlocked("ACH_PALACE_TRUTH"), "Independent Emei progress must retain its own achievement without implying Luoyang completion.")
+		backend.reset_for_tests()
+	var palace_complete := {"quest_stage": "explore", "quest_states": QUEST_RULES.DEFAULT_STAGES.duplicate(true)}
+	assert(QUEST_RULES.set_stage(palace_complete, "luoyang", "chapter2_complete"))
+	assert(QUEST_RULES.set_stage(palace_complete, "huashan", "huashan_meet_companion"))
+	service.evaluate_state(palace_complete)
+	assert(service.is_unlocked("ACH_PALACE_TRUTH"), "Luoyang completion must stay eligible after accepting another region's quest.")
+	backend.reset_for_tests()
+	service.evaluate_state({"quest_stage": "explore", "flags": ["palace_truth"]})
+	assert(service.is_unlocked("ACH_PALACE_TRUTH"), "An explicit saved Luoyang completion flag must retain its achievement.")
+	backend.reset_for_tests()
 
 	var state := {
 		"quest_stage": "game_complete",
