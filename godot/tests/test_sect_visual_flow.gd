@@ -119,11 +119,11 @@ func _run() -> void:
 	var has_master_portrait := false
 	for option in main.choice_options:
 		if str(option[2]) == "talk_master":
-			has_master_portrait = option.size() == 5 and option[4] == PORTRAITS.for_speaker("顾长风")
+			has_master_portrait = option.size() >= 5 and option[4] == PORTRAITS.for_speaker("顾长风")
 	_check(has_master_portrait, "The hall shows Gu Changfeng's portrait on the voluntary conversation option")
 	var hall_master_button: Button
 	for button in main.content.find_children("*", "Button", true, false):
-		if button.icon == PORTRAITS.for_speaker("顾长风"):
+		if button.has_meta("card_icon") and button.get_meta("card_icon") == PORTRAITS.for_speaker("顾长风"):
 			hall_master_button = button
 	_check(hall_master_button != null and not hall_master_button.disabled, "The master is visibly available as a conversation inside the hall")
 	if capture:
@@ -151,7 +151,7 @@ func _run() -> void:
 		var id := str(option[2]).trim_prefix("recruit_")
 		if id in ["zhou_mubai", "liu_ruyan"]:
 			var title := "周慕白" if id == "zhou_mubai" else "柳如烟"
-			_check(option.size() == 5 and option[4] == PORTRAITS.for_speaker(title), "Recruitment card has %s's own portrait" % title)
+			_check(option.size() >= 5 and option[4] == PORTRAITS.for_speaker(title), "Recruitment card has %s's own portrait" % title)
 	if capture:
 		await _snapshot("disciples-inn.png")
 	main._resolve_choice("recruit_zhou_mubai")

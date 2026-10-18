@@ -1,5 +1,24 @@
 # Building 山河问道
 
+## 0.174.0 — card grids for every sect interior
+
+The hall, construction overview, alchemy workshop, forge, tavern, library,
+and back-mountain gathering now share the fixed card layout introduced for
+the training ground. Each
+screen has a stable title, optional category tabs, a compact two-column card
+grid, and a fixed return control. Long descriptions move into tooltips;
+affordability and state become badges. Lists paginate at six cards instead of
+using a scroll container, so no scroll is needed for the current sect content.
+Long ChoiceView lists that remain (for example the Luoyang market) use
+`DragScrollContainer`: a left-button drag scrolls the list without firing the
+card under the pointer, while a stationary click still activates it. Library
+cards are read-only and show the learned art's rank, equipped state, and
+description.
+
+The menu and Windows Desktop export preset are both 0.174.0. Only the full
+game is exported and verified; the demo preset and build remain untouched.
+See `../qa/2026-10-18-building-card-layout/REPORT.md` for validation and images.
+
 ## 0.173.0 — category-wide weapon specialty damage
 
 Weapon drill levels now increase every learned art in the same category

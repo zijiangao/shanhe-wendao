@@ -48,6 +48,7 @@ const QUEST_RULES := preload("res://scripts/progression/quest_rules.gd")
 const LIBRARY_CATEGORIES := [["fist", "拳掌"], ["sword", "剑法"], ["blade", "刀法"], ["staff", "枪棍"], ["internal", "内功"], ["lightness", "轻功"]]
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
 const TRAINING_SELECTION_VIEW := preload("res://scripts/ui/training_selection_view.gd")
+const BUILDING_SELECTION_VIEW := preload("res://scripts/ui/building_selection_view.gd")
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 const CHARACTER_PORTRAITS := preload("res://scripts/ui/character_portraits.gd")
 const CREDITS_PATH := "res://data/credits.json"
@@ -704,7 +705,7 @@ func _show_menu() -> void:
 	panel.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.173.0 · 开局建设，自由探索江湖"
+	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.174.0 · 开局建设，自由探索江湖"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	var credits_button := _action_button("制作名单与版权", Color("#485e54"))
@@ -1172,7 +1173,7 @@ func _location_action_requested(action_id: String) -> void:
 				return
 			choice_event = "workshop"
 			choice_prompt = "炼药坊 · %s" % CRAFTING_RULES.inventory_text_alchemy(GameState.data)
-			choice_options = CRAFTING_RULES.options_alchemy(GameState.data)
+			choice_options = _with_item_icons(CRAFTING_RULES.options_alchemy(GameState.data))
 			screen = "choice"
 			_rebuild()
 		"forge":
@@ -1181,7 +1182,7 @@ func _location_action_requested(action_id: String) -> void:
 				return
 			choice_event = "forge"
 			choice_prompt = "锻造坊 · %s" % CRAFTING_RULES.inventory_text_forge(GameState.data)
-			choice_options = CRAFTING_RULES.options_forge(GameState.data)
+			choice_options = _with_item_icons(CRAFTING_RULES.options_forge(GameState.data))
 			screen = "choice"
 			_rebuild()
 		"fisher": _start_dialogue("clue_fisher", ONBOARDING_SPEC.dialogue_for("clue_fisher"))
@@ -1368,29 +1369,97 @@ func _show_choice() -> void:
 		selection.browsing_changed.connect(_training_browsing_changed)
 		selection.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_event, GameState.data, training_selection_category, training_selection_page)
 		return
+	if choice_event in ["sect_hall", "sect_building", "workshop", "forge", "qingyun_tavern", "gathering"]:
+		choice_options = _prepare_building_cards(choice_options, choice_event)
+		var cards: Control = BUILDING_SELECTION_VIEW.new()
+		content.add_child(cards)
+		cards.option_selected.connect(_resolve_choice)
+		cards.setup(_location_texture(str(GameState.data.location)), _choice_screen_title(), choice_prompt, choice_options, choice_event, GameState.data)
+		return
 	var view: ChoiceView = CHOICE_VIEW.instantiate()
 	content.add_child(view)
 	var choice_title := "抉 择"
-	if choice_event == "workshop":
-		choice_title = "炼 药 坊"
-	elif choice_event == "forge":
-		choice_title = "锻 造 坊"
-	elif choice_event == "training":
-		choice_title = "演 武 场"
-	elif choice_event == "gathering":
+	if choice_event == "gathering":
 		choice_title = "青云后山"
-	elif choice_event == "qingyun_tavern":
-		choice_title = "青云客栈 · 门下弟子"
-	elif choice_event == "sect_building":
-		choice_title = "青云门 · 营 造 图" if sect_building_selection.is_empty() else str(SECT_BUILDING_RULES.BUILDINGS[sect_building_selection].title)
-	elif choice_event == "sect_hall":
-		choice_title = "青云门 · 正 殿"
 	if choice_event.begins_with("market"):
 		choice_title = "西 市 坊 市"
 	view.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_title)
 	view.option_selected.connect(_resolve_choice)
 
+func _choice_screen_title() -> String:
+	match choice_event:
+		"workshop": return "炼 药 坊"
+		"forge": return "锻 造 坊"
+		"gathering": return "青 云 后 山"
+		"sect_building": return "青云门 · 营 造 图" if sect_building_selection.is_empty() else str(SECT_BUILDING_RULES.BUILDINGS[sect_building_selection].title)
+		"sect_hall": return "青云门 · 正 殿"
+		"qingyun_tavern": return "青云客栈 · 门下弟子"
+	return "抉 择"
+
+func _prepare_building_cards(options: Array, event: String) -> Array:
+	var result := []
+	for option in options:
+		var row: Array = option.duplicate(true)
+		if row.size() >= 3 and str(row[2]) == "leave":
+			result.append(row)
+			continue
+		while row.size() < 4:
+			row.append(false)
+		var disabled := bool(row[3])
+		var metadata := _existing_card_metadata(row)
+		metadata["tooltip"] = str(row[1])
+		metadata["badge"] = _building_badge(event, row, disabled)
+		metadata["accent"] = _building_accent(event)
+		result.append(_attach_card_metadata(row, metadata))
+	return result
+
+func _existing_card_metadata(row: Array) -> Dictionary:
+	for index in [5, 4]:
+		if row.size() > index and row[index] is Dictionary:
+			return Dictionary(row[index]).duplicate(true)
+	return {}
+
+func _attach_card_metadata(row: Array, metadata: Dictionary) -> Array:
+	if row.size() > 5 and row[5] is Dictionary:
+		row[5] = metadata
+		return row
+	while row.size() < 5:
+		row.append(null)
+	row.append(metadata)
+	return row
+
+func _building_badge(event: String, row: Array, disabled: bool) -> String:
+	var title := str(row[0])
+	if event in ["workshop", "forge"]:
+		return "材料不足" if disabled else "可制作"
+	if event == "gathering":
+		return "本周专精" if str(row[2]) == TRAINING_RULES.weekly_focus(int(GameState.data.week)) else "采集"
+	if event == "sect_building":
+		if title.contains("Lv.%d" % SECT_BUILDING_RULES.MAX_LEVEL) or str(row[1]).contains("已达最高"):
+			return "已满级"
+		return "材料不足" if disabled else "可升级"
+	if event == "sect_hall":
+		return "可接取" if "接取" in title else "对话"
+	if event == "qingyun_tavern":
+		if title.begins_with("已招募"):
+			return "随行中" if "当前随行" in title else "已加入"
+		if title.begins_with("独自切磋"):
+			return "不带随行"
+		return "银两不足" if disabled else "可招募"
+	return ""
+
+func _building_accent(event: String) -> Color:
+	match event:
+		"workshop": return Color("#6f9c5b")
+		"forge": return Color("#b58a5a")
+		"qingyun_tavern": return Color("#7ba9a1")
+	return Color("#dfbf74")
+
 func _resolve_choice(route: String) -> void:
+	if choice_event == "library":
+		screen = "location"
+		_rebuild()
+		return
 	if choice_event == "sect_hall":
 		if route == "talk_master":
 			_qingyun_master_event()
@@ -2017,60 +2086,43 @@ func _show_quests() -> void:
 
 ## 藏经阁 (0.103.0): left/right category browser -- 拳掌/剑法/刀法/枪棍/内功/
 ## 轻功 buttons on the left select which category's learned wuxue shows on
-## the right. Replaces the old single long grouped list.
+## the right. 0.174.0 moves it onto the same fixed card grid as the sect's
+## other interiors, with category tabs and pagination instead of a scroll list.
 func _show_library() -> void:
 	_clear_content()
-	var backdrop := ColorRect.new()
-	backdrop.color = Color("#d8cfbd")
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	content.add_child(backdrop)
-	var panel := UI_THEME.framed_panel(content, Vector2(155, 28), Vector2(970, 520), UI_THEME.PARCHMENT_TINT, 14)
-	var title := Label.new()
-	title.text = "藏 经 阁"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 30)
-	title.add_theme_color_override("font_color", Color("#193128"))
-	panel.add_child(title)
-
-	var body := HBoxContainer.new()
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 20)
-	panel.add_child(body)
-
-	var left := VBoxContainer.new()
-	left.custom_minimum_size.x = 190
-	left.add_theme_constant_override("separation", 10)
-	body.add_child(left)
+	choice_event = "library"
+	choice_prompt = "已习得武学 · 悬停查看说明"
+	var rows := []
 	for pair in LIBRARY_CATEGORIES:
-		var category_id: String = pair[0]
-		var category_button := UI_THEME.action_button(str(pair[1]), Color("#8b493b") if library_category == category_id else Color("#315f4b"))
-		category_button.custom_minimum_size.y = 50
-		category_button.pressed.connect(func(): library_category = category_id; _rebuild())
-		left.add_child(category_button)
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left.add_child(spacer)
-	var leave := UI_THEME.action_button("返回", Color("#4d5550"))
-	leave.custom_minimum_size.y = 50
-	leave.pressed.connect(func(): screen = "location"; _rebuild())
-	left.add_child(leave)
+		var category_id := str(pair[0])
+		for row in WUXUE_RULES.options_library_category(GameState.data, category_id):
+			var entry: Array = row.duplicate(true)
+			var metadata := _existing_card_metadata(entry)
+			metadata["category"] = category_id
+			metadata["tooltip"] = str(entry[1])
+			metadata["accent"] = _library_accent(category_id)
+			if not metadata.has("badge"):
+				metadata["badge"] = "已习得"
+			rows.append(_attach_card_metadata(entry, metadata))
+	choice_options = rows
+	var view: Control = BUILDING_SELECTION_VIEW.new()
+	content.add_child(view)
+	view.option_selected.connect(_resolve_choice)
+	view.browsing_changed.connect(_library_browsing_changed)
+	view.setup(_location_texture(str(GameState.data.location)), "藏 经 阁", choice_prompt, rows, "library", GameState.data, LIBRARY_CATEGORIES, library_category, 0)
 
-	var right_scroll := ScrollContainer.new()
-	right_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(right_scroll)
-	var right := VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_theme_constant_override("separation", 10)
-	right_scroll.add_child(right)
-	for row in WUXUE_RULES.options_library_category(GameState.data, library_category):
-		var entry := Label.new()
-		entry.text = "%s\n%s" % [str(row[0]), str(row[1])]
-		entry.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		entry.add_theme_font_size_override("font_size", 18)
-		entry.add_theme_color_override("font_color", Color("#f4eee2"))
-		entry.add_theme_stylebox_override("normal", _box(Color("#294438")))
-		right.add_child(entry)
+func _library_browsing_changed(category: String, _page: int) -> void:
+	library_category = category
+
+func _library_accent(category_id: String) -> Color:
+	match category_id:
+		"fist": return Color("#c98a4b")
+		"sword": return Color("#7ba9a1")
+		"blade": return Color("#b56750")
+		"staff": return Color("#8a7a5c")
+		"internal": return Color("#9b7bad")
+		"lightness": return Color("#7b9bc9")
+	return Color("#dfbf74")
 
 func _show_achievements() -> void:
 	_clear_content()
@@ -2146,7 +2198,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.173.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.174.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

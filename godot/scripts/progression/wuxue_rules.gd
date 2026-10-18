@@ -183,22 +183,25 @@ static func options_library_category(state: Dictionary, category_id: String) -> 
 	if category_id == "internal":
 		var equipped_internal := str(state.get("equipped_internal", ""))
 		for id in Array(state.get("learned_internal", [])):
-			rows.append(_library_row(str(INTERNAL[id].title), internal_level(state, id), id == equipped_internal))
+			rows.append(_library_row(str(INTERNAL[id].title), internal_level(state, id), id == equipped_internal, str(INTERNAL[id].description)))
 	elif category_id == "lightness":
 		var equipped_lightness := str(state.get("equipped_lightness", ""))
 		for id in Array(state.get("learned_lightness", [])):
-			rows.append(_library_row(str(LIGHTNESS[id].title), lightness_level(state, id), id == equipped_lightness))
+			rows.append(_library_row(str(LIGHTNESS[id].title), lightness_level(state, id), id == equipped_lightness, str(LIGHTNESS[id].description)))
 	else:
 		for id in Array(state.get("learned_moves", [])):
 			if str(MOVES.get(id, {}).get("category", "")) == category_id:
-				rows.append(_library_row(str(MOVES[id].title), move_level(state, id), false))
+				rows.append(_library_row(str(MOVES[id].title), move_level(state, id), false, str(MOVES[id].description)))
 	if rows.is_empty():
-		rows.append(["尚未习得", "这一类武学尚未习得任何内容，请前往洛阳西市秘籍阁学习。", "none", true])
+		rows.append(["尚未习得", "这一类武学尚未习得任何内容，请前往洛阳西市秘籍阁学习。", "none", true, null, {"read_only": true, "badge": "未习得"}])
 	return rows
 
-static func _library_row(title: String, level: int, equipped: bool) -> Array:
+static func _library_row(title: String, level: int, equipped: bool, description: String = "") -> Array:
 	var rank := "已大成" if level >= MAX_LEVEL else "Lv.%d" % level
-	return ["%s · %s%s" % [title, rank, "（已装备）" if equipped else ""], "已习得", "none", true]
+	var badge := "已装备" if equipped else ("已大成" if level >= MAX_LEVEL else "已习得")
+	var detail := description if not description.is_empty() else "已习得"
+	return ["%s · %s%s" % [title, rank, "（已装备）" if equipped else ""], detail, "none", true, null, {"tooltip": detail, "badge": badge, "read_only": true}]
+
 
 static func options_training(state: Dictionary) -> Array:
 	var options := []

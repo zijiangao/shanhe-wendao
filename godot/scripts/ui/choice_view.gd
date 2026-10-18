@@ -2,6 +2,7 @@ class_name ChoiceView
 extends Control
 
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
+const DRAG_SCROLL := preload("res://scripts/ui/drag_scroll_container.gd")
 
 signal option_selected(id: String)
 
@@ -54,7 +55,7 @@ func setup(background: Texture2D, prompt_text: String, options: Array, title_tex
 	prompt.add_theme_font_size_override("font_size", 21)
 	prompt.add_theme_color_override("font_color", Color("#f6f0e4"))
 	panel.add_child(prompt)
-	var scroll := ScrollContainer.new()
+	var scroll := DRAG_SCROLL.new()
 	scroll.name = "ChoiceScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

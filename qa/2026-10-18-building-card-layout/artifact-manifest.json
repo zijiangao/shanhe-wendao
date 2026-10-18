@@ -1,0 +1,29 @@
+{
+    "version":  "0.174.0",
+    "file_version":  "0.174.0.0",
+    "product_version":  "0.174.0.0",
+    "source_hashes":  {
+                          "godot/main.gd":  "532AEC9DBEC817802F15B3691DCFE947EEE1349C1C9FF468B5B0CBF646FBB4CD",
+                          "godot/scripts/ui/building_selection_view.gd":  "42C9F23D846FE08CB7864F2FD0466180028EC2EF680431D042DB0F1C009EED68",
+                          "godot/scripts/ui/choice_view.gd":  "5580E9750814E6D0BF50E777B46C8BFD09D1E2CC98CE0A1BB4B1A1F6E31592FE",
+                          "godot/scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                          "godot/scripts/progression/wuxue_rules.gd":  "D62ECDE674E32B096FD510BA1E4FD7EE126127D970B06FC1F2CDB67020D71404",
+                          "godot/tests/test_building_selection_layout.gd":  "D8B2B3486127C82CED690FE178278AA501707D00B4EB7E41F69696AA9165DCD1",
+                          "godot/tests/test_drag_scroll.gd":  "611A83DB0B7D39DD17DA40B58AC4029DFD85CB2C6AF2C2E9331710E34DE0DAD2",
+                          "godot/export_presets.cfg":  "C2185E57C812F875C7D46895B9357DA500CF0642897B0AB22C7DF5882E8EE881"
+                      },
+    "artifacts":  [
+                      {
+                          "path":  "build/windows/ShanheWendao.exe",
+                          "bytes":  109268480,
+                          "sha256":  "1BAEAB04DB291FC395C26BD30F893D2361DAB29193AB01C546BB73C3EA6AEC12"
+                      },
+                      {
+                          "path":  "build/windows/ShanheWendao.pck",
+                          "bytes":  59375564,
+                          "sha256":  "4F2CD83C5415EC1F69904C6BE0639FCD7878543E7FEE4ADA3DD1F6D5E64DAE7F"
+                      }
+                  ],
+    "demo_files_unchanged":  true,
+    "demo_preset_unchanged":  true
+}

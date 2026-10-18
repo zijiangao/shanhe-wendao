@@ -27,12 +27,10 @@ func _run() -> void:
 			main._show_sect_building()
 			await _settle()
 			var view := main.content.get_child(0) as Control
-			var case_valid := await _check_options(view, main.content.get_global_rect(), 5)
-			var buttons: Array = view.find_children("*", "Button", true, false)
-			if buttons.size() == 5:
-				for index in range(4):
-					case_valid = not buttons[index].disabled and case_valid
-				buttons[-1].pressed.emit()
+			var case_valid := await _check_building_options(view, main.content.get_global_rect(), 4)
+			var building_leave := _building_leave(view)
+			if building_leave != null:
+				building_leave.pressed.emit()
 				case_valid = main.screen == "location" and case_valid
 			await _settle()
 			valid = case_valid and valid
@@ -65,6 +63,26 @@ func _run() -> void:
 		main._clear_content()
 		await _settle()
 	quit(0 if valid else 25)
+
+func _check_building_options(view: Control, area: Rect2, expected_cards: int) -> bool:
+	var cards: Array = view.find_children("*", "Button", true, false).filter(func(button: Button): return str(button.get_meta("option_id", "")) not in ["", "leave"] and not button.has_meta("category_id"))
+	var leave := _building_leave(view)
+	var panel := view.find_child("BuildingPanel", true, false) as Control
+	if cards.size() != expected_cards or leave == null or panel == null:
+		return false
+	var valid := view.get_viewport_rect().grow(1).encloses(panel.get_global_rect())
+	valid = area.grow(1).encloses(panel.get_global_rect()) and valid
+	for button in cards:
+		valid = not button.disabled and valid
+		valid = area.grow(1).encloses(button.get_global_rect()) and valid
+	valid = area.grow(1).encloses(leave.get_global_rect()) and valid
+	return valid
+
+func _building_leave(view: Control) -> Button:
+	for button in view.find_children("*", "Button", true, false):
+		if str(button.get_meta("option_id", "")) == "leave":
+			return button
+	return null
 
 func _check_options(view: Control, area: Rect2, expected_count: int) -> bool:
 	var panel := view.find_child("ChoicePanel", true, false) as Control
