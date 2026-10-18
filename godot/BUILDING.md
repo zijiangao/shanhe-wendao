@@ -13,6 +13,17 @@ The menu and Windows Desktop export preset are both 0.173.0. Only the full
 game is exported and verified; the demo preset and build remain untouched.
 See `../qa/2026-10-18-category-specialty/REPORT.md` for validation and images.
 
+## Local Windows test launches
+
+Exported EXEs are unsigned (`codesign/enable=false`), so launching them from
+Explorer triggers the SmartScreen "Windows protected your PC" prompt. For
+local playtesting, run `../play.cmd` from the repository root: it launches the
+same exported EXE through a signed Windows host, avoiding Explorer's
+ShellExecute prompt. This is only a local convenience. A self-signed
+certificate is treated like no signature by SmartScreen; public builds still
+need a trusted code-signing certificate, Microsoft Store distribution, or a
+Steam launch path.
+
 ## 0.172.0 — compact training selection without scrolling
 
 The training ground now uses a dedicated selection view. Four weapon drills

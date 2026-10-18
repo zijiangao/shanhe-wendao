@@ -22,6 +22,8 @@
 3. 打开本目录的 `project.godot`。
 4. 按 `F6` 或右上角运行按钮。
 
+导出完整版后，本地测试可以直接双击仓库根目录的 [`play.cmd`](../play.cmd)。它通过 PowerShell 直接启动导出包，避免资源管理器对未签名 EXE 弹出 SmartScreen；这不是发行方案，正式分发仍需要代码签名，或让玩家通过 Steam/Store 启动。
+
 项目使用Compatibility渲染器，目标分辨率为1280×720，方便低配置Windows电脑和后续Steam Deck测试。DEBUG构建（编辑器内运行、非Release导出）顶部会出现”开发”菜单，可直接跳转章节并热重载剧情JSON；正式Release导出通过 `OS.is_debug_build()` 判断自动隐藏该入口。
 
 ## 当前架构
