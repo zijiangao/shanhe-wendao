@@ -1,0 +1,26 @@
+{
+    "version":  "0.174.1",
+    "file_version":  "0.174.1.0",
+    "product_version":  "0.174.1.0",
+    "source_hashes":  {
+                          "godot/main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                          "godot/scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                          "godot/scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                          "godot/tests/test_training_result_layout.gd":  "00BB5145430CC769898FC3C12FB5844452D5AA03A44192D3C992DF4DE169652C",
+                          "godot/export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F"
+                      },
+    "artifacts":  [
+                      {
+                          "path":  "build/windows/ShanheWendao.exe",
+                          "bytes":  109268480,
+                          "sha256":  "AFF21DCABF02B83FB1158EBA46B5B6D406C6003C4191036A2289A1D1FBA3BAC4"
+                      },
+                      {
+                          "path":  "build/windows/ShanheWendao.pck",
+                          "bytes":  59376316,
+                          "sha256":  "979ADDBC0E7467E7DB31C18A9334FDD299EAE6B7038454DC4F1317956D82ED31"
+                      }
+                  ],
+    "demo_files_unchanged":  true,
+    "demo_preset_unchanged":  true
+}

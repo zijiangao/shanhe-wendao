@@ -1,0 +1,738 @@
+{
+    "version":  "0.174.1",
+    "date":  "2026-10-18",
+    "starting_commit":  "d2d68b3",
+    "source_hashes":  {
+                          "godot/main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                          "godot/scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                          "godot/scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                          "godot/tests/test_training_result_layout.gd":  "00BB5145430CC769898FC3C12FB5844452D5AA03A44192D3C992DF4DE169652C",
+                          "godot/export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F"
+                      },
+    "result_layout_scales":  [
+                                 1,
+                                 1.3
+                             ],
+    "result_detail_scrollable":  true,
+    "fixed_done_button":  true,
+    "test_executions":  45,
+    "distinct_test_scripts":  38,
+    "phases":  {
+                   "Import":  {
+                                  "version":  "0.174.1",
+                                  "phase":  "Import",
+                                  "count":  1,
+                                  "passed":  1,
+                                  "source_hashes":  {
+                                                        "main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                                                        "project.godot":  "69EEC27AB7B49CC279D2237C3A22982DAC56923471DC8E9685DB092C11692042",
+                                                        "export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F",
+                                                        "scripts/ui/choice_view.gd":  "5580E9750814E6D0BF50E777B46C8BFD09D1E2CC98CE0A1BB4B1A1F6E31592FE",
+                                                        "scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                                                        "scripts/ui/training_selection_view.gd":  "6D22B8E7EB3A7D4FB0F5DF2EF603FBF856887E51A7561BBBC8144D946F90AB9A",
+                                                        "scripts/ui/building_selection_view.gd":  "42C9F23D846FE08CB7864F2FD0466180028EC2EF680431D042DB0F1C009EED68",
+                                                        "scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                                                        "scripts/progression/training_minigame_rules.gd":  "D73AB9A8230AF93C9333E3EF82950FE6464668C3E607AFA1394A821D3E0C382F",
+                                                        "scripts/progression/wuxue_rules.gd":  "D62ECDE674E32B096FD510BA1E4FD7EE126127D970B06FC1F2CDB67020D71404",
+                                                        "scripts/battle/battle_engine.gd":  "D7FF5F98C78B4B76CD88B8F97C475A68210C2DFAC78AFE79AD116387BAC44586"
+                                                    },
+                                  "results":  [
+                                                  {
+                                                      "name":  "import",
+                                                      "exit_code":  0,
+                                                      "timeout":  false,
+                                                      "elapsed_seconds":  7.56,
+                                                      "expected_diagnostic_errors":  0,
+                                                      "diagnostic_errors":  0,
+                                                      "passed":  true
+                                                  }
+                                              ]
+                              },
+                   "Tests":  {
+                                 "version":  "0.174.1",
+                                 "phase":  "Tests",
+                                 "count":  20,
+                                 "passed":  20,
+                                 "source_hashes":  {
+                                                       "main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                                                       "project.godot":  "69EEC27AB7B49CC279D2237C3A22982DAC56923471DC8E9685DB092C11692042",
+                                                       "export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F",
+                                                       "scripts/ui/choice_view.gd":  "5580E9750814E6D0BF50E777B46C8BFD09D1E2CC98CE0A1BB4B1A1F6E31592FE",
+                                                       "scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                                                       "scripts/ui/training_selection_view.gd":  "6D22B8E7EB3A7D4FB0F5DF2EF603FBF856887E51A7561BBBC8144D946F90AB9A",
+                                                       "scripts/ui/building_selection_view.gd":  "42C9F23D846FE08CB7864F2FD0466180028EC2EF680431D042DB0F1C009EED68",
+                                                       "scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                                                       "scripts/progression/training_minigame_rules.gd":  "D73AB9A8230AF93C9333E3EF82950FE6464668C3E607AFA1394A821D3E0C382F",
+                                                       "scripts/progression/wuxue_rules.gd":  "D62ECDE674E32B096FD510BA1E4FD7EE126127D970B06FC1F2CDB67020D71404",
+                                                       "scripts/battle/battle_engine.gd":  "D7FF5F98C78B4B76CD88B8F97C475A68210C2DFAC78AFE79AD116387BAC44586"
+                                                   },
+                                 "results":  [
+                                                 {
+                                                     "name":  "test_training_result_layout",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  4.09,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_drag_scroll",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  0.97,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_building_selection_layout",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  4.52,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_library_view",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  2.92,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_crafting_view",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  3.39,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_qingyun_tavern_view",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  2.92,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_battle_engine",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  0.97,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_training_menu_view",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  3.01,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_training_selection_layout",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  7.64,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_training_keyboard_input",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  8.35,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_training_minigame_rules",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  1.03,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_training_event_rules",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  0.89,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_sparring_rules",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  0.88,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_qingyun_spar",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  0.88,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_character_view",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  2.83,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_settings_return_flow",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  3.02,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_choice_layout",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  4.49,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_management_flow",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  3.1,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_sect_visual_flow",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  8.37,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 },
+                                                 {
+                                                     "name":  "test_free_exploration",
+                                                     "exit_code":  0,
+                                                     "timeout":  false,
+                                                     "elapsed_seconds":  8.55,
+                                                     "expected_diagnostic_errors":  0,
+                                                     "diagnostic_errors":  0,
+                                                     "passed":  true
+                                                 }
+                                             ]
+                             },
+                   "Baseline":  {
+                                    "version":  "0.174.1",
+                                    "phase":  "Baseline",
+                                    "count":  25,
+                                    "passed":  25,
+                                    "source_hashes":  {
+                                                          "main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                                                          "project.godot":  "69EEC27AB7B49CC279D2237C3A22982DAC56923471DC8E9685DB092C11692042",
+                                                          "export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F",
+                                                          "scripts/ui/choice_view.gd":  "5580E9750814E6D0BF50E777B46C8BFD09D1E2CC98CE0A1BB4B1A1F6E31592FE",
+                                                          "scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                                                          "scripts/ui/training_selection_view.gd":  "6D22B8E7EB3A7D4FB0F5DF2EF603FBF856887E51A7561BBBC8144D946F90AB9A",
+                                                          "scripts/ui/building_selection_view.gd":  "42C9F23D846FE08CB7864F2FD0466180028EC2EF680431D042DB0F1C009EED68",
+                                                          "scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                                                          "scripts/progression/training_minigame_rules.gd":  "D73AB9A8230AF93C9333E3EF82950FE6464668C3E607AFA1394A821D3E0C382F",
+                                                          "scripts/progression/wuxue_rules.gd":  "D62ECDE674E32B096FD510BA1E4FD7EE126127D970B06FC1F2CDB67020D71404",
+                                                          "scripts/battle/battle_engine.gd":  "D7FF5F98C78B4B76CD88B8F97C475A68210C2DFAC78AFE79AD116387BAC44586"
+                                                      },
+                                    "results":  [
+                                                    {
+                                                        "name":  "test_quest_rules",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  1.12,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_game_state",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  0.97,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_sect_building_rules",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  0.88,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_steam_service",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  0.88,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_onboarding_spec",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  0.88,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_tutorial_rules",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  0.89,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_free_exploration",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  7.64,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_quest_view",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  3.81,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_map_view",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  2.83,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_sect_visual_flow",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  8.47,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_choice_layout",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  5.59,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_progression_return_flow",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  3.72,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_full_journey",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  16.83,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_prepared_journey",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  37.03,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_sect_journey",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  12.23,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_save_manager",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  1.12,
+                                                        "expected_diagnostic_errors":  3,
+                                                        "diagnostic_errors":  3,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_companion_save_validation",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  0.88,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_battle_save_validation",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  0.88,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_management_flow",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  3.11,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_dialogue_portraits",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  3.29,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_qingyun_tavern_view",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  2.92,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_character_view",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  2.86,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_companion_rules",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  0.89,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_battle_quit_flow",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  2.83,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    },
+                                                    {
+                                                        "name":  "test_training_keyboard_input",
+                                                        "exit_code":  0,
+                                                        "timeout":  false,
+                                                        "elapsed_seconds":  7.38,
+                                                        "expected_diagnostic_errors":  0,
+                                                        "diagnostic_errors":  0,
+                                                        "passed":  true
+                                                    }
+                                                ]
+                                },
+                   "Render":  {
+                                  "version":  "0.174.1",
+                                  "phase":  "Render",
+                                  "count":  4,
+                                  "passed":  4,
+                                  "source_hashes":  {
+                                                        "main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                                                        "project.godot":  "69EEC27AB7B49CC279D2237C3A22982DAC56923471DC8E9685DB092C11692042",
+                                                        "export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F",
+                                                        "scripts/ui/choice_view.gd":  "5580E9750814E6D0BF50E777B46C8BFD09D1E2CC98CE0A1BB4B1A1F6E31592FE",
+                                                        "scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                                                        "scripts/ui/training_selection_view.gd":  "6D22B8E7EB3A7D4FB0F5DF2EF603FBF856887E51A7561BBBC8144D946F90AB9A",
+                                                        "scripts/ui/building_selection_view.gd":  "42C9F23D846FE08CB7864F2FD0466180028EC2EF680431D042DB0F1C009EED68",
+                                                        "scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                                                        "scripts/progression/training_minigame_rules.gd":  "D73AB9A8230AF93C9333E3EF82950FE6464668C3E607AFA1394A821D3E0C382F",
+                                                        "scripts/progression/wuxue_rules.gd":  "D62ECDE674E32B096FD510BA1E4FD7EE126127D970B06FC1F2CDB67020D71404",
+                                                        "scripts/battle/battle_engine.gd":  "D7FF5F98C78B4B76CD88B8F97C475A68210C2DFAC78AFE79AD116387BAC44586"
+                                                    },
+                                  "results":  [
+                                                  {
+                                                      "name":  "test_training_result_layout",
+                                                      "exit_code":  0,
+                                                      "timeout":  false,
+                                                      "elapsed_seconds":  6.12,
+                                                      "expected_diagnostic_errors":  0,
+                                                      "diagnostic_errors":  0,
+                                                      "passed":  true
+                                                  },
+                                                  {
+                                                      "name":  "test_training_selection_layout",
+                                                      "exit_code":  0,
+                                                      "timeout":  false,
+                                                      "elapsed_seconds":  17.44,
+                                                      "expected_diagnostic_errors":  0,
+                                                      "diagnostic_errors":  0,
+                                                      "passed":  true
+                                                  },
+                                                  {
+                                                      "name":  "test_building_selection_layout",
+                                                      "exit_code":  0,
+                                                      "timeout":  false,
+                                                      "elapsed_seconds":  9.57,
+                                                      "expected_diagnostic_errors":  0,
+                                                      "diagnostic_errors":  0,
+                                                      "passed":  true
+                                                  },
+                                                  {
+                                                      "name":  "test_qingyun_spar_view",
+                                                      "exit_code":  0,
+                                                      "timeout":  false,
+                                                      "elapsed_seconds":  4.54,
+                                                      "expected_diagnostic_errors":  0,
+                                                      "diagnostic_errors":  0,
+                                                      "passed":  true
+                                                  }
+                                              ]
+                              },
+                   "Export":  {
+                                  "version":  "0.174.1",
+                                  "phase":  "Export",
+                                  "count":  2,
+                                  "passed":  2,
+                                  "source_hashes":  {
+                                                        "main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                                                        "project.godot":  "69EEC27AB7B49CC279D2237C3A22982DAC56923471DC8E9685DB092C11692042",
+                                                        "export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F",
+                                                        "scripts/ui/choice_view.gd":  "5580E9750814E6D0BF50E777B46C8BFD09D1E2CC98CE0A1BB4B1A1F6E31592FE",
+                                                        "scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                                                        "scripts/ui/training_selection_view.gd":  "6D22B8E7EB3A7D4FB0F5DF2EF603FBF856887E51A7561BBBC8144D946F90AB9A",
+                                                        "scripts/ui/building_selection_view.gd":  "42C9F23D846FE08CB7864F2FD0466180028EC2EF680431D042DB0F1C009EED68",
+                                                        "scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                                                        "scripts/progression/training_minigame_rules.gd":  "D73AB9A8230AF93C9333E3EF82950FE6464668C3E607AFA1394A821D3E0C382F",
+                                                        "scripts/progression/wuxue_rules.gd":  "D62ECDE674E32B096FD510BA1E4FD7EE126127D970B06FC1F2CDB67020D71404",
+                                                        "scripts/battle/battle_engine.gd":  "D7FF5F98C78B4B76CD88B8F97C475A68210C2DFAC78AFE79AD116387BAC44586"
+                                                    },
+                                  "results":  [
+                                                  {
+                                                      "name":  "import",
+                                                      "exit_code":  0,
+                                                      "timeout":  false,
+                                                      "elapsed_seconds":  21,
+                                                      "expected_diagnostic_errors":  0,
+                                                      "diagnostic_errors":  0,
+                                                      "passed":  true
+                                                  },
+                                                  {
+                                                      "name":  "full-export",
+                                                      "exit_code":  0,
+                                                      "timeout":  false,
+                                                      "elapsed_seconds":  5.73,
+                                                      "expected_diagnostic_errors":  0,
+                                                      "diagnostic_errors":  0,
+                                                      "passed":  true
+                                                  }
+                                              ]
+                              },
+                   "Release":  {
+                                   "version":  "0.174.1",
+                                   "phase":  "Release",
+                                   "count":  5,
+                                   "passed":  5,
+                                   "source_hashes":  {
+                                                         "main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                                                         "project.godot":  "69EEC27AB7B49CC279D2237C3A22982DAC56923471DC8E9685DB092C11692042",
+                                                         "export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F",
+                                                         "scripts/ui/choice_view.gd":  "5580E9750814E6D0BF50E777B46C8BFD09D1E2CC98CE0A1BB4B1A1F6E31592FE",
+                                                         "scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                                                         "scripts/ui/training_selection_view.gd":  "6D22B8E7EB3A7D4FB0F5DF2EF603FBF856887E51A7561BBBC8144D946F90AB9A",
+                                                         "scripts/ui/building_selection_view.gd":  "42C9F23D846FE08CB7864F2FD0466180028EC2EF680431D042DB0F1C009EED68",
+                                                         "scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                                                         "scripts/progression/training_minigame_rules.gd":  "D73AB9A8230AF93C9333E3EF82950FE6464668C3E607AFA1394A821D3E0C382F",
+                                                         "scripts/progression/wuxue_rules.gd":  "D62ECDE674E32B096FD510BA1E4FD7EE126127D970B06FC1F2CDB67020D71404",
+                                                         "scripts/battle/battle_engine.gd":  "D7FF5F98C78B4B76CD88B8F97C475A68210C2DFAC78AFE79AD116387BAC44586"
+                                                     },
+                                   "results":  [
+                                                   {
+                                                       "name":  "full-build",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  6.03,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "release-credits",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  1.71,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "steam-data",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  1.71,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "training-flow",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  2.08,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "pause-flow",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  1.72,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   }
+                                               ]
+                               },
+                   "Package":  {
+                                   "version":  "0.174.1",
+                                   "phase":  "Package",
+                                   "count":  6,
+                                   "passed":  6,
+                                   "source_hashes":  {
+                                                         "main.gd":  "197A1F7B5F9FD81C71732EDF086A977C833FA9B6864E9F3FBFED713C36251BB7",
+                                                         "project.godot":  "69EEC27AB7B49CC279D2237C3A22982DAC56923471DC8E9685DB092C11692042",
+                                                         "export_presets.cfg":  "7B7515683AF41A317F849C110C1327FF34B96BADA9E9D2E3AFD8BA3F76EBEC1F",
+                                                         "scripts/ui/choice_view.gd":  "5580E9750814E6D0BF50E777B46C8BFD09D1E2CC98CE0A1BB4B1A1F6E31592FE",
+                                                         "scripts/ui/drag_scroll_container.gd":  "FA66866C3DE4DA2542B48794D205988F2ACFA9AE78516BC9001A64B2FFC3F12C",
+                                                         "scripts/ui/training_selection_view.gd":  "6D22B8E7EB3A7D4FB0F5DF2EF603FBF856887E51A7561BBBC8144D946F90AB9A",
+                                                         "scripts/ui/building_selection_view.gd":  "42C9F23D846FE08CB7864F2FD0466180028EC2EF680431D042DB0F1C009EED68",
+                                                         "scripts/ui/training_minigame_view.gd":  "5232534B07EE3B5EF1D9C1BEF152D16A5BAD60CADD176434410D90949BA28EB8",
+                                                         "scripts/progression/training_minigame_rules.gd":  "D73AB9A8230AF93C9333E3EF82950FE6464668C3E607AFA1394A821D3E0C382F",
+                                                         "scripts/progression/wuxue_rules.gd":  "D62ECDE674E32B096FD510BA1E4FD7EE126127D970B06FC1F2CDB67020D71404",
+                                                         "scripts/battle/battle_engine.gd":  "D7FF5F98C78B4B76CD88B8F97C475A68210C2DFAC78AFE79AD116387BAC44586"
+                                                     },
+                                   "results":  [
+                                                   {
+                                                       "name":  "selection-layout",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  7.05,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "selection-render",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  15.84,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "building-layout",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  3.81,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "building-render",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  7.59,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "result-layout",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  2.43,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   },
+                                                   {
+                                                       "name":  "result-render",
+                                                       "exit_code":  0,
+                                                       "timeout":  false,
+                                                       "elapsed_seconds":  4.25,
+                                                       "expected_diagnostic_errors":  0,
+                                                       "diagnostic_errors":  0,
+                                                       "passed":  true
+                                                   }
+                                               ]
+                               }
+               },
+    "demo_files_unchanged":  true,
+    "demo_preset_unchanged":  true
+}

@@ -1,5 +1,18 @@
 # Building 山河问道
 
+## 0.174.1 — training result always exposes 收功
+
+The training settlement panel now sizes itself to the visible content area
+and keeps a fixed "收功 · 返回青云门" button outside a DragScrollContainer.
+Long result cards (round breakdown, herb/mineral discovery, event) scroll or
+drag inside the panel instead of pushing the only exit below the frame. This
+fixes the stranded result screen at normal and 130% UI scale; the rest of the
+minigame layout is unchanged.
+
+The menu and Windows Desktop export preset are both 0.174.1. Only the full
+game is exported and verified; the demo preset and build remain untouched.
+See `../qa/2026-10-18-training-result-recovery/REPORT.md` for validation.
+
 ## 0.174.0 — card grids for every sect interior
 
 The hall, construction overview, alchemy workshop, forge, tavern, library,

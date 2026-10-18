@@ -4,6 +4,7 @@ extends Control
 const RULES := preload("res://scripts/progression/training_minigame_rules.gd")
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
+const DRAG_SCROLL := preload("res://scripts/ui/drag_scroll_container.gd")
 
 signal direction_selected(direction: String)
 signal continue_requested
@@ -35,8 +36,18 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	add_child(backdrop)
 
 	var frame := PanelContainer.new()
-	frame.position = Vector2(170, 24)
-	frame.size = Vector2(940, 570)
+	if result.is_empty():
+		frame.position = Vector2(170, 24)
+		frame.size = Vector2(940, 570)
+	else:
+		# The result panel must use the visible content area: a fixed 940x570
+		# frame clipped the 收功 button once the result gained several cards,
+		# and also ran past the right edge at 130% UI scale (the scaled
+		# content control can be wider than the visible viewport).
+		var visible_width := minf(size.x, get_viewport_rect().size.x)
+		var panel_width := minf(maxf(0, visible_width - 48), 1040.0)
+		frame.position = Vector2((visible_width - panel_width) * 0.5, 12)
+		frame.size = Vector2(panel_width, maxf(0, size.y - 24))
 	frame.add_theme_stylebox_override("panel", _box(Color("#172820")))
 	add_child(frame)
 	var page := VBoxContainer.new()
@@ -50,7 +61,24 @@ func setup(discipline: String, round_index: int, challenge: Dictionary, input_in
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	page.add_child(title)
 	if not result.is_empty():
-		_show_result(page, result, spec)
+		var scroll := DRAG_SCROLL.new()
+		scroll.name = "TrainingResultScroll"
+		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		page.add_child(scroll)
+		var result_page := VBoxContainer.new()
+		result_page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		result_page.add_theme_constant_override("separation", 8)
+		scroll.add_child(result_page)
+		_show_result(result_page, result, spec)
+		var done := Button.new()
+		done.text = "收功 · 返回青云门"
+		done.custom_minimum_size.y = 48
+		done.add_theme_font_size_override("font_size", 18)
+		done.add_theme_stylebox_override("normal", _box(Color("#8b493b")))
+		done.pressed.connect(func(): continue_requested.emit())
+		page.add_child(done)
+		done.grab_focus()
 		return
 	var description := Label.new()
 	description.text = str(spec.description)
@@ -294,13 +322,6 @@ func _show_result(page: VBoxContainer, result: Dictionary, spec: Dictionary) -> 
 		event_text.add_theme_font_size_override("font_size", 15)
 		event_text.add_theme_color_override("font_color", Color("#f2dfb3"))
 		event_card.add_child(event_text)
-	var done := Button.new()
-	done.text = "收功 · 返回青云门"
-	done.custom_minimum_size.y = 48
-	done.add_theme_font_size_override("font_size", 18)
-	done.add_theme_stylebox_override("normal", _box(Color("#8b493b")))
-	done.pressed.connect(func(): continue_requested.emit())
-	page.add_child(done)
 
 func _sum(values: Array) -> int:
 	var total := 0
