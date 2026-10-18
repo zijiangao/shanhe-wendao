@@ -1,5 +1,18 @@
 # Building 山河问道
 
+## 0.173.0 — category-wide weapon specialty damage
+
+Weapon drill levels now increase every learned art in the same category
+instead of one signature move. Sword, blade, fist, and staff each use the
+same one-point-per-two-levels rule for all matching moves; blade keeps its
+existing normal-attack bonus and mastery exposure. The preview and the
+execution formulas share `WuxueRules.move_category_damage_bonus()`, so a
+newly added art inherits its category's training bonus automatically.
+
+The menu and Windows Desktop export preset are both 0.173.0. Only the full
+game is exported and verified; the demo preset and build remain untouched.
+See `../qa/2026-10-18-category-specialty/REPORT.md` for validation and images.
+
 ## 0.172.0 — compact training selection without scrolling
 
 The training ground now uses a dedicated selection view. Four weapon drills

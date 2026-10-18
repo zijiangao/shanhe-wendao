@@ -1,0 +1,27 @@
+{
+    "version":  "0.173.0",
+    "file_version":  "0.173.0.0",
+    "product_version":  "0.173.0.0",
+    "source_hashes":  {
+                          "godot/main.gd":  "C5F8FEB6ADDFDBC793D5400A521FDCCA82CA1D997C3D8AC9F552FE8F33015264",
+                          "godot/scripts/progression/wuxue_rules.gd":  "83EF4A3E0C83929DE46D9C9495F43FF72326C62E2AF86E6F21F9D3DF2A8F3DD0",
+                          "godot/scripts/battle/battle_engine.gd":  "D7FF5F98C78B4B76CD88B8F97C475A68210C2DFAC78AFE79AD116387BAC44586",
+                          "godot/scripts/progression/training_minigame_rules.gd":  "D73AB9A8230AF93C9333E3EF82950FE6464668C3E607AFA1394A821D3E0C382F",
+                          "godot/tests/test_battle_engine.gd":  "F76911CAB7D26133EE55DFE2365424E14DC7711B36ABD80E6FA1D34F0EA5549D",
+                          "godot/export_presets.cfg":  "5A6065AE94E121FA7D52F863605AD58A3693B1530ED1C02318FDAC6BAAF808FB"
+                      },
+    "artifacts":  [
+                      {
+                          "path":  "build/windows/ShanheWendao.exe",
+                          "bytes":  109268480,
+                          "sha256":  "7B3EC26A0A2CA5E3A314F65D947EA312623A43ADCBD25153577F373CE2ED8C6C"
+                      },
+                      {
+                          "path":  "build/windows/ShanheWendao.pck",
+                          "bytes":  59357512,
+                          "sha256":  "AA102F3B6288985C5D5B2599657E4BC794DBF9A837121DB8E1ED06FC53CC7A9E"
+                      }
+                  ],
+    "demo_files_unchanged":  true,
+    "demo_preset_unchanged":  true
+}

@@ -142,10 +142,10 @@ static func train_specialty(state: Dictionary, discipline: String, xp_gain: int)
 
 static func perk_text(discipline: String, level: int) -> String:
 	match discipline:
-		"swordsmanship": return "每2级剑伤 +1；大成后流云剑法只耗6真气"
-		"bladesmanship": return "每2级普攻 +1；大成后普攻制造2层破绽"
-		"fistsmanship": return "每2级拳伤 +1；大成后裂石拳只耗3真气"
-		"staffsmanship": return "每2级枪伤 +1；大成后裂甲枪无视全部护甲"
+		"swordsmanship": return "每2级全部剑法威力 +1；大成后流云剑法只耗6真气"
+		"bladesmanship": return "每2级全部刀法威力与普攻 +1；大成后普攻制造2层破绽"
+		"fistsmanship": return "每2级全部拳掌威力 +1；大成后裂石拳只耗3真气"
+		"staffsmanship": return "每2级全部枪棍威力 +1；大成后裂甲枪无视全部护甲"
 		"herbalism": return "回春散随等级增强；大成再加5治疗，采药增产 +%d" % gathering_bonus(level)
 		"mining": return "采矿增产 +%d；大成后打造兵刃/护具少花3矿石" % gathering_bonus(level)
 	return ""

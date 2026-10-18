@@ -16,8 +16,8 @@ func _initialize() -> void:
 func _run() -> void:
 	var project_name := str(ProjectSettings.get_setting("application/config/name"))
 	var test_data := OS.get_environment("APPDATA").replace("\\", "/").to_lower()
-	if project_name not in ["ShanheWendao-iteration-tests", "山河问道"] or "/acceptance-0172/" not in test_data:
-		push_error("Use the acceptance-0172 isolated APPDATA for training selection tests.")
+	if project_name not in ["ShanheWendao-iteration-tests", "山河问道"] or "/acceptance-" not in test_data:
+		push_error("Use an isolated acceptance APPDATA for training selection tests.")
 		quit(2)
 		return
 	capture = "--capture-training-selection" in OS.get_cmdline_user_args()

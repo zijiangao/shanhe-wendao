@@ -17,7 +17,9 @@ const TRAIN_XP_MAX := 15
 ## every learned move is usable in battle immediately.
 ##
 ## "category" (0.102.0) sorts moves into 藏经阁's four weapon-style
-## groupings -- purely a display grouping, no gameplay effect.
+## groupings. Since 0.173.0 it also drives the specialty damage bonus:
+## every move in a category gains the same bonus from that weapon drill,
+## rather than only one signature art being strengthened.
 const MOVES := {
 	"cloud_sword": {"title": "流云剑法", "description": "直线三格，无视护甲，引爆破绽。", "price": 120, "qi_cost": 8, "upgrade_base": 35, "level_damage_bonus": 1, "category": "sword"},
 	"blade_technique": {"title": "断岳刀法", "description": "相邻重击，永久破甲并制造2层破绽。", "price": 120, "qi_cost": 6, "upgrade_base": 35, "level_damage_bonus": 1, "category": "blade"},
@@ -34,6 +36,16 @@ const CATEGORIES := [
 	["blade", "刀法"],
 	["staff", "枪棍"],
 ]
+
+## The four weapon drills in 演武场 map one-to-one onto move categories.
+## Keeping this mapping beside MOVES guarantees a newly added art inherits
+## its category's training bonus without touching each damage formula.
+const DISCIPLINE_BY_CATEGORY := {
+	"fist": "fistsmanship",
+	"sword": "swordsmanship",
+	"blade": "bladesmanship",
+	"staff": "staffsmanship",
+}
 
 ## 基础内功/基础身法 (0.94.0): every hero starts already knowing these, same
 ## as 流云剑法/断岳刀法 always being available in battle -- new_game() learns
@@ -66,6 +78,20 @@ static func move_damage_bonus(state: Dictionary, id: String) -> int:
 	if not MOVES.has(id):
 		return 0
 	return (move_level(state, id) - 1) * int(MOVES[id].get("level_damage_bonus", 0))
+
+## Every two drill levels add one damage to *all* learned moves in that
+## weapon category. A single category-level function keeps the preview and
+## execution formulas aligned as more arts are added.
+static func category_damage_bonus(state: Dictionary, category: String) -> int:
+	var discipline := str(DISCIPLINE_BY_CATEGORY.get(category, ""))
+	if discipline.is_empty():
+		return 0
+	return maxi(0, int(state.get(discipline, 0))) / 2
+
+static func move_category_damage_bonus(state: Dictionary, id: String) -> int:
+	if not MOVES.has(id):
+		return 0
+	return category_damage_bonus(state, str(MOVES[id].category))
 
 static func internal_damage_bonus(state: Dictionary) -> int:
 	var id := str(state.get("equipped_internal", ""))

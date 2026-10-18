@@ -243,6 +243,28 @@ func _test_specialty_damage_bonus() -> void:
 	assert(bool(trained_result.get("ok", false)) and bool(plain_result.get("ok", false)), "Specialty damage comparison requires two legal sword attacks.")
 	assert(int(trained_result.damage) == int(plain_result.damage) + 3, "Swordsmanship should increase sword skill damage every two levels.")
 
+	# 0.173.0: the drill bonus belongs to the whole weapon category. Both
+	# blade arts must scale, and a sword specialty must not leak into them.
+	var category_state := {"swordsmanship": 6, "bladesmanship": 6, "fistsmanship": 6, "staffsmanship": 6}
+	for move_id in ["cloud_sword", "blade_technique", "night_triple_blade", "stone_splitting_fist", "armor_splitting_spear"]:
+		assert(WUXUE_RULES.move_category_damage_bonus(category_state, move_id) == 3, "%s should use its category drill's +3 bonus at level 6." % move_id)
+	assert(WUXUE_RULES.category_damage_bonus({"swordsmanship": 100}, "blade") == 0, "A sword specialty must not grant a blade-category bonus.")
+	var blade_trained := _player_fixture()
+	blade_trained.bladesmanship = 6
+	var blade_plain := _player_fixture()
+	var trained_blade_range := ENGINE.blade_damage_range(blade_trained)
+	var plain_blade_range := ENGINE.blade_damage_range(blade_plain)
+	assert(trained_blade_range.x == plain_blade_range.x + 3 and trained_blade_range.y == plain_blade_range.y + 3, "Level 6 bladesmanship should add three damage to 断岳刀法.")
+	var trained_night_range := ENGINE.night_blade_hit_range(blade_trained)
+	var plain_night_range := ENGINE.night_blade_hit_range(blade_plain)
+	assert(trained_night_range.x == plain_night_range.x + 3 and trained_night_range.y == plain_night_range.y + 3, "Level 6 bladesmanship should add three damage to every 暗夜三刀 hit, not only the first art.")
+	var sword_only := _player_fixture()
+	sword_only.swordsmanship = 100
+	assert(ENGINE.night_blade_hit_range(sword_only) == ENGINE.night_blade_hit_range(blade_plain), "Sword training must not buff a blade art.")
+	var normal_plain_range := ENGINE.normal_damage_range(blade_plain)
+	var normal_trained_range := ENGINE.normal_damage_range(blade_trained)
+	assert(normal_trained_range.x == normal_plain_range.x + 3 and normal_trained_range.y == normal_plain_range.y + 3, "Blade specialty should keep its documented normal-attack bonus while also covering every blade art.")
+
 func _test_specialty_mastery_perks() -> void:
 	var sword_battle := _fixture()
 	sword_battle.active_unit = "hero"

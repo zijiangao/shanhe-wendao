@@ -112,30 +112,30 @@ static func preview_queue(battle: Dictionary, count: int = 6) -> Array:
 	return order
 
 static func normal_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
+	var base := int(player.get("strength", 0)) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + WUXUE_RULES.category_damage_bonus(player, "blade") + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
 	return Vector2i(base, base + 2)
 
 static func cloud_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3 + WUXUE_RULES.move_damage_bonus(player, "cloud_sword")
+	var base := int(player.get("strength", 0)) + 9 + int(player.get("insight", 0)) / 2 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + WUXUE_RULES.move_category_damage_bonus(player, "cloud_sword") + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.get("skill_mastery", {}).get("cloud", 0)) / 3 + WUXUE_RULES.move_damage_bonus(player, "cloud_sword")
 	return Vector2i(base, base + 3)
 
 static func blade_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "blade_technique")
+	var base := int(player.get("strength", 0)) + 7 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + WUXUE_RULES.move_category_damage_bonus(player, "blade_technique") + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "blade_technique")
 	return Vector2i(base, base + 3)
 
 static func blade_armor_break(player: Dictionary) -> int:
 	return 2 if int(player.get("bladesmanship", 0)) >= 60 else 1
 
 static func stone_fist_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("fistsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "stone_splitting_fist")
+	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + WUXUE_RULES.move_category_damage_bonus(player, "stone_splitting_fist") + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "stone_splitting_fist")
 	return Vector2i(base, base + 2)
 
 static func spear_damage_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("staffsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "armor_splitting_spear")
+	var base := int(player.get("strength", 0)) + 5 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + WUXUE_RULES.move_category_damage_bonus(player, "armor_splitting_spear") + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + WUXUE_RULES.move_damage_bonus(player, "armor_splitting_spear")
 	return Vector2i(base, base + 2)
 
 static func night_blade_hit_range(player: Dictionary) -> Vector2i:
-	var base := int(player.get("strength", 0)) / 2 + 4 + SHOP_RULES.weapon_attack_bonus(player) / 2 + WUXUE_RULES.internal_damage_bonus(player) / 2 + WUXUE_RULES.move_damage_bonus(player, "night_triple_blade")
+	var base := int(player.get("strength", 0)) / 2 + 4 + SHOP_RULES.weapon_attack_bonus(player) / 2 + WUXUE_RULES.internal_damage_bonus(player) / 2 + WUXUE_RULES.move_category_damage_bonus(player, "night_triple_blade") + WUXUE_RULES.move_damage_bonus(player, "night_triple_blade")
 	return Vector2i(base, base + 2)
 
 static func healing_amount(player: Dictionary) -> int:
@@ -224,7 +224,7 @@ static func _attack(battle: Dictionary, player: Dictionary, target: Vector2i, rn
 	if not RULES.can_attack_cell(battle, target, false, int(player.qi)):
 		return _failure("普通攻击只能命中相邻敌人。")
 	var enemy_index := RULES.enemy_at(battle, target)
-	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("bladesmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
+	var base_damage := int(battle.ally.attack) + 2 if str(battle.get("active_unit", "hero")) == "ally" else int(player.strength) + 3 + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + WUXUE_RULES.category_damage_bonus(player, "blade") + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player)
 	var armor := RULES.enemy_armor(battle.enemies[enemy_index])
 	var damage := maxi(1, base_damage + _roll_bonus(rng) - armor)
 	_apply_enemy_damage(battle, enemy_index, target, damage, "damage")
@@ -254,7 +254,7 @@ static func _cloud_skill(battle: Dictionary, player: Dictionary, target: Vector2
 	var enemy_index := RULES.enemy_at(battle, target)
 	var exposure := RULES.enemy_exposure(battle.enemies[enemy_index])
 	var exposure_bonus := exposure * 4
-	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + int(player.get("swordsmanship", 0)) / 2 + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.skill_mastery.cloud / 3) + WUXUE_RULES.move_damage_bonus(player, "cloud_sword") + exposure_bonus + _roll_range(rng, 0, 3)
+	var damage := int(player.strength) + 9 + int(player.get("insight", 0) / 2) + GROWTH_RULES.combat_bonus(int(player.get("xp", 0))) + WUXUE_RULES.move_category_damage_bonus(player, "cloud_sword") + SHOP_RULES.weapon_attack_bonus(player) + WUXUE_RULES.internal_damage_bonus(player) + int(player.skill_mastery.cloud / 3) + WUXUE_RULES.move_damage_bonus(player, "cloud_sword") + exposure_bonus + _roll_range(rng, 0, 3)
 	player.qi = int(player.qi) - qi_cost
 	player.skill_mastery.cloud = int(player.skill_mastery.cloud) + 1
 	battle.enemies[enemy_index].exposure = 0
