@@ -47,6 +47,7 @@ const QUEST_RULES := preload("res://scripts/progression/quest_rules.gd")
 ## WuxueRules.options_library_category() rather than via that same field.
 const LIBRARY_CATEGORIES := [["fist", "拳掌"], ["sword", "剑法"], ["blade", "刀法"], ["staff", "枪棍"], ["internal", "内功"], ["lightness", "轻功"]]
 const TRAINING_VIEW := preload("res://scripts/ui/training_minigame_view.gd")
+const TRAINING_SELECTION_VIEW := preload("res://scripts/ui/training_selection_view.gd")
 const UI_THEME := preload("res://scripts/ui/ui_theme.gd")
 const CHARACTER_PORTRAITS := preload("res://scripts/ui/character_portraits.gd")
 const CREDITS_PATH := "res://data/credits.json"
@@ -86,6 +87,8 @@ var quit_after_battle_turn: bool = false
 var active_battle_view: TacticalBattleView
 var last_battle_id: String = "blackreed"
 var training_discipline: String = ""
+var training_selection_category: String = ""
+var training_selection_page: int = 0
 var training_round: int = 0
 var training_target: String = ""
 var training_challenge: Dictionary = {}
@@ -701,7 +704,7 @@ func _show_menu() -> void:
 	panel.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.171.0 · 开局建设，自由探索江湖"
+	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.172.0 · 开局建设，自由探索江湖"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	var credits_button := _action_button("制作名单与版权", Color("#485e54"))
@@ -987,22 +990,48 @@ func _location_actions(location_id: String) -> Array:
 
 func _show_training_menu() -> void:
 	choice_event = "training"
-	choice_prompt = "选择本周的修炼方向 · 当前修为 %d（%s）" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
-	choice_options = TRAINING_RULES.options(GameState.data)
+	choice_prompt = "每周一次 · 修为 %d · %s" % [GameState.data.xp, GROWTH_RULES.rank_name(int(GameState.data.xp))]
+	choice_options = []
+	var action_spent := bool(GameState.data.get("acted_this_week", false)) or GameState.deadline_reached()
+	for original in TRAINING_RULES.options(GameState.data):
+		var id := str(original[2])
+		var level := clampi(int(GameState.data.get(id, 0)), 0, TRAINING_RULES.MAX_SPECIALTY_LEVEL)
+		var progress := "已大成" if level >= TRAINING_RULES.MAX_SPECIALTY_LEVEL else "经验 %d/%d" % [TRAINING_RULES.specialty_xp(GameState.data, id), TRAINING_RULES.specialty_xp_needed(level)]
+		var mechanic := "记忆连招" if id in ["swordsmanship", "staffsmanship"] else "把握蓄力时机"
+		var badge := "本周修为 +%d" % TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS if id == TRAINING_RULES.weekly_focus(int(GameState.data.week)) else ""
+		var details := "%s\n%s\n三回合成绩决定修为与专精经验。" % [str(TRAINING_RULES.DISCIPLINES[id].description), TRAINING_RULES.perk_text(id, level)]
+		choice_options.append(["%s · Lv.%d" % [TRAINING_RULES.discipline_short_name(id), level], "%s · %s" % [mechanic, progress], id, action_spent, null, {"tooltip": details, "badge": badge, "accent": TRAINING_RULES.DISCIPLINES[id].accent}])
 	var spar_rotation := SPARRING_RULES.rotation_for(int(GameState.data.week))
-	choice_options.append(["实战切磋 · %s" % spar_rotation.name, "%s；%s。" % [spar_rotation.focus, SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))], "qingyun_spar"])
+	choice_options.append(["实战切磋", str(spar_rotation.name), "qingyun_spar", action_spent, null, {"tooltip": "%s；%s。" % [spar_rotation.focus, SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))]}])
 	var has_learned_wuxue: bool = not Array(GameState.data.get("learned_moves", [])).is_empty() or not Array(GameState.data.get("learned_internal", [])).is_empty() or not Array(GameState.data.get("learned_lightness", [])).is_empty()
-	choice_options.append(["武学修炼", "消耗一周潜心温习已习得的招式/内功/轻功，获得经验；经验满即可提升等级，免费但比秘籍阁的银两升级慢。" if has_learned_wuxue else "尚未习得任何招式/内功/轻功，请先到洛阳西市秘籍阁学习。", "wuxue_training", not has_learned_wuxue])
-	choice_options.append(["暂不修炼", "不消耗行动点，返回青云门。", "leave"])
+	choice_options.append(["武学修炼", "温习招式、内功与轻功" if has_learned_wuxue else "先到洛阳学习武学", "wuxue_training", not has_learned_wuxue, null, {"tooltip": "免费温习已学武学，消耗本周行动并获得经验。经验足够即可提升等级。"}])
+	choice_options.append(["暂不修炼", "返回青云门", "leave"])
 	screen = "choice"
 	_rebuild()
 
 func _show_wuxue_training() -> void:
 	choice_event = "wuxue_training"
-	choice_prompt = "武学修炼 · 消耗一周，免费但缓慢 · 悟性 %d，每次额外经验 +%d" % [int(GameState.data.insight), WUXUE_RULES.insight_xp_bonus(GameState.data)]
+	choice_prompt = "免费温习 · 每周一次 · 悟性加成 +%d 经验" % WUXUE_RULES.insight_xp_bonus(GameState.data)
 	choice_options = WUXUE_RULES.options_training(GameState.data)
+	for option in choice_options:
+		var route := str(option[2])
+		if route == "leave":
+			option[1] = "返回演武场"
+			continue
+		var id := route.trim_prefix("train_move_").trim_prefix("train_internal_").trim_prefix("train_lightness_")
+		var catalog: Dictionary = WUXUE_RULES.MOVES if route.begins_with("train_move_") else (WUXUE_RULES.INTERNAL if route.begins_with("train_internal_") else WUXUE_RULES.LIGHTNESS)
+		var level: int = WUXUE_RULES.move_level(GameState.data, id) if route.begins_with("train_move_") else (WUXUE_RULES.internal_level(GameState.data, id) if route.begins_with("train_internal_") else WUXUE_RULES.lightness_level(GameState.data, id))
+		var detail := str(option[1])
+		option[0] = "%s · Lv.%d" % [str(catalog[id].title), level]
+		option[1] = "已大成" if level >= WUXUE_RULES.MAX_LEVEL else "经验 %d/%d" % [WUXUE_RULES.wuxue_xp(GameState.data, id), WUXUE_RULES.xp_needed(level)]
+		option.append(null)
+		option.append({"tooltip": detail, "badge": "已大成" if level >= WUXUE_RULES.MAX_LEVEL else ("本周已行动" if bool(option[3]) else "")})
 	screen = "choice"
 	_rebuild()
+
+func _training_browsing_changed(category: String, page: int) -> void:
+	training_selection_category = category
+	training_selection_page = page
 
 func _show_gathering_menu() -> void:
 	choice_event = "gathering"
@@ -1332,6 +1361,13 @@ func _add_palace_evidence(kind: String, favored_route: String) -> void:
 
 func _show_choice() -> void:
 	_clear_content()
+	if choice_event in ["training", "wuxue_training", "spar_focus"]:
+		var selection: Control = TRAINING_SELECTION_VIEW.new()
+		content.add_child(selection)
+		selection.option_selected.connect(_resolve_choice)
+		selection.browsing_changed.connect(_training_browsing_changed)
+		selection.setup(_location_texture(str(GameState.data.location)), choice_prompt, choice_options, choice_event, GameState.data, training_selection_category, training_selection_page)
+		return
 	var view: ChoiceView = CHOICE_VIEW.instantiate()
 	content.add_child(view)
 	var choice_title := "抉 择"
@@ -1379,16 +1415,18 @@ func _resolve_choice(route: String) -> void:
 	if choice_event == "training":
 		if route == "qingyun_spar":
 			choice_event = "spar_focus"
-			choice_prompt = "选择本次实战切磋的兵器方向"
+			choice_prompt = "选择兵器 · 本周切磋：%s" % str(SPARRING_RULES.rotation_for(int(GameState.data.week)).name)
 			choice_options = [
-				["以剑应战", "切磋评价将提升剑法专精。", "swordsmanship"],
-				["以刀应战", "切磋评价将提升刀法专精。", "bladesmanship"],
-				["返回", "不消耗行动点，返回修炼选择。", "leave"]
+				["以剑应战", "提升剑法专精", "swordsmanship"],
+				["以刀应战", "提升刀法专精", "bladesmanship"],
+				["返回", "返回演武场", "leave"]
 			]
 			screen = "choice"
 			_rebuild()
 			return
 		if route == "wuxue_training":
+			training_selection_category = ""
+			training_selection_page = 0
 			_show_wuxue_training()
 			return
 		if route != "leave":
@@ -2108,7 +2146,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.171.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.172.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

@@ -1,0 +1,21 @@
+{
+    "version":  "0.172.0",
+    "file_version":  "0.172.0.0",
+    "product_version":  "0.172.0.0",
+    "source_main_sha256":  "A68CFE398BF47FBC3D44B8E4D763354121BFCD0B625F4AFDB55F52BEBD57B1DF",
+    "source_training_selection_sha256":  "6D22B8E7EB3A7D4FB0F5DF2EF603FBF856887E51A7561BBBC8144D946F90AB9A",
+    "artifacts":  [
+                      {
+                          "path":  "build/windows/ShanheWendao.exe",
+                          "bytes":  109268480,
+                          "sha256":  "34246D245D4720F32E7E3BAE6EA41A5DA82E7FC6A75FF776A7CBBF7012E89C05"
+                      },
+                      {
+                          "path":  "build/windows/ShanheWendao.pck",
+                          "bytes":  59356936,
+                          "sha256":  "C615F7F177277BC903056BC3799700ADF11440BE8EAE3026FA9CC3300BD9EEB8"
+                      }
+                  ],
+    "demo_files_unchanged":  true,
+    "demo_preset_unchanged":  true
+}

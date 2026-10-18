@@ -1,5 +1,19 @@
 # Building 山河问道
 
+## 0.172.0 — compact training selection without scrolling
+
+The training ground now uses a dedicated selection view. Four weapon drills
+and the martial-arts and sparring entries are grouped into compact cards,
+with short experience information and a fixed return control. Detailed
+mechanics remain available as tooltips. Martial-arts practice uses category
+tabs and pages rather than a long scrolling list, preserving the selected
+category and page after an action. Sparring weapon selection uses the same
+fixed layout. Training rules, rewards, and weekly costs are unchanged.
+
+The menu and Windows Desktop export preset are both 0.172.0. Only the full
+game is exported and verified; the demo preset and build remain untouched.
+See `../qa/2026-10-13-training-selection/REPORT.md` for validation and images.
+
 ## 0.171.0 — free exploration and optional regional commissions
 
 The full game starts with no assigned story quest. Every world-map destination
