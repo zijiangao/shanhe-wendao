@@ -1,0 +1,45 @@
+{
+  "version": "0.175.0",
+  "date": "2026-10-19",
+  "start_commit": "6131bc1",
+  "save_version": 13,
+  "suites": {
+    "fast": {
+      "passed": 64,
+      "total": 64,
+      "skipped_isolated": 13,
+      "new_tests": ["test_sect_post_rules.gd"],
+      "updated_tests": ["test_weekly_task_rules.gd"]
+    },
+    "isolated": {
+      "passed": 2,
+      "total": 2,
+      "tests": ["test_management_flow.gd", "test_full_journey.gd"]
+    },
+    "release_exe": {
+      "passed": 7,
+      "total": 7,
+      "checks": [
+        "--verify-sect-post-flow",
+        "--verify-full-build",
+        "--verify-release-credits",
+        "--verify-steam-data",
+        "--verify-training-flow",
+        "--verify-crafting-flow",
+        "--verify-pause-flow"
+      ]
+    },
+    "rendered": {
+      "captures": [
+        "screenshots/sect_post_panel.png",
+        "screenshots/sect_post_assignment.png",
+        "screenshots/sect_post_assignment_bottom.png"
+      ]
+    }
+  },
+  "behavior": {
+    "posts": ["steward", "instructor", "quartermaster", "envoy"],
+    "companion_tasks_semantics": "unchanged ids; envoy added",
+    "save_migration": "none required"
+  }
+}

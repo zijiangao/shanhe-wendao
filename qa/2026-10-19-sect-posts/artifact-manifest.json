@@ -1,0 +1,23 @@
+{
+  "version": "0.175.0",
+  "file_version": "0.175.0.0",
+  "export_preset": "Windows Desktop",
+  "exported_at": "2026-10-19T13:05:00+08:00",
+  "artifacts": {
+    "exe": {
+      "path": "build/windows/ShanheWendao.exe",
+      "bytes": 109268480,
+      "sha256": "EE04D719BE5FD9A6B72E5E9F92321E87A525CE17003E3FEE88FBF7BFD3C3F4CA"
+    },
+    "pck": {
+      "path": "build/windows/ShanheWendao.pck",
+      "bytes": 59384944,
+      "sha256": "1D04E74E1DC4271FECAE4445079DFAB2674C0E2DBBA062E62EF916B507E1A8A3"
+    }
+  },
+  "demo": {
+    "preset_version": "0.122.0.0",
+    "exe": "build/windows-demo/ShanheWendaoDemo.exe",
+    "untouched": true
+  }
+}

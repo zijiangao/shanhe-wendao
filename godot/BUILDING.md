@@ -1,5 +1,22 @@
 # Building 山河问道
 
+## 0.175.0 — sect posts for every companion
+
+The three persistent companion tasks (赚钱/修炼/采集) now double as 门派职守:
+掌柜, 传功长老, 总管, plus a new 知客 post that brings back 声望 each week.
+Every post adds a stat-scaled bonus on top of its base task — 传功长老 gives
+沈羽 extra 修为 (1 + insight/12, capped at 4), 掌柜 raises the companion's
+silver payout by 25–60%, 总管 adds 1–3 herbs and ore, and 知客 adds 1 声望
+(plus one more at level 30). The bonus only applies when `end_week()` passes the
+companion's live stat snapshot, so existing saves keep their old task ids and
+need no migration; `SAVE_VERSION` stays 13. The companion panel now shows the
+current post and its weekly forecast, and the assignment screen is labelled
+"门派职守" instead of "分派任务".
+
+The menu and Windows Desktop export preset are both 0.175.0. Only the full
+game is exported and verified; the demo preset and build remain untouched.
+See `../qa/2026-10-19-sect-posts/REPORT.md` for validation.
+
 ## 0.174.2 — construction cards name the real blocker
 
 Sect construction is a weekly action, but the construction pavilion stays

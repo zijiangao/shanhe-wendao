@@ -168,7 +168,8 @@ func end_week() -> bool:
 	for companion_id in COMPANION_RULES.roster(data):
 		var companion_entry: Dictionary = COMPANION_RULES.companion_entry(companion_id)
 		var companion_attack := int(companion_entry.get("attack", 0)) + WEEKLY_TASK_RULES.companion_attack_growth(data, companion_id)
-		var companion_result := WEEKLY_TASK_RULES.resolve_companion(data, companion_id, companion_attack)
+		var companion_stats := WEEKLY_TASK_RULES.companion_stats(data, companion_id, companion_entry)
+		var companion_result := WEEKLY_TASK_RULES.resolve_companion(data, companion_id, companion_attack, -1, companion_stats)
 		if not companion_result.is_empty():
 			var companion_title := str(companion_entry.get("title", companion_id))
 			match str(companion_result.get("task", "")):
@@ -180,6 +181,9 @@ func end_week() -> bool:
 						progress += "提升%d级，四维属性与气血上限提高。" % levels_gained
 					add_log(progress)
 				"gather": add_log("%s采回%d份药材、%d份矿石。" % [companion_title, int(companion_result.get("herbs", 0)), int(companion_result.get("ore", 0))])
+				"envoy": add_log("%s走访江湖，为门派扬名，声望 +%d。" % [companion_title, int(companion_result.get("renown", 0))])
+			if str(companion_result.get("post_text", "")) != "":
+				add_log(str(companion_result.post_text))
 	var sect_herbs := SECT_BUILDING_RULES.herb_weekly_bonus(data)
 	if sect_herbs > 0:
 		data.materials.herbs = int(data.materials.get("herbs", 0)) + sect_herbs

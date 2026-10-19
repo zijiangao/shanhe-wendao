@@ -16,3 +16,6 @@
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Third-party reference game (local analysis only)
+/金书江湖2V94B-绿色完整版/

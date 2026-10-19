@@ -3,6 +3,7 @@ extends RefCounted
 
 const GROWTH_RULES := preload("res://scripts/progression/growth_rules.gd")
 const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
+const SECT_POST_RULES := preload("res://scripts/progression/sect_post_rules.gd")
 
 ## 分派任务 (0.115.0) -- an additive, parallel system alongside the existing
 ## 演武场/后山 minigames, NOT a replacement: those keep their scoring/combo/
@@ -21,6 +22,7 @@ const TASKS := {
 	"earn": {"title": "赚钱", "description": "外出跑一趟买卖，凭本事挣一笔银两。"},
 	"train": {"title": "修炼", "description": "闭门修炼，稳步提升根基。"},
 	"gather": {"title": "采集", "description": "上山下乡，采回药材矿石。"},
+	"envoy": {"title": "游历", "description": "走访江湖，替门派扬名。"},
 }
 const FOCUS_ROTATION := ["strength", "insight", "constitution"]
 ## 侠客升级 (0.116.0)：修炼任务每次结算发放的经验，跟沈羽自己
@@ -46,13 +48,15 @@ static func options_hero(state: Dictionary) -> Array:
 	options.append(["返回", "不消耗行动点，返回人物信息。", "leave"])
 	return options
 
-static func options_companion(state: Dictionary, id: String) -> Array:
+static func options_companion(state: Dictionary, id: String, stats: Dictionary = {}) -> Array:
 	var options := []
 	var current := str(Dictionary(state.get("companion_tasks", {})).get(id, ""))
-	options.append(["不分派任务", "取消这位同伴的持续任务。", "assign_companion_", current == ""])
+	options.append(["不任职守", "取消这位同伴的持续职守。", "assign_companion_", current == ""])
 	for task_id in TASKS:
-		var item: Dictionary = TASKS[task_id]
-		options.append(["%s%s" % [str(item.title), "（持续进行中）" if current == task_id else ""], str(item.description), "assign_companion_%s" % task_id, current == task_id])
+		var post_title := SECT_POST_RULES.title(task_id)
+		var forecast := SECT_POST_RULES.forecast_text(task_id, stats)
+		var text := "%s\n%s" % [SECT_POST_RULES.summary(task_id), forecast]
+		options.append(["%s%s" % [post_title, "（当前职守）" if current == task_id else ""], text, "assign_companion_%s" % task_id, current == task_id])
 	options.append(["返回", "不消耗行动点，返回同伴信息。", "leave"])
 	return options
 
@@ -89,12 +93,17 @@ static func resolve_hero(state: Dictionary, roll: int = -1) -> Dictionary:
 			result.herbs = herbs
 			result.ore = ore
 			result.text = "沈羽上山下乡，采回%d份药材、%d份矿石。" % [herbs, ore]
+		"envoy":
+			var renown := 1 + bonus / 6
+			state.renown = int(state.get("renown", 0)) + renown
+			result.renown = renown
+			result.text = "沈羽走访江湖，为青云门扬名，声望 +%d。" % renown
 	state.weekly_task_hero = ""
 	return result
 
 ## 同伴那份的等价物 -- companion_id 必须已加入门派 (COMPANION_RULES.roster())
 ## 才会被 GameState.end_week() 结算，避免离队同伴还在偷偷挣钱。
-static func resolve_companion(state: Dictionary, id: String, companion_attack: int, roll: int = -1) -> Dictionary:
+static func resolve_companion(state: Dictionary, id: String, companion_attack: int, roll: int = -1, companion_stats: Dictionary = {}) -> Dictionary:
 	var task_id := str(Dictionary(state.get("companion_tasks", {})).get(id, ""))
 	if not is_valid_task(task_id):
 		return {}
@@ -115,6 +124,17 @@ static func resolve_companion(state: Dictionary, id: String, companion_attack: i
 			state.materials.ore = int(state.materials.get("ore", 0)) + ore
 			result.herbs = herbs
 			result.ore = ore
+		"envoy":
+			var renown := 1
+			state.renown = int(state.get("renown", 0)) + renown
+			result.renown = renown
+	# 岗位额外收益 (0.175.0)：只有调用方传入同伴属性时才结算，保证老调用
+	# 方式（测试/旧逻辑）行为不变；GameState.end_week() 永远传真实属性。
+	if not companion_stats.is_empty():
+		var post_bonus := SECT_POST_RULES.apply_bonus(state, task_id, companion_stats, result)
+		if not post_bonus.is_empty():
+			result.post_bonus = post_bonus
+			result.post_text = str(post_bonus.get("text", ""))
 	return result
 
 static func _companion_growth_bucket(state: Dictionary, id: String) -> Dictionary:
@@ -172,3 +192,18 @@ static func companion_hp_growth(state: Dictionary, id: String) -> int:
 
 static func companion_attribute_growth(state: Dictionary, id: String, key: String) -> int:
 	return int(_companion_growth_bucket(state, id).get(key, 0))
+
+## 门人职守 (0.175.0)：把固定目录里的基础属性与存档里的成长值合成一份
+## 只读属性快照，供 SectPostRules 计算岗位收益、供 UI 显示预测。
+## 不 preload CompanionRules，避免 WeeklyTaskRules -> CompanionRules ->
+## WeeklyTaskRules 的循环依赖；调用方把 companion_entry() 的结果传进来。
+static func companion_stats(state: Dictionary, id: String, entry: Dictionary) -> Dictionary:
+	return {
+		"name": str(entry.get("title", id)),
+		"level": companion_level(state, id),
+		"strength": int(entry.get("strength", 0)) + companion_attribute_growth(state, id, "strength"),
+		"agility": int(entry.get("agility", 0)) + companion_attribute_growth(state, id, "agility"),
+		"insight": int(entry.get("insight", 0)) + companion_attribute_growth(state, id, "insight"),
+		"constitution": int(entry.get("constitution", 0)) + companion_attribute_growth(state, id, "constitution"),
+		"attack": int(entry.get("attack", 0)) + companion_attack_growth(state, id),
+	}

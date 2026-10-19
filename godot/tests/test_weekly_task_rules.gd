@@ -70,11 +70,47 @@ func _initialize() -> void:
 
 	var companion_options_state := _hero_state()
 	companion_options_state.companion_tasks = {"zhou_mubai": "gather"}
-	var companion_options: Array = RULES.options_companion(companion_options_state, "zhou_mubai")
+	var companion_stats := {"name": "周慕白", "level": 1, "strength": 5, "agility": 4, "insight": 4, "constitution": 5, "attack": 5}
+	var companion_options: Array = RULES.options_companion(companion_options_state, "zhou_mubai", companion_stats)
 	var gather_row := companion_options.filter(func(o): return str(o[2]) == "assign_companion_gather")
-	assert(gather_row.size() == 1 and bool(gather_row[0][3]) and "持续进行中" in str(gather_row[0][0]), "The companion's currently-assigned task should be marked as ongoing.")
-	var none_row := companion_options.filter(func(o): return str(o[0]) == "不分派任务")
-	assert(none_row.size() == 1 and not bool(none_row[0][3]), "The 'no task' row should stay enabled so the player can always cancel an assignment.")
+	assert(gather_row.size() == 1 and bool(gather_row[0][3]) and "当前职守" in str(gather_row[0][0]), "The companion's currently-assigned post should be marked as ongoing.")
+	assert("总管" in str(gather_row[0][0]) and "药材" in str(gather_row[0][1]), "Companion options should use the 门派职守 titles and forecast text, not the old task labels.")
+	var none_row := companion_options.filter(func(o): return str(o[0]) == "不任职守")
+	assert(none_row.size() == 1 and not bool(none_row[0][3]), "The 'no post' row should stay enabled so the player can always cancel an assignment.")
+
+	# 门派职守 (0.175.0) -- the post bonus only applies when the caller passes
+	# a companion stat snapshot, so old call sites keep their exact old numbers.
+	var post_earn_state := _hero_state()
+	post_earn_state.companion_tasks = {"zhou_mubai": "earn"}
+	var post_earn: Dictionary = RULES.resolve_companion(post_earn_state, "zhou_mubai", 5, 3, companion_stats)
+	assert(int(post_earn.silver) == 18, "The base 赚钱 payout must stay 10 + attack + roll.")
+	assert(int(post_earn.post_bonus.silver) == 5, "掌柜 should add 26% of the base payout at insight 4 (18 -> 5).")
+	assert(int(post_earn_state.silver) == 100 + 18 + 5, "The post bonus must be credited to the same silver pool.")
+
+	var post_gather_state := _hero_state()
+	post_gather_state.companion_tasks = {"zhou_mubai": "gather"}
+	var post_gather: Dictionary = RULES.resolve_companion(post_gather_state, "zhou_mubai", 5, 5, companion_stats)
+	assert(int(post_gather_state.materials.herbs) == 3 and int(post_gather_state.materials.ore) == 3, "总管 should add +1 herb/+1 ore on top of the base 2/2 at roll 5.")
+
+	var post_train_state := _hero_state()
+	post_train_state.companion_tasks = {"zhou_mubai": "train"}
+	var post_train: Dictionary = RULES.resolve_companion(post_train_state, "zhou_mubai", 5, 0, companion_stats)
+	assert(int(post_train_state.xp) == 1, "传功长老 should grant 沈羽 +1 xp/week at insight 4.")
+	assert(int(post_train.xp_gained) == RULES.COMPANION_TRAIN_XP, "The companion still receives their own 修炼 xp.")
+
+	var envoy_state := _hero_state()
+	envoy_state.companion_tasks = {"zhou_mubai": "envoy"}
+	var envoy_result: Dictionary = RULES.resolve_companion(envoy_state, "zhou_mubai", 5, 0, companion_stats)
+	assert(int(envoy_result.renown) == 1 and int(envoy_state.renown) == 1, "知客 at level 1 grants the base 1 renown, no extra yet.")
+	var veteran_stats := companion_stats.duplicate(true)
+	veteran_stats.level = 30
+	var veteran_result: Dictionary = RULES.resolve_companion(envoy_state, "zhou_mubai", 5, 0, veteran_stats)
+	assert(int(veteran_result.post_bonus.renown) == 1 and int(envoy_state.renown) == 3, "知客 at level 30 adds one extra renown on top of the base.")
+
+	var hero_envoy_state := _hero_state()
+	hero_envoy_state.weekly_task_hero = "envoy"
+	var hero_envoy: Dictionary = RULES.resolve_hero(hero_envoy_state, 6)
+	assert(int(hero_envoy.renown) == 2 and int(hero_envoy_state.renown) == 2, "沈羽's 游历 task should grant 1 + roll/6 renown.")
 
 	var damaged := _hero_state()
 	damaged.companion_growth = {"zhou_mubai": {"xp": -20, "level": 99, "strength": -4, "constitution": []}}

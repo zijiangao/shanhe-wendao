@@ -40,6 +40,7 @@ const WUXUE_RULES := preload("res://scripts/progression/wuxue_rules.gd")
 const COMPANION_RULES := preload("res://scripts/progression/companion_rules.gd")
 const WEEKLY_TASK_RULES := preload("res://scripts/progression/weekly_task_rules.gd")
 const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
+const SECT_POST_RULES := preload("res://scripts/progression/sect_post_rules.gd")
 const QUEST_RULES := preload("res://scripts/progression/quest_rules.gd")
 ## 藏经阁 (0.103.0): left-column category buttons, in display order. The
 ## first four match WuxueRules.MOVES' "category" field; 内功/轻功 aren't
@@ -119,6 +120,8 @@ func _ready() -> void:
 	_show_menu()
 	if "--verify-onboarding-flow" in OS.get_cmdline_user_args():
 		call_deferred("_verify_onboarding_flow")
+	elif "--verify-sect-post-flow" in OS.get_cmdline_user_args():
+		call_deferred("_verify_sect_post_flow")
 	elif "--verify-steam-data" in OS.get_cmdline_user_args():
 		call_deferred("_verify_steam_data")
 	elif "--verify-battle-presentation" in OS.get_cmdline_user_args():
@@ -158,6 +161,34 @@ func _handle_release_mode_verification() -> bool:
 		push_error("Release mode verification failed.")
 	get_tree().quit(0 if valid else 2)
 	return true
+
+func _verify_sect_post_flow() -> void:
+	seed(20261019)
+	GameState.new_game()
+	GameState.data.silver = 1000
+	var recruited := COMPANION_RULES.recruit(GameState.data, "zhou_mubai") and COMPANION_RULES.recruit(GameState.data, "liu_ruyan")
+	var assigned := GameState.assign_companion_task("zhou_mubai", "earn") and GameState.assign_companion_task("liu_ruyan", "gather")
+	var invalid_rejected := not GameState.assign_companion_task("zhou_mubai", "not_a_post")
+	var silver_before := int(GameState.data.silver)
+	var herbs_before := int(GameState.data.materials.herbs)
+	var ore_before := int(GameState.data.materials.ore)
+	var ended := GameState.end_week()
+	var valid := recruited and assigned and invalid_rejected and ended
+	valid = valid and int(GameState.data.silver) > silver_before + 10
+	valid = valid and int(GameState.data.materials.herbs) >= herbs_before + 2
+	valid = valid and int(GameState.data.materials.ore) >= ore_before + 2
+	valid = valid and GameState.data.log.any(func(entry): return "掌柜" in str(entry) and "周慕白" in str(entry))
+	valid = valid and GameState.data.log.any(func(entry): return "总管" in str(entry) and "柳如烟" in str(entry))
+	var xp_before := int(GameState.data.xp)
+	var renown_before := int(GameState.data.renown)
+	var reassigned := GameState.assign_companion_task("zhou_mubai", "train") and GameState.assign_companion_task("liu_ruyan", "envoy")
+	var second_week := GameState.end_week()
+	valid = valid and reassigned and second_week
+	valid = valid and int(GameState.data.xp) == xp_before + 1
+	valid = valid and int(GameState.data.renown) == renown_before + 1
+	valid = valid and GameState.data.log.any(func(entry): return "传功长老" in str(entry))
+	print("Sect post flow verification passed." if valid else "Sect post flow verification failed.")
+	get_tree().quit(0 if valid else 17)
 
 func _verify_training_flow() -> void:
 	GameState.new_game()
@@ -705,7 +736,7 @@ func _show_menu() -> void:
 	panel.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.174.2 · 开局建设，自由探索江湖"
+	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.175.0 · 开局建设，自由探索江湖"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	var credits_button := _action_button("制作名单与版权", Color("#485e54"))
@@ -1645,7 +1676,7 @@ func _resolve_choice(route: String) -> void:
 			_rebuild()
 			return
 		if not GameState.assign_companion_task(companion_gear_target, route.trim_prefix("assign_companion_")):
-			_toast("无法为这位同伴分派任务。")
+			_toast("无法为这位同伴安排职守。")
 			return
 		SaveManager.save_auto()
 		_show_companion_tasks(companion_gear_target)
@@ -2208,7 +2239,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.174.2 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.175.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
@@ -2718,15 +2749,22 @@ func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) ->
 	armor_button.pressed.connect(func(): _show_companion_armors(id))
 	gear_buttons.add_child(armor_button)
 
-	# 分派任务 (0.115.0)：不占用沈羽的每周行动，一旦分派就持续进行，直到玩家
-	# 改派或取消——每次结束本周都会结算一次。
+	# 门派职守 (0.175.0)：把 0.115.0 的"分派任务"升级成有身份的岗位。
+	# 仍然不占用沈羽的每周行动，一旦任职就持续结算，直到改派或取消。
 	var task_title := Label.new()
-	task_title.text = "分 派 任 务"
+	task_title.text = "门 派 职 守"
 	task_title.add_theme_font_size_override("font_size", 20)
 	task_title.add_theme_color_override("font_color", Color("#dfbf74"))
 	info.add_child(task_title)
 	var current_task_id := str(Dictionary(GameState.data.get("companion_tasks", {})).get(id, ""))
-	var task_text := "持续进行：%s（每周结束时自动结算）" % str(WEEKLY_TASK_RULES.TASKS[current_task_id].title) if WEEKLY_TASK_RULES.is_valid_task(current_task_id) else "尚未分派任务，同伴平时闲置。"
+	var post_stats := WEEKLY_TASK_RULES.companion_stats(GameState.data, id, entry)
+	var task_text := "尚未任职守，同伴平时闲置。"
+	if WEEKLY_TASK_RULES.is_valid_task(current_task_id):
+		task_text = "当前职守：%s · %s\n%s" % [
+			SECT_POST_RULES.title(current_task_id),
+			SECT_POST_RULES.forecast_text(current_task_id, post_stats),
+			"每周结束自动结算。",
+		]
 	var task_card := Label.new()
 	task_card.text = task_text
 	task_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2734,7 +2772,7 @@ func _show_companion_info(info: VBoxContainer, id: String, entry: Dictionary) ->
 	task_card.add_theme_color_override("font_color", Color("#f4eee2"))
 	task_card.add_theme_stylebox_override("normal", _box(Color("#223a30")))
 	info.add_child(task_card)
-	var task_button := UI_THEME.action_button("分派任务", Color("#4d5550"))
+	var task_button := UI_THEME.action_button("调整职守", Color("#4d5550"))
 	task_button.custom_minimum_size.y = 40
 	task_button.pressed.connect(func(): _show_companion_tasks(id))
 	info.add_child(task_button)
@@ -2761,8 +2799,10 @@ func _show_hero_tasks() -> void:
 func _show_companion_tasks(id: String) -> void:
 	companion_gear_target = id
 	choice_event = "companion_task"
-	choice_prompt = "%s · 分派任务" % str(COMPANION_RULES.companion_entry(id).get("title", id))
-	choice_options = WEEKLY_TASK_RULES.options_companion(GameState.data, id)
+	var entry: Dictionary = COMPANION_RULES.companion_entry(id)
+	var stats := WEEKLY_TASK_RULES.companion_stats(GameState.data, id, entry)
+	choice_prompt = "%s · 门派职守" % str(entry.get("title", id))
+	choice_options = WEEKLY_TASK_RULES.options_companion(GameState.data, id, stats)
 	screen = "choice"
 	_rebuild()
 
