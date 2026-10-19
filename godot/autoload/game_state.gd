@@ -284,6 +284,9 @@ func complete_training(discipline: String, score: int, event_roll: int = -1, bes
 	var current_level := int(train_result.new_level)
 	outcome.specialty_level = current_level
 	outcome.specialty_rank = TRAINING_RULES.specialty_rank_name(current_level)
+	if bool(train_result.get("capped", false)):
+		outcome.specialty_capped = true
+		outcome.specialty_cap = int(train_result.get("cap", 0))
 	outcome.rank_up = TRAINING_RULES.specialty_rank_index(current_level) > TRAINING_RULES.specialty_rank_index(previous_level)
 	var gathering_bonus := TRAINING_RULES.gathering_bonus(current_level)
 	if discipline == "herbalism":

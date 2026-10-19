@@ -113,6 +113,28 @@ static func effect_text(state: Dictionary, id: String) -> String:
 		return ""
 	return str(BUILDINGS[id].effects[level(state, id)])
 
+## 建筑门槛 (0.176.0)：建筑不只是数值加成，还决定专精/武学的成长上限。
+## 与 effect_text 分开，避免把"当前效果"和"解锁了什么"混成一句。
+static func unlock_text(id: String, building_level: int) -> String:
+	var lv := clampi(building_level, 0, MAX_LEVEL)
+	match id:
+		"training_ground":
+			return ["专精上限 29（升到 Lv.1 可突破 30）", "专精可突破 30（熟手）", "专精可突破 60（精通）", "专精可突破 100（大成）"][lv]
+		"library":
+			return ["武学上限 4 级（升到 Lv.1 提高到 6）", "武学上限 6 级", "武学上限 8 级", "武学上限 10 级"][lv]
+	return ""
+
+## 卡片标题用的紧凑版：建筑总览一次四张卡时，解锁信息必须一眼可见，
+## 不能只藏在 tooltip 或第二行描述里。
+static func unlock_short(id: String, building_level: int) -> String:
+	var lv := clampi(building_level, 0, MAX_LEVEL)
+	match id:
+		"training_ground":
+			return ["专精上限29", "专精30", "专精60", "专精100"][lv]
+		"library":
+			return ["武学上限4", "武学上限6", "武学上限8", "武学上限10"][lv]
+	return ""
+
 static func next_effect_text(state: Dictionary, id: String) -> String:
 	var next_level := level(state, id) + 1
 	if not BUILDINGS.has(id) or next_level > MAX_LEVEL:
@@ -150,12 +172,12 @@ static func options(state: Dictionary) -> Array:
 		var current := level(state, id)
 		var cost := cost_for_next(state, id)
 		var locked := current >= MAX_LEVEL or not can_upgrade(state, id)
-		var status := "当前 Lv.%d · %s" % [current, effect_text(state, id)]
+		var status := "当前 Lv.%d · %s · %s" % [current, effect_text(state, id), unlock_text(id, current)]
 		if current < MAX_LEVEL:
-			status += "\n下级：%s · 需要%s" % [next_effect_text(state, id), cost_text(cost)]
+			status += "\n下级：%s · %s · 需要%s" % [next_effect_text(state, id), unlock_text(id, current + 1), cost_text(cost)]
 		var blocked := upgrade_block_reason(state, id)
 		if blocked != "":
 			status += "\n%s" % blocked
-		result.append(["%s · Lv.%d" % [str(entry.title), current], "%s\n%s" % [str(entry.description), status], "upgrade_%s" % id, locked])
+		result.append(["%s · Lv.%d · %s" % [str(entry.title), current, unlock_short(id, current)], "%s\n%s" % [str(entry.description), status], "upgrade_%s" % id, locked])
 	result.append(["离开营造图", "不消耗行动点，返回青云门。", "leave"])
 	return result

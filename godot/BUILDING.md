@@ -1,5 +1,21 @@
 # Building 山河问道
 
+## 0.176.0 — sect buildings gate specialty and wuxue caps
+
+The 演武场 and 藏经阁 now decide how far a hero can grow before the next
+construction upgrade. 演武场 Lv.0/1/2/3 caps the four weapon specialties at
+29/59/99/100, so 30 (熟手), 60 (精通) and 100 (大成) each need one more
+building level. 藏经阁 Lv.0/1/2/3 caps every wuxue at 4/6/8/10. Existing saves
+keep any level they have already reached (the gate only blocks further gains),
+and training at the cap banks at most one level of xp so the next building
+upgrade converts it immediately. The construction cards now list the unlock
+they provide, the specialty menu names the current cap, and the manuals screen
+disables an upgrade row with "需藏经阁 Lv.N" instead of silently failing.
+
+The menu and Windows Desktop export preset are both 0.176.0. Only the full
+game is exported and verified; the demo preset and build remain untouched.
+See `../qa/2026-10-19-building-gates/REPORT.md` for validation.
+
 ## 0.175.0 — sect posts for every companion
 
 The three persistent companion tasks (赚钱/修炼/采集) now double as 门派职守:

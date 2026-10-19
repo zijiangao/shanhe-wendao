@@ -70,12 +70,14 @@ func _initialize() -> void:
 	# that one S-grade training (3 xp) exactly crosses it, so the rank_up
 	# still triggers deterministically in a single complete_training() call.
 	state.new_game()
+	state.data.sect.buildings.training_ground = 2
 	state.data.herbalism = 59
 	state.data.specialty_xp.herbalism = TRAINING_RULES.specialty_xp_needed(59) - 3
 	var mastery_herbs: Dictionary = state.complete_training("herbalism", 300, 99, 3)
 	assert(mastery_herbs.rank_up and mastery_herbs.specialty_rank == "精通" and int(state.data.herbalism) == 60, "Crossing level sixty should announce herbalism mastery.")
 	assert(int(mastery_herbs.herbs) == 4 and int(state.data.materials.herbs) == 4, "Master herbalism should add one material to the normal score reward.")
 	state.new_game()
+	state.data.sect.buildings.training_ground = 3
 	state.data.mining = 99
 	state.data.specialty_xp.mining = TRAINING_RULES.specialty_xp_needed(99) - 3
 	var mastery_mining: Dictionary = state.complete_training("mining", 300, 99, 3)

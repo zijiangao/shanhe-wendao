@@ -8,6 +8,20 @@ const LIGHTNESS_LEVEL_DIVISOR := 3
 const TRAIN_XP_MIN := 8
 const TRAIN_XP_MAX := 15
 
+## 建筑门槛 (0.176.0) -- 藏经阁决定武学等级上限：Lv.0 只能到 4，
+## Lv.1 到 6，Lv.2 到 8，Lv.3 才允许 10。旧档已超上限的等级保留，
+## 只限制继续提升；没有 sect 字段的最小测试字典保持旧的无上限行为。
+const MASTERY_CAP_BY_LIBRARY := [4, 6, 8, 10]
+
+static func mastery_cap(state: Dictionary) -> int:
+	if typeof(state.get("sect", null)) != TYPE_DICTIONARY:
+		return MAX_LEVEL
+	var level := SECT_BUILDING_RULES.level(state, "library")
+	return int(MASTERY_CAP_BY_LIBRARY[clampi(level, 0, 3)])
+
+static func mastery_capped(state: Dictionary, level: int) -> bool:
+	return level >= mastery_cap(state) and mastery_cap(state) < MAX_LEVEL
+
 ## 流云剑法/断岳刀法 (0.95.0) are normal learnable/equippable moves like any
 ## other -- no longer innate/always-available (reverted from 0.94.0's
 ## special-cased treatment, since the user found that inconsistent with
@@ -158,17 +172,23 @@ static func train_lightness(state: Dictionary, id: String, xp_gain: int) -> Dict
 static func _train(state: Dictionary, level_key: String, id: String, xp_gain: int, level: int) -> Dictionary:
 	if not state.has("wuxue_xp") or typeof(state.wuxue_xp) != TYPE_DICTIONARY:
 		state.wuxue_xp = {}
+	var cap := mastery_cap(state)
 	var xp := wuxue_xp(state, id) + maxi(0, xp_gain)
+	if level >= cap:
+		state.wuxue_xp[id] = mini(xp, xp_needed(level)) if cap < MAX_LEVEL else 0
+		return {"ok": true, "leveled_up": false, "new_level": level, "xp": int(state.wuxue_xp[id]), "xp_needed": xp_needed(level) if level < MAX_LEVEL else 0, "cap": cap, "capped": cap < MAX_LEVEL}
 	var leveled_up := false
-	while level < MAX_LEVEL and xp >= xp_needed(level):
+	while level < cap and xp >= xp_needed(level):
 		xp -= xp_needed(level)
 		level += 1
 		leveled_up = true
+	if level >= cap and cap < MAX_LEVEL:
+		xp = mini(xp, xp_needed(level))
 	if not state.has(level_key) or typeof(state[level_key]) != TYPE_DICTIONARY:
 		state[level_key] = {}
 	state[level_key][id] = level
 	state.wuxue_xp[id] = 0 if level >= MAX_LEVEL else xp
-	return {"ok": true, "leveled_up": leveled_up, "new_level": level, "xp": int(state.wuxue_xp[id]), "xp_needed": xp_needed(level) if level < MAX_LEVEL else 0}
+	return {"ok": true, "leveled_up": leveled_up, "new_level": level, "xp": int(state.wuxue_xp[id]), "xp_needed": xp_needed(level) if level < MAX_LEVEL else 0, "cap": cap, "capped": level >= cap and cap < MAX_LEVEL}
 
 ## 藏经阁 (0.91.0) is a read-only summary of learned wuxue -- every row is
 ## disabled since this screen only informs, it never lets you train/equip/
@@ -217,9 +237,16 @@ static func options_training(state: Dictionary) -> Array:
 static func _training_row(state: Dictionary, title: String, description: String, level: int, id: String, route: String) -> Array:
 	if level >= MAX_LEVEL:
 		return ["修炼 · %s · 已大成" % title, "%s（已修炼至第10层，无需再练）" % description, route, true]
+	var cap := mastery_cap(state)
+	var cap_note := ""
+	var cap_suffix := ""
+	if level >= cap and cap < MAX_LEVEL:
+		var needed_building := SECT_BUILDING_RULES.level(state, "library") + 1
+		cap_note = "\n已达藏经阁 Lv.%d 的武学上限 %d；继续修炼会积攒经验，升级藏经阁后可突破。" % [SECT_BUILDING_RULES.level(state, "library"), cap]
+		cap_suffix = " · 需藏经阁 Lv.%d" % needed_building
 	if bool(state.get("acted_this_week", false)) or str(state.get("weekly_task_hero", "")) != "":
 		return ["修炼 · %s · 本周已行动" % title, "休息至下一周后，可继续修炼。", route, true]
-	return ["修炼 · %s Lv.%d（%d/%d 经验）" % [title, level, wuxue_xp(state, id), xp_needed(level)], description, route, false]
+	return ["修炼 · %s Lv.%d%s（%d/%d 经验）" % [title, level, cap_suffix, wuxue_xp(state, id), xp_needed(level)], "%s%s" % [description, cap_note], route, false]
 
 static func options_manuals(state: Dictionary) -> Array:
 	var options := []
@@ -229,9 +256,18 @@ static func options_manuals(state: Dictionary) -> Array:
 	options.append(["返回", "不消耗行动点，返回西市。", "leave"])
 	return options
 
-static func _level_row(title: String, level: int, cost: int, silver: int, route: String) -> Array:
+static func _level_row(state: Dictionary, title: String, level: int, cost: int, silver: int, route: String) -> Array:
 	if level >= MAX_LEVEL:
 		return ["升级 · %s · 已满级" % title, "已修炼至第10层，武学大成。", route, true]
+	var cap := mastery_cap(state)
+	if level >= cap:
+		var need_building := 0
+		for index in range(MASTERY_CAP_BY_LIBRARY.size()):
+			if int(MASTERY_CAP_BY_LIBRARY[index]) > level:
+				need_building = index
+				break
+		var library_level := SECT_BUILDING_RULES.level(state, "library")
+		return ["升级 · %s Lv.%d · 需藏经阁 Lv.%d" % [title, level, need_building], "当前藏经阁 Lv.%d 只能把武学支持到 Lv.%d；升级藏经阁后可继续提升。" % [library_level, cap], route, true]
 	return ["升级 · %s Lv.%d→%d · %d 银" % [title, level, level + 1, cost], "修为越高，境界提升所需银两越多。", route, silver < cost]
 
 static func _move_options(state: Dictionary) -> Array:
@@ -247,7 +283,7 @@ static func _move_options(state: Dictionary) -> Array:
 			options.append(["学习 · %s · %d 银" % [str(item.title), price], str(item.description), "learn_move_%s" % id, silver < price])
 		if id in learned:
 			var level := move_level(state, id)
-			options.append(_level_row(str(item.title), level, effective_manual_cost(state, upgrade_cost(MOVES, id, level)), silver, "upgrade_move_%s" % id))
+			options.append(_level_row(state, str(item.title), level, effective_manual_cost(state, upgrade_cost(MOVES, id, level)), silver, "upgrade_move_%s" % id))
 	return options
 
 static func _internal_options(state: Dictionary) -> Array:
@@ -266,7 +302,7 @@ static func _internal_options(state: Dictionary) -> Array:
 			options.append(["学习 · %s · %d 银" % [str(item.title), price], str(item.description), "learn_internal_%s" % id, silver < price])
 		if id in learned:
 			var level := internal_level(state, id)
-			options.append(_level_row(str(item.title), level, effective_manual_cost(state, upgrade_cost(INTERNAL, id, level)), silver, "upgrade_internal_%s" % id))
+			options.append(_level_row(state, str(item.title), level, effective_manual_cost(state, upgrade_cost(INTERNAL, id, level)), silver, "upgrade_internal_%s" % id))
 	return options
 
 static func _lightness_options(state: Dictionary) -> Array:
@@ -285,7 +321,7 @@ static func _lightness_options(state: Dictionary) -> Array:
 			options.append(["学习 · %s · %d 银" % [str(item.title), price], str(item.description), "learn_lightness_%s" % id, silver < price])
 		if id in learned:
 			var level := lightness_level(state, id)
-			options.append(_level_row(str(item.title), level, effective_manual_cost(state, upgrade_cost(LIGHTNESS, id, level)), silver, "upgrade_lightness_%s" % id))
+			options.append(_level_row(state, str(item.title), level, effective_manual_cost(state, upgrade_cost(LIGHTNESS, id, level)), silver, "upgrade_lightness_%s" % id))
 	return options
 
 static func effective_manual_cost(state: Dictionary, base_cost: int) -> int:
@@ -351,7 +387,7 @@ static func upgrade_move(state: Dictionary, id: String) -> bool:
 	if not MOVES.has(id) or id not in Array(state.get("learned_moves", [])):
 		return false
 	var level := move_level(state, id)
-	if level >= MAX_LEVEL:
+	if level >= MAX_LEVEL or level >= mastery_cap(state):
 		return false
 	var cost := effective_manual_cost(state, upgrade_cost(MOVES, id, level))
 	if int(state.get("silver", 0)) < cost:
@@ -366,7 +402,7 @@ static func upgrade_internal(state: Dictionary, id: String) -> bool:
 	if not INTERNAL.has(id) or id not in Array(state.get("learned_internal", [])):
 		return false
 	var level := internal_level(state, id)
-	if level >= MAX_LEVEL:
+	if level >= MAX_LEVEL or level >= mastery_cap(state):
 		return false
 	var cost := effective_manual_cost(state, upgrade_cost(INTERNAL, id, level))
 	if int(state.get("silver", 0)) < cost:
@@ -381,7 +417,7 @@ static func upgrade_lightness(state: Dictionary, id: String) -> bool:
 	if not LIGHTNESS.has(id) or id not in Array(state.get("learned_lightness", [])):
 		return false
 	var level := lightness_level(state, id)
-	if level >= MAX_LEVEL:
+	if level >= MAX_LEVEL or level >= mastery_cap(state):
 		return false
 	var cost := effective_manual_cost(state, upgrade_cost(LIGHTNESS, id, level))
 	if int(state.get("silver", 0)) < cost:

@@ -3,6 +3,7 @@ extends RefCounted
 
 const HERBARIUM_RULES := preload("res://scripts/progression/herbarium_rules.gd")
 const MINERALOGY_RULES := preload("res://scripts/progression/mineralogy_rules.gd")
+const SECT_BUILDING_RULES := preload("res://scripts/progression/sect_building_rules.gd")
 
 const ROUND_COUNT := 3
 const COMBO_SCORE_THRESHOLD := 85
@@ -119,26 +120,51 @@ static func specialty_xp_needed(level: int) -> int:
 static func specialty_xp(state: Dictionary, discipline: String) -> int:
 	return maxi(0, int(Dictionary(state.get("specialty_xp", {})).get(discipline, 0)))
 
+## 建筑门槛 (0.176.0) -- 演武场决定四项武学专精的突破上限：
+## Lv.0 只能到 29（升 Lv.1 才可跨过 30 熟手），Lv.1 到 59，
+## Lv.2 到 99，Lv.3 才允许 100 大成。旧档已超上限的等级保留
+## （祖父条款）：这里只限制“继续提升”，不会把已有等级压回去。
+const SPECIALTY_CAP_BY_TRAINING_GROUND := [29, 59, 99, 100]
+
+static func specialty_cap(state: Dictionary) -> int:
+	# 单元测试/旧调用常传最小字典；没有 sect 字段时保持旧的无上限行为，
+	# 真实存档在 new_game()/import_data() 后一定带着 sect。
+	if typeof(state.get("sect", null)) != TYPE_DICTIONARY:
+		return MAX_SPECIALTY_LEVEL
+	var level := SECT_BUILDING_RULES.level(state, "training_ground")
+	return int(SPECIALTY_CAP_BY_TRAINING_GROUND[clampi(level, 0, 3)])
+
+static func specialty_capped(state: Dictionary, discipline: String) -> bool:
+	return int(state.get(discipline, 0)) >= specialty_cap(state) and specialty_cap(state) < MAX_SPECIALTY_LEVEL
+
 ## 专精训练/切磋共用的升级入口 (0.105.0)，结构照抄 WuxueRules._train()：
 ## 经验攒够 specialty_xp_needed(当前等级) 就升一级，循环直到经验不够或到达
-## MAX_SPECIALTY_LEVEL 封顶（封顶后多余经验直接丢弃，不再累积）。
+## MAX_SPECIALTY_LEVEL / 当前建筑上限（封顶后最多保留一级的经验，便于
+## 升完建筑后立刻突破一次）。
 static func train_specialty(state: Dictionary, discipline: String, xp_gain: int) -> Dictionary:
 	if not is_valid_discipline(discipline):
 		return {"ok": false}
 	if not state.has("specialty_xp") or typeof(state.specialty_xp) != TYPE_DICTIONARY:
 		state.specialty_xp = {}
+	var cap := specialty_cap(state)
 	var level := clampi(int(state.get(discipline, 0)), 0, MAX_SPECIALTY_LEVEL)
 	if level >= MAX_SPECIALTY_LEVEL:
-		return {"ok": true, "leveled_up": false, "new_level": level, "xp": 0, "xp_needed": 0}
+		return {"ok": true, "leveled_up": false, "new_level": level, "xp": 0, "xp_needed": 0, "cap": MAX_SPECIALTY_LEVEL, "capped": false}
 	var xp := specialty_xp(state, discipline) + maxi(0, xp_gain)
+	if level >= cap:
+		state[discipline] = level
+		state.specialty_xp[discipline] = mini(xp, specialty_xp_needed(level))
+		return {"ok": true, "leveled_up": false, "new_level": level, "xp": int(state.specialty_xp[discipline]), "xp_needed": specialty_xp_needed(level), "cap": cap, "capped": cap < MAX_SPECIALTY_LEVEL}
 	var leveled_up := false
-	while level < MAX_SPECIALTY_LEVEL and xp >= specialty_xp_needed(level):
+	while level < cap and xp >= specialty_xp_needed(level):
 		xp -= specialty_xp_needed(level)
 		level += 1
 		leveled_up = true
+	if level >= cap and cap < MAX_SPECIALTY_LEVEL:
+		xp = mini(xp, specialty_xp_needed(level))
 	state[discipline] = level
 	state.specialty_xp[discipline] = 0 if level >= MAX_SPECIALTY_LEVEL else xp
-	return {"ok": true, "leveled_up": leveled_up, "new_level": level, "xp": int(state.specialty_xp[discipline]), "xp_needed": specialty_xp_needed(level) if level < MAX_SPECIALTY_LEVEL else 0}
+	return {"ok": true, "leveled_up": leveled_up, "new_level": level, "xp": int(state.specialty_xp[discipline]), "xp_needed": specialty_xp_needed(level) if level < MAX_SPECIALTY_LEVEL else 0, "cap": cap, "capped": level >= cap and cap < MAX_SPECIALTY_LEVEL}
 
 static func perk_text(discipline: String, level: int) -> String:
 	match discipline:
@@ -219,7 +245,19 @@ static func _discipline_options(state: Dictionary, disciplines: Array) -> Array:
 		elif discipline == "mining":
 			var mineral_level := MINERALOGY_RULES.gather_level(state.get("mineralogy", {}), MINERALOGY_RULES.lifetime_catches(state))
 			gather_text = "\n挖矿等级 Lv.%d/%d（矿物本身的图鉴等级，越高解锁越稀有的品种）" % [mineral_level, MINERALOGY_RULES.MAX_GATHER_LEVEL]
-		result.append([str(titles[discipline]), "%s%s %d级（%s） · %s · %s%s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, xp_progress, progress, perk_text(discipline, level), gather_text], discipline])
+		var cap := specialty_cap(state)
+		var cap_text := ""
+		if cap < MAX_SPECIALTY_LEVEL:
+			var building_level := SECT_BUILDING_RULES.level(state, "training_ground")
+			if level >= cap:
+				cap_text = "\n已达演武场 Lv.%d 的专精上限 %d；升级演武场后可继续突破。" % [building_level, cap]
+			else:
+				cap_text = "\n当前专精上限 %d（演武场 Lv.%d）；升级演武场可提高。" % [cap, building_level]
+		var card_title := str(titles[discipline])
+		if cap < MAX_SPECIALTY_LEVEL and level >= cap:
+			var needed_building := SECT_BUILDING_RULES.level(state, "training_ground") + 1
+			card_title += " · 需演武场 Lv.%d" % needed_building
+		result.append([card_title, "%s%s %d级（%s） · %s · %s%s%s\n小游戏成绩决定本周成长与收益。" % [focus_text, specialty_rank_name(level), level, xp_progress, progress, perk_text(discipline, level), gather_text, cap_text], discipline])
 	return result
 
 static func score_round(correct: bool, elapsed_ms: int) -> int:

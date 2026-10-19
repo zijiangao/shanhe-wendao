@@ -1,0 +1,46 @@
+{
+  "version": "0.176.0",
+  "date": "2026-10-19",
+  "start_commit": "7288d6c",
+  "save_version": 13,
+  "suites": {
+    "fast": {
+      "passed": 65,
+      "total": 65,
+      "skipped_isolated": 13,
+      "new_tests": ["test_sect_building_gates.gd"],
+      "updated_tests": ["test_game_state.gd"]
+    },
+    "isolated": {
+      "sect_journey": {"checks": 1168, "failures": 0},
+      "full_journey": {"passed": true}
+    },
+    "release_exe": {
+      "passed": 8,
+      "total": 8,
+      "checks": [
+        "--verify-building-gates",
+        "--verify-sect-post-flow",
+        "--verify-full-build",
+        "--verify-release-credits",
+        "--verify-steam-data",
+        "--verify-training-flow",
+        "--verify-crafting-flow",
+        "--verify-pause-flow"
+      ]
+    },
+    "rendered": {
+      "captures": [
+        "screenshots/building_gates_training.png",
+        "screenshots/building_gates_manuals.png",
+        "screenshots/building_gates_card.png"
+      ]
+    }
+  },
+  "gates": {
+    "specialty_cap_by_training_ground": [29, 59, 99, 100],
+    "mastery_cap_by_library": [4, 6, 8, 10],
+    "grandfather_existing_levels": true,
+    "save_migration": "none required"
+  }
+}

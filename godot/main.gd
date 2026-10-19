@@ -122,6 +122,8 @@ func _ready() -> void:
 		call_deferred("_verify_onboarding_flow")
 	elif "--verify-sect-post-flow" in OS.get_cmdline_user_args():
 		call_deferred("_verify_sect_post_flow")
+	elif "--verify-building-gates" in OS.get_cmdline_user_args():
+		call_deferred("_verify_building_gates")
 	elif "--verify-steam-data" in OS.get_cmdline_user_args():
 		call_deferred("_verify_steam_data")
 	elif "--verify-battle-presentation" in OS.get_cmdline_user_args():
@@ -161,6 +163,28 @@ func _handle_release_mode_verification() -> bool:
 		push_error("Release mode verification failed.")
 	get_tree().quit(0 if valid else 2)
 	return true
+
+func _verify_building_gates() -> void:
+	GameState.new_game()
+	GameState.data.silver = 5000
+	GameState.data.swordsmanship = 29
+	GameState.data.specialty_xp = {"swordsmanship": 0}
+	var blocked: Dictionary = TRAINING_RULES.train_specialty(GameState.data, "swordsmanship", 100)
+	var valid := int(blocked.new_level) == 29 and bool(blocked.get("capped", false))
+	GameState.data.sect.buildings.training_ground = 1
+	var unlocked: Dictionary = TRAINING_RULES.train_specialty(GameState.data, "swordsmanship", 1)
+	valid = valid and int(unlocked.new_level) >= 30
+	GameState.data.learned_moves.append("cloud_sword")
+	GameState.data.move_levels = {"cloud_sword": 4}
+	GameState.data.wuxue_xp = {"cloud_sword": 0}
+	var wuxue_blocked: Dictionary = WUXUE_RULES.train_move(GameState.data, "cloud_sword", 500)
+	valid = valid and int(wuxue_blocked.new_level) == 4 and bool(wuxue_blocked.get("capped", false))
+	var upgrade_blocked := not WUXUE_RULES.upgrade_move(GameState.data, "cloud_sword")
+	GameState.data.sect.buildings.library = 1
+	var upgrade_ok := WUXUE_RULES.upgrade_move(GameState.data, "cloud_sword")
+	valid = valid and upgrade_blocked and upgrade_ok and WUXUE_RULES.move_level(GameState.data, "cloud_sword") == 5
+	print("Building gates verification passed." if valid else "Building gates verification failed.")
+	get_tree().quit(0 if valid else 18)
 
 func _verify_sect_post_flow() -> void:
 	seed(20261019)
@@ -736,7 +760,7 @@ func _show_menu() -> void:
 	panel.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.175.0 · 开局建设，自由探索江湖"
+	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.176.0 · 开局建设，自由探索江湖"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	var credits_button := _action_button("制作名单与版权", Color("#485e54"))
@@ -1031,8 +1055,18 @@ func _show_training_menu() -> void:
 		var progress := "已大成" if level >= TRAINING_RULES.MAX_SPECIALTY_LEVEL else "经验 %d/%d" % [TRAINING_RULES.specialty_xp(GameState.data, id), TRAINING_RULES.specialty_xp_needed(level)]
 		var mechanic := "记忆连招" if id in ["swordsmanship", "staffsmanship"] else "把握蓄力时机"
 		var badge := "本周修为 +%d" % TRAINING_RULES.WEEKLY_FOCUS_XP_BONUS if id == TRAINING_RULES.weekly_focus(int(GameState.data.week)) else ""
-		var details := "%s\n%s\n三回合成绩决定修为与专精经验。" % [str(TRAINING_RULES.DISCIPLINES[id].description), TRAINING_RULES.perk_text(id, level)]
-		choice_options.append(["%s · Lv.%d" % [TRAINING_RULES.discipline_short_name(id), level], "%s · %s" % [mechanic, progress], id, action_spent, null, {"tooltip": details, "badge": badge, "accent": TRAINING_RULES.DISCIPLINES[id].accent}])
+		var title := "%s · Lv.%d" % [TRAINING_RULES.discipline_short_name(id), level]
+		var cap := TRAINING_RULES.specialty_cap(GameState.data)
+		var cap_note := ""
+		if cap < TRAINING_RULES.MAX_SPECIALTY_LEVEL:
+			var building_level := SECT_BUILDING_RULES.level(GameState.data, "training_ground")
+			if level >= cap:
+				title += " · 需演武场 Lv.%d" % (building_level + 1)
+				cap_note = "\n已达演武场 Lv.%d 的专精上限 %d；升级演武场后可继续突破。" % [building_level, cap]
+			else:
+				cap_note = "\n当前专精上限 %d（演武场 Lv.%d）；升级演武场可提高。" % [cap, building_level]
+		var details := "%s\n%s\n三回合成绩决定修为与专精经验。%s" % [str(TRAINING_RULES.DISCIPLINES[id].description), TRAINING_RULES.perk_text(id, level), cap_note]
+		choice_options.append([title, "%s · %s" % [mechanic, progress], id, action_spent, null, {"tooltip": details, "badge": badge, "accent": TRAINING_RULES.DISCIPLINES[id].accent}])
 	var spar_rotation := SPARRING_RULES.rotation_for(int(GameState.data.week))
 	choice_options.append(["实战切磋", str(spar_rotation.name), "qingyun_spar", action_spent, null, {"tooltip": "%s；%s。" % [spar_rotation.focus, SPARRING_RULES.record_text(GameState.data.get("sparring_record", {}))]}])
 	var has_learned_wuxue: bool = not Array(GameState.data.get("learned_moves", [])).is_empty() or not Array(GameState.data.get("learned_internal", [])).is_empty() or not Array(GameState.data.get("learned_lightness", [])).is_empty()
@@ -1054,10 +1088,12 @@ func _show_wuxue_training() -> void:
 		var catalog: Dictionary = WUXUE_RULES.MOVES if route.begins_with("train_move_") else (WUXUE_RULES.INTERNAL if route.begins_with("train_internal_") else WUXUE_RULES.LIGHTNESS)
 		var level: int = WUXUE_RULES.move_level(GameState.data, id) if route.begins_with("train_move_") else (WUXUE_RULES.internal_level(GameState.data, id) if route.begins_with("train_internal_") else WUXUE_RULES.lightness_level(GameState.data, id))
 		var detail := str(option[1])
-		option[0] = "%s · Lv.%d" % [str(catalog[id].title), level]
-		option[1] = "已大成" if level >= WUXUE_RULES.MAX_LEVEL else "经验 %d/%d" % [WUXUE_RULES.wuxue_xp(GameState.data, id), WUXUE_RULES.xp_needed(level)]
+		var cap := WUXUE_RULES.mastery_cap(GameState.data)
+		var capped := level >= cap and cap < WUXUE_RULES.MAX_LEVEL
+		option[0] = "%s · Lv.%d%s" % [str(catalog[id].title), level, (" · 需藏经阁 Lv.%d" % (SECT_BUILDING_RULES.level(GameState.data, "library") + 1)) if capped else ""]
+		option[1] = "已大成" if level >= WUXUE_RULES.MAX_LEVEL else ("已达上限 · 需藏经阁 Lv.%d" % (SECT_BUILDING_RULES.level(GameState.data, "library") + 1) if capped else "经验 %d/%d" % [WUXUE_RULES.wuxue_xp(GameState.data, id), WUXUE_RULES.xp_needed(level)])
 		option.append(null)
-		option.append({"tooltip": detail, "badge": "已大成" if level >= WUXUE_RULES.MAX_LEVEL else ("本周已行动" if bool(option[3]) else "")})
+		option.append({"tooltip": detail, "badge": "已大成" if level >= WUXUE_RULES.MAX_LEVEL else ("需藏经阁" if capped else ("本周已行动" if bool(option[3]) else ""))})
 	screen = "choice"
 	_rebuild()
 
@@ -1079,7 +1115,7 @@ func _show_sect_building(building_id: String = "") -> void:
 	choice_prompt = "青云门 · 门派建设 · 银两 %d · 药材 %d · 矿石 %d" % [int(GameState.data.silver), int(GameState.data.materials.get("herbs", 0)), int(GameState.data.materials.get("ore", 0))]
 	choice_options = SECT_BUILDING_RULES.options(GameState.data)
 	if not sect_building_selection.is_empty():
-		choice_prompt = "%s · %s\n%s" % [str(SECT_BUILDING_RULES.BUILDINGS[sect_building_selection].title), SECT_BUILDING_RULES.effect_text(GameState.data, sect_building_selection), choice_prompt]
+		choice_prompt = "%s · %s · %s\n%s" % [str(SECT_BUILDING_RULES.BUILDINGS[sect_building_selection].title), SECT_BUILDING_RULES.effect_text(GameState.data, sect_building_selection), SECT_BUILDING_RULES.unlock_text(sect_building_selection, SECT_BUILDING_RULES.level(GameState.data, sect_building_selection)), choice_prompt]
 		choice_options = choice_options.filter(func(option: Array): return str(option[2]) in ["upgrade_%s" % sect_building_selection, "leave"])
 	screen = "choice"
 	_rebuild()
@@ -1560,7 +1596,10 @@ func _resolve_choice(route: String) -> void:
 		if not bool(train_result.get("ok", false)):
 			_toast("本周已经行动过了，请先结束本周；或这门武学已大成，无需再练。")
 			return
-		_toast("武学境界更进一层！" if bool(train_result.get("leveled_up", false)) else "潜心温习，颇有所得。")
+		if bool(train_result.get("capped", false)):
+			_toast("藏经阁等级不足，修为已积攒；升级藏经阁后可继续突破。")
+		else:
+			_toast("武学境界更进一层！" if bool(train_result.get("leveled_up", false)) else "潜心温习，颇有所得。")
 		SaveManager.save_auto()
 		_show_wuxue_training()
 		return
@@ -2239,7 +2278,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.175.0 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.176.0 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)
