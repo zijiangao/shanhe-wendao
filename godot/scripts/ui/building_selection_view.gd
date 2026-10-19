@@ -80,7 +80,10 @@ func setup(background: Texture2D, title_text: String, prompt: String, options: A
 	_panel.add_child(_return_button)
 	_footer_hint = _label("悬停查看详情" if not _is_read_only() else "悬停查看武学说明", 13, MUTED)
 	_footer_hint.name = "BuildingFooterHint"
-	_footer_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if _mode == "sect_building" and bool(_state.get("acted_this_week", false)):
+		_footer_hint.text = "本周已行动 · 离开后结束本周"
+	_footer_hint.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_footer_hint.clip_text = true
 	_footer_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_panel.add_child(_footer_hint)
 	_build_choices()

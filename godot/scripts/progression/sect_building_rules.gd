@@ -74,6 +74,29 @@ static func can_upgrade(state: Dictionary, id: String, check_action: bool = true
 	var materials: Dictionary = state.get("materials", {})
 	return int(materials.get("herbs", 0)) >= int(cost.get("herbs", 0)) and int(materials.get("ore", 0)) >= int(cost.get("ore", 0))
 
+## Human-readable reason for the disabled state. The pavilion is reachable
+## after the week's action has already been spent, so "材料不足" must not be
+## used for every locked card -- that made fully stocked players think
+## construction was permanently impossible.
+static func upgrade_block_reason(state: Dictionary, id: String) -> String:
+	if not BUILDINGS.has(id):
+		return "无法升级"
+	if level(state, id) >= MAX_LEVEL:
+		return "已达最高等级"
+	if int(state.get("week", 1)) >= 104:
+		return "两年期限已到"
+	if bool(state.get("acted_this_week", false)):
+		return "本周已行动，结束本周后可升级"
+	var cost := cost_for_next(state, id)
+	if int(state.get("silver", 0)) < int(cost.get("silver", 0)):
+		return "银两不足（%d/%d）" % [int(state.get("silver", 0)), int(cost.get("silver", 0))]
+	var materials: Dictionary = state.get("materials", {})
+	if int(materials.get("herbs", 0)) < int(cost.get("herbs", 0)):
+		return "药材不足（%d/%d）" % [int(materials.get("herbs", 0)), int(cost.get("herbs", 0))]
+	if int(materials.get("ore", 0)) < int(cost.get("ore", 0)):
+		return "矿石不足（%d/%d）" % [int(materials.get("ore", 0)), int(cost.get("ore", 0))]
+	return ""
+
 static func upgrade(state: Dictionary, id: String) -> Dictionary:
 	if not can_upgrade(state, id, false):
 		return {"ok": false}
@@ -130,6 +153,9 @@ static func options(state: Dictionary) -> Array:
 		var status := "当前 Lv.%d · %s" % [current, effect_text(state, id)]
 		if current < MAX_LEVEL:
 			status += "\n下级：%s · 需要%s" % [next_effect_text(state, id), cost_text(cost)]
+		var blocked := upgrade_block_reason(state, id)
+		if blocked != "":
+			status += "\n%s" % blocked
 		result.append(["%s · Lv.%d" % [str(entry.title), current], "%s\n%s" % [str(entry.description), status], "upgrade_%s" % id, locked])
 	result.append(["离开营造图", "不消耗行动点，返回青云门。", "leave"])
 	return result

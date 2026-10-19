@@ -43,6 +43,22 @@ func _run() -> void:
 		main._show_sect_building()
 		await _settle()
 		_check_screen("sect_building", 4, "营造图")
+		game.data.acted_this_week = true
+		main._show_sect_building()
+		await _settle()
+		var acted_card := _option_button("upgrade_training_ground")
+		_check(acted_card != null and acted_card.disabled, "Construction is disabled after this week's action is spent.")
+		_check(_card_badge("upgrade_training_ground") == "本周已行动", "A stocked construction card must say the week is spent, not that materials are missing.")
+		_check(acted_card != null and "本周已行动" in acted_card.tooltip_text, "The construction tooltip must explain the weekly-action block.")
+		var acted_footer := _view().find_child("BuildingFooterHint", true, false) as Label
+		_check(acted_footer != null and acted_footer.is_visible_in_tree() and "本周已行动" in acted_footer.text, "The construction footer must explain how to proceed after the weekly action.")
+		_check(acted_footer != null and _view().get_global_rect().grow(1).encloses(acted_footer.get_global_rect()), "The construction footer must not be pushed below the panel.")
+		if capture:
+			await _snapshot("building-sect-acted-%d.png" % roundi(scale * 100))
+		game.data.acted_this_week = false
+		main._show_sect_building()
+		await _settle()
+		_check(_card_badge("upgrade_training_ground") == "可升级", "The same stocked card becomes upgradeable again next week.")
 		if capture:
 			await _snapshot("building-sect-%d.png" % roundi(scale * 100))
 		main._show_sect_building("herb_garden")
@@ -152,6 +168,13 @@ func _option_button(id: String) -> Button:
 		if str(button.get_meta("option_id", "")) == id:
 			return button
 	return null
+
+func _card_badge(id: String) -> String:
+	var button := _option_button(id)
+	if button == null:
+		return ""
+	var badge := button.find_child("CardBadge", true, false) as Label
+	return badge.text if badge != null else ""
 
 func _card_buttons() -> Array:
 	var view := _view()

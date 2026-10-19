@@ -18,8 +18,10 @@ func _initialize() -> void:
 	assert(bool(upgrade.ok) and int(state.data.sect.buildings.training_ground) == 1, "A ready building should upgrade to level one before meeting the master.")
 	assert(bool(state.data.acted_this_week) and int(state.data.silver) == silver_before - 300, "Construction should consume one weekly action and its silver cost.")
 	assert(int(state.data.materials.herbs) == 19 and int(state.data.materials.ore) == 18, "Construction should consume its herb and ore costs.")
+	assert(SECT_BUILDING_RULES.upgrade_block_reason(state.data, "library") == "本周已行动，结束本周后可升级", "A stocked but already-acted player must be told to end the week, not that materials are missing.")
 	assert(not state.upgrade_sect_building("library").get("ok", false), "A second construction in the same week must be rejected.")
 	assert(state.end_week(), "Ending the construction week should succeed.")
+	assert(SECT_BUILDING_RULES.upgrade_block_reason(state.data, "library") == "", "After ending the week with enough resources, the next construction must have no blocking reason.")
 	state.data.materials.herbs = 20
 	state.data.materials.ore = 20
 	var garden: Dictionary = state.upgrade_sect_building("herb_garden")
@@ -67,5 +69,21 @@ func _initialize() -> void:
 	var deadline: Dictionary = state.data.duplicate(true)
 	assert(not state.upgrade_sect_building("training_ground").get("ok", false) and state.data == deadline, "The two-year deadline must still reject construction without changing state.")
 	assert(not SECT_BUILDING_RULES.can_upgrade(state.data, "unknown_building"), "Unknown buildings must still be rejected.")
+	state.new_game()
+	state.data.acted_this_week = false
+	state.data.silver = 0
+	state.data.materials = {"herbs": 100, "ore": 100}
+	assert(SECT_BUILDING_RULES.upgrade_block_reason(state.data, "training_ground").begins_with("银两不足"), "A silver shortfall must be named explicitly.")
+	state.data.silver = 1000
+	state.data.materials = {"herbs": 0, "ore": 100}
+	assert(SECT_BUILDING_RULES.upgrade_block_reason(state.data, "training_ground").begins_with("药材不足"), "A herb shortfall must be named explicitly.")
+	state.data.materials = {"herbs": 100, "ore": 0}
+	assert(SECT_BUILDING_RULES.upgrade_block_reason(state.data, "training_ground").begins_with("矿石不足"), "An ore shortfall must be named explicitly.")
+	state.data.materials = {"herbs": 100, "ore": 100}
+	state.data.week = state.FINAL_WEEK
+	assert(SECT_BUILDING_RULES.upgrade_block_reason(state.data, "training_ground") == "两年期限已到", "The deadline must have its own reason.")
+	state.data.week = 1
+	state.data.sect.buildings.training_ground = SECT_BUILDING_RULES.MAX_LEVEL
+	assert(SECT_BUILDING_RULES.upgrade_block_reason(state.data, "training_ground") == "已达最高等级", "A maxed building must report its cap, not a resource shortage.")
 	print("PASS test_sect_building_rules")
 	quit()

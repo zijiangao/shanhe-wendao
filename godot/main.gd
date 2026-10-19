@@ -705,7 +705,7 @@ func _show_menu() -> void:
 	panel.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.174.1 · 开局建设，自由探索江湖"
+	hint.text = "试玩章：青云门 → 黑苇渡 → 黑苇寨之战" if DEMO_POLICY.is_demo_build() else "完整版 0.174.2 · 开局建设，自由探索江湖"
 	hint.add_theme_color_override("font_color", Color("#aeb8b0"))
 	panel.add_child(hint)
 	var credits_button := _action_button("制作名单与版权", Color("#485e54"))
@@ -1435,9 +1435,19 @@ func _building_badge(event: String, row: Array, disabled: bool) -> String:
 	if event == "gathering":
 		return "本周专精" if str(row[2]) == TRAINING_RULES.weekly_focus(int(GameState.data.week)) else "采集"
 	if event == "sect_building":
-		if title.contains("Lv.%d" % SECT_BUILDING_RULES.MAX_LEVEL) or str(row[1]).contains("已达最高"):
+		var building_id := str(row[2]).trim_prefix("upgrade_")
+		var reason := SECT_BUILDING_RULES.upgrade_block_reason(GameState.data, building_id)
+		if reason.begins_with("已达最高"):
 			return "已满级"
-		return "材料不足" if disabled else "可升级"
+		if reason.begins_with("本周已行动"):
+			return "本周已行动"
+		if reason.begins_with("银两不足"):
+			return "银两不足"
+		if reason.begins_with("药材不足") or reason.begins_with("矿石不足"):
+			return "材料不足"
+		if reason.begins_with("两年"):
+			return "期限已到"
+		return "可升级" if reason.is_empty() else "不可升级"
 	if event == "sect_hall":
 		return "可接取" if "接取" in title else "对话"
 	if event == "qingyun_tavern":
@@ -2198,7 +2208,7 @@ func _show_credits() -> void:
 	title.add_theme_color_override("font_color", Color("#f2dfb3"))
 	panel.add_child(title)
 	var version := Label.new()
-	version.text = "《山河问道》 · Windows 0.174.1 · Godot 4.7.1"
+	version.text = "《山河问道》 · Windows 0.174.2 · Godot 4.7.1"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_color_override("font_color", Color("#c9c7bc"))
 	panel.add_child(version)

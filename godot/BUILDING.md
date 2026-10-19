@@ -1,5 +1,19 @@
 # Building 山河问道
 
+## 0.174.2 — construction cards name the real blocker
+
+Sect construction is a weekly action, but the construction pavilion stays
+open after that action is spent. Every disabled card used to say "材料不足",
+so a player with 5 herbs, 6 ore, and 10,000 silver could still believe
+construction was permanently impossible. Cards now distinguish "本周已行动",
+"银两不足", "材料不足", "期限已到", and "已满级"; the footer tells the player
+to leave the pavilion and end the week. The card tooltip also includes the
+exact reason.
+
+The menu and Windows Desktop export preset are both 0.174.2. Only the full
+game is exported and verified; the demo preset and build remain untouched.
+See `../qa/2026-10-19-sect-construction-labels/REPORT.md` for validation.
+
 ## 0.174.1 — training result always exposes 收功
 
 The training settlement panel now sizes itself to the visible content area

@@ -1,0 +1,27 @@
+{
+    "version":  "0.174.2",
+    "file_version":  "0.174.2.0",
+    "product_version":  "0.174.2.0",
+    "source_hashes":  {
+                          "godot/main.gd":  "A79275C2CC0AA6679DAB45B606C0D632CC7C7EA80937111105B4EA8DEF552936",
+                          "godot/scripts/progression/sect_building_rules.gd":  "636BEDBE63B1566969496A23B856A49CD30547CB57FA7A8FF86AB754D11CDD54",
+                          "godot/scripts/ui/building_selection_view.gd":  "95466660A6A7EC676B49B0DA472868A362F6722F2106780B0830B3A3E0A1F6DE",
+                          "godot/tests/test_sect_building_rules.gd":  "F5D61B7CABC9DF6D5F389C3376EE47362D5A49684EDF46E688EC372BAA8463B6",
+                          "godot/tests/test_building_selection_layout.gd":  "55FEF791099870DDB72AA57E7E2115CE8369999F4C857EEB24296EE1FF222C19",
+                          "godot/export_presets.cfg":  "E57EC4774B425E0323A43F98EFD42A0F607B94470DE442B13A45448653AE3D64"
+                      },
+    "artifacts":  [
+                      {
+                          "path":  "build/windows/ShanheWendao.exe",
+                          "bytes":  109268480,
+                          "sha256":  "AA660DE86811878C749F56AE4BCF5334B2966F75DFB2169C1CD6D6B081300AB8"
+                      },
+                      {
+                          "path":  "build/windows/ShanheWendao.pck",
+                          "bytes":  59377660,
+                          "sha256":  "B68975C4D319E4BB541F7D513565D9165F5C8DAC15EC642B95FEE3578E6FFC80"
+                      }
+                  ],
+    "demo_files_unchanged":  true,
+    "demo_preset_unchanged":  true
+}
